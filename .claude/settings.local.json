@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(umbraco-cms-backoffice-skills:umbraco-backoffice)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}

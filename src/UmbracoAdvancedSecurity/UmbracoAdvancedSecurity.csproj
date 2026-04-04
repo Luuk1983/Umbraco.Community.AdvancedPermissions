@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>UmbracoAdvancedSecurity</RootNamespace>
+    <AssemblyName>UmbracoAdvancedSecurity</AssemblyName>
+    <!-- Serve wwwroot content at the web root (/) rather than the default /_content/{assembly}/ path.
+         This allows App_Plugins files to be accessible at /App_Plugins/... as Umbraco expects. -->
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+
+    <!-- NuGet package metadata -->
+    <PackageId>UmbracoAdvancedSecurity</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Umbraco Advanced Security Contributors</Authors>
+    <Description>Sitecore-inspired security model for Umbraco v17: explicit Allow/Deny permissions, inheritance through the content tree, an Everyone role for global constraints, and dedicated Security Editor + Access Viewer UIs.</Description>
+    <PackageTags>umbraco;security;permissions;cms</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UmbracoAdvancedSecurity.Core\UmbracoAdvancedSecurity.Core.csproj" />
+    <ProjectReference Include="..\UmbracoAdvancedSecurity.Data\UmbracoAdvancedSecurity.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Core" Version="17.3.0" />
+    <PackageReference Include="Umbraco.Cms.Infrastructure" Version="17.3.0" />
+    <PackageReference Include="Umbraco.Cms.Api.Management" Version="17.3.0" />
+  </ItemGroup>
+
+</Project>

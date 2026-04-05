@@ -1,4 +1,4 @@
-# UmbracoAdvancedSecurity — Memory Index
+# LP.Umbraco.AdvancedPermissions — Memory Index
 
 ## Architecture Decision Records
 

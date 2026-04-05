@@ -28,8 +28,8 @@ The management API endpoints require a bearer token. We initially used `credenti
 // manifests.ts
 {
   type: 'backofficeEntryPoint',
-  alias: 'UAS.EntryPoint',
-  name: 'Umbraco Advanced Security Entry Point',
+  alias: 'UAP.EntryPoint',
+  name: 'Umbraco Advanced Permissions Entry Point',
   js: () => import('./entrypoint.js'),
 }
 ```
@@ -39,7 +39,7 @@ The management API endpoints require a bearer token. We initially used `credenti
 ```typescript
 // entrypoint.ts
 import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
-import { setAuthContext } from './api/advanced-security.api.js';
+import { setAuthContext } from './api/advanced-permissions.api.js';
 
 export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
   _host.consumeContext(UMB_AUTH_CONTEXT, (authContext) => {
@@ -51,7 +51,7 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
 ### 3. Use the token in every fetch
 
 ```typescript
-// advanced-security.api.ts
+// advanced-permissions.api.ts
 const openApiConfig = _authContext?.getOpenApiConfiguration();
 const token = openApiConfig?.token ? await openApiConfig.token() : undefined;
 if (token) headers['Authorization'] = `Bearer ${token}`;

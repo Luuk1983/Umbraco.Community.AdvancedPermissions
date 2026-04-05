@@ -5,7 +5,7 @@
 
 ## Context
 
-Early in development, `AddMvcCore().AddApplicationPart(typeof(AdvancedSecurityControllerBase).Assembly)` was added to the test site's `Program.cs` after endpoints returned 404. It was believed that Umbraco's MVC discovery did not automatically find controllers in referenced class libraries.
+Early in development, `AddMvcCore().AddApplicationPart(typeof(AdvancedPermissionsControllerBase).Assembly)` was added to the test site's `Program.cs` after endpoints returned 404. It was believed that Umbraco's MVC discovery did not automatically find controllers in referenced class libraries.
 
 ## Investigation
 
@@ -15,18 +15,17 @@ After running the test site **without** the `AddApplicationPart` call, all 8 end
 
 Do **not** call `AddApplicationPart()` for this package. Umbraco v17's minimal API discovery and/or MVC controller discovery correctly picks up controllers from referenced class library assemblies without it.
 
-The consuming application's `Program.cs` only needs:
+The consuming application's `Program.cs` only needs the standard Umbraco builder — the package auto-registers via `IComposer` discovery:
 
 ```csharp
 builder.CreateUmbracoBuilder()
     .AddBackOffice()
     .AddWebsite()
     .AddDeliveryApi()
-    .AddAdvancedSecurity()  // our extension method — registers services + DB
     .Build();
 ```
 
 ## Consequences
 
-- Simpler integration: the `AddAdvancedSecurity()` extension handles everything.
+- Simpler integration: no extension method needed, the package auto-discovers via `IComposer`.
 - Do not re-add `AddApplicationPart` if endpoints appear to return 404 — first check for port conflicts and stale processes.

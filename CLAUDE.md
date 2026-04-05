@@ -1,21 +1,21 @@
-# UmbracoAdvancedSecurity — Claude Code Guide
+# LP.Umbraco.AdvancedPermissions — Claude Code Guide
 
 ## Project Overview
 
-Umbraco v17 package implementing a Sitecore-inspired security model. Adds explicit Allow/Deny permission entries per role per content node, tree-based inheritance, an `$everyone` role, and dedicated backoffice UIs (Security Editor + Access Viewer).
+Umbraco v17 package implementing advanced permission management. Adds explicit Allow/Deny permission entries per role per content node, tree-based inheritance, an `$everyone` role, and dedicated backoffice UIs (Permissions Editor + Access Viewer).
 
 ## Solution Structure
 
 ```
 src/
-  UmbracoAdvancedSecurity.Core/       # Domain models, interfaces — no Umbraco dependency
-  UmbracoAdvancedSecurity.Data/       # EF Core repository implementation (SQLite for tests)
-  UmbracoAdvancedSecurity/            # Main package: composers, controllers, services, wwwroot
-  UmbracoAdvancedSecurity.Client/     # Vite+TypeScript frontend (Lit web components)
+  LP.Umbraco.AdvancedPermissions.Core/       # Domain models, interfaces — no Umbraco dependency
+  LP.Umbraco.AdvancedPermissions.Data/       # EF Core repository implementation (SQLite for tests)
+  LP.Umbraco.AdvancedPermissions/            # Main package: composers, controllers, services, wwwroot
+  LP.Umbraco.AdvancedPermissions.Client/     # Vite+TypeScript frontend (Lit web components)
 tests/
-  UmbracoAdvancedSecurity.Core.Tests/ # Unit tests — permission resolver logic
-  UmbracoAdvancedSecurity.Data.Tests/ # Integration tests — repository with real SQLite DB
-  UmbracoAdvancedSecurity.TestSite/   # Full Umbraco site for manual testing
+  LP.Umbraco.AdvancedPermissions.Core.Tests/ # Unit tests — permission resolver logic
+  LP.Umbraco.AdvancedPermissions.Data.Tests/ # Integration tests — repository with real SQLite DB
+  LP.Umbraco.AdvancedPermissions.TestSite/   # Full Umbraco site for manual testing
 Memory/
   Plans/                              # Implementation plans
   ADRs/                               # Architecture decision records (see below)
@@ -31,27 +31,27 @@ Memory/
 | `Core/Interfaces/IPermissionResolver.cs` | Resolution algorithm contract |
 | `Core/Interfaces/IAdvancedPermissionRepository.cs` | Data access contract |
 | `Data/Repositories/AdvancedPermissionRepository.cs` | EF Core implementation |
-| `UmbracoAdvancedSecurity/Services/AdvancedPermissionService.cs` | Orchestrates resolution: loads ancestors, applies $everyone, explicit, scope |
-| `UmbracoAdvancedSecurity/Composing/AdvancedSecurityComposer.cs` | DI registrations + `AddAdvancedSecurity()` extension |
-| `UmbracoAdvancedSecurity/Controllers/` | 4 minimal API controllers (Meta, Permission, Effective, Tree) |
-| `UmbracoAdvancedSecurity/Caching/AdvancedPermissionCache.cs` | In-memory cache with node-key invalidation |
-| `UmbracoAdvancedSecurity/Notifications/AdvancedPermissionCacheInvalidator.cs` | Invalidates cache on content save/delete |
+| `LP.Umbraco.AdvancedPermissions/Services/AdvancedPermissionService.cs` | Orchestrates resolution: loads ancestors, applies $everyone, explicit, scope |
+| `LP.Umbraco.AdvancedPermissions/Composing/AdvancedPermissionsComposer.cs` | DI registrations via `IComposer` auto-discovery |
+| `LP.Umbraco.AdvancedPermissions/Controllers/` | 4 minimal API controllers (Meta, Permission, Effective, Tree) |
+| `LP.Umbraco.AdvancedPermissions/Caching/AdvancedPermissionCache.cs` | In-memory cache with node-key invalidation |
+| `LP.Umbraco.AdvancedPermissions/Notifications/AdvancedPermissionCacheInvalidator.cs` | Invalidates cache on content save/delete |
 
 ### Frontend (TypeScript + Lit)
 | File | Purpose |
 |------|---------|
 | `Client/src/entrypoint.ts` | `backofficeEntryPoint` — wires `UMB_AUTH_CONTEXT` to API module |
 | `Client/src/manifests.ts` | All extension manifests (entrypoint, section, menu, workspaces) |
-| `Client/src/api/advanced-security.api.ts` | Typed fetch wrappers; `setAuthContext()` called from entrypoint |
+| `Client/src/api/advanced-permissions.api.ts` | Typed fetch wrappers; `setAuthContext()` called from entrypoint |
 | `Client/src/models/permission.models.ts` | TypeScript interfaces mirroring C# response models |
-| `Client/src/security-editor/uas-security-editor-root.element.ts` | Security Editor — manage permissions per role/node |
-| `Client/src/access-viewer/uas-access-viewer-root.element.ts` | Access Viewer — view effective permissions with reasoning |
+| `Client/src/permissions-editor/uap-permissions-editor-root.element.ts` | Permissions Editor — manage permissions per role/node |
+| `Client/src/access-viewer/uap-access-viewer-root.element.ts` | Access Viewer — view effective permissions with reasoning |
 | `Client/public/umbraco-package.json` | Umbraco package manifest; lives in `public/` so Vite copies it on every build |
-| `Client/vite.config.ts` | Builds to `../UmbracoAdvancedSecurity/wwwroot/App_Plugins/UmbracoAdvancedSecurity/` |
+| `Client/vite.config.ts` | Builds to `../LP.Umbraco.AdvancedPermissions/wwwroot/App_Plugins/UmbracoAdvancedPermissions/` |
 
 ## Management API Endpoints
 
-Base: `GET|PUT /umbraco/management/api/v1/advanced-security/`
+Base: `GET|PUT /umbraco/management/api/v1/advanced-permissions/`
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -75,18 +75,26 @@ All endpoints require backoffice authentication and return 401 without it. **No 
 - **Resolution priority**: explicit entry on current node > inherited from nearest ancestor > default (deny)
 - **`$everyone`** is evaluated first; explicit role entries can override it
 
+## NuGet Packaging
+
+The package ships as a single NuGet package (`LP.Umbraco.AdvancedPermissions`). Core and Data DLLs are bundled into the package via `PrivateAssets="all"` and a custom MSBuild target — they are NOT separate NuGet dependencies.
+
+```bash
+dotnet pack src/LP.Umbraco.AdvancedPermissions/  # Create NuGet package
+```
+
 ## Build & Run
 
 ### Backend
 ```bash
-dotnet build                          # Build all projects
-dotnet test                           # Run all 39 tests (20 unit + 19 integration)
-dotnet pack src/UmbracoAdvancedSecurity/  # Create NuGet package
+dotnet build                                      # Build all projects
+dotnet test                                       # Run all 39 tests (20 unit + 19 integration)
+dotnet pack src/LP.Umbraco.AdvancedPermissions/   # Create NuGet package
 ```
 
 ### Frontend
 ```bash
-cd src/UmbracoAdvancedSecurity.Client
+cd src/LP.Umbraco.AdvancedPermissions.Client
 npm install                           # First time only
 npm run build                         # Vite build → wwwroot/App_Plugins/
 npx tsc --noEmit                      # Type-check only
@@ -94,7 +102,7 @@ npx tsc --noEmit                      # Type-check only
 
 ### Test Site
 ```bash
-cd tests/UmbracoAdvancedSecurity.TestSite
+cd tests/LP.Umbraco.AdvancedPermissions.TestSite
 dotnet run --urls http://localhost:5000
 # Visit http://localhost:5000/umbraco
 ```
@@ -119,9 +127,11 @@ dotnet run --urls http://localhost:5000
 
 7. **`umbraco-package.json` must live in `Client/public/`** — Vite's `emptyOutDir: true` deletes everything in the output dir on each build. Files in `public/` are copied verbatim after the clean.
 
-8. **Static web assets path**: The csproj uses `<StaticWebAssetBasePath>/</StaticWebAssetBasePath>` to override the default `/_content/UmbracoAdvancedSecurity/` path. Without it, `App_Plugins/` files would be unreachable.
+8. **Static web assets path**: The csproj uses `<StaticWebAssetBasePath>/</StaticWebAssetBasePath>` to override the default `/_content/LP.Umbraco.AdvancedPermissions/` path. Without it, `App_Plugins/` files would be unreachable.
 
 9. **SDK must be `Microsoft.NET.Sdk.Razor`** — `Microsoft.NET.Sdk` does not publish `wwwroot/` as static web assets.
+
+10. **Namespace collision with `Umbraco.Cms`**: Since the project namespace is `LP.Umbraco.AdvancedPermissions`, the compiler sees `LP.Umbraco` as a parent namespace. Inline fully-qualified references like `Umbraco.Cms.Core.Models.IContent` will resolve against `LP.Umbraco` first. Use `using` directives or `global::Umbraco.Cms.Core...` for inline references.
 
 ## Umbraco Reference Source
 

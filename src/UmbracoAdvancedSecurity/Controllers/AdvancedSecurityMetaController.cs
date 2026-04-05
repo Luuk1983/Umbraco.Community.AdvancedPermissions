@@ -44,8 +44,7 @@ public sealed class AdvancedSecurityMetaController(IUserGroupService userGroupSe
             new(
                 AdvancedSecurityConstants.EveryoneRoleAlias,
                 AdvancedSecurityConstants.EveryoneRoleDisplayName,
-                IsEveryone: true,
-                DefaultVerbs: AdvancedSecurityConstants.EveryoneDefaultVerbs),
+                IsEveryone: true),
         };
 
         int skip = 0;
@@ -59,8 +58,7 @@ public sealed class AdvancedSecurityMetaController(IUserGroupService userGroupSe
                 result.Add(new RoleResponseModel(
                     group.Alias,
                     group.Name ?? group.Alias,
-                    IsEveryone: false,
-                    DefaultVerbs: group.Permissions.ToList()));
+                    IsEveryone: false));
             }
 
             skip += take;

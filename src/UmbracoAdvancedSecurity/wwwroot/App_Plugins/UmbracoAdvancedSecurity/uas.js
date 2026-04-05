@@ -4,7 +4,7 @@ const e = [
     type: "backofficeEntryPoint",
     alias: "UAS.EntryPoint",
     name: "Umbraco Advanced Security Entry Point",
-    js: () => import("./entrypoint-Jm72DZvJ.js")
+    js: () => import("./entrypoint-CBdy9Z8U.js")
   },
   // ─── Section Sidebar App (inside Users section) ───────────────────────────
   {
@@ -63,23 +63,26 @@ const e = [
     meta: {
       entityType: "uas-security-editor"
     },
-    element: () => import("./uas-security-editor-root.element-DGShFjwq.js")
+    element: () => import("./uas-security-editor-root.element-BTb6bx31.js")
   },
-  // ─── Granular Permission Override ─────────────────────────────────────────
-  // Replaces the built-in document granular permissions UI with a redirect
-  // message pointing users to the Security Editor in the Users section.
+  // ─── Granular Permission Redirect (ungrouped) ────────────────────────────
+  // Appears in the "General rights" box in the user group editor (rendered
+  // by umb-user-group-entity-type-permission-groups when any userGranularPermission
+  // has no forEntityTypes). Shows a message directing users to the Security Editor.
+  // The native document entityUserPermission manifests are excluded in the entry
+  // point, so the "Documents" box disappears entirely — this ungrouped entry is
+  // the sole visible hint about document permission management.
   {
     type: "userGranularPermission",
     alias: "UAS.UserGranularPermission.Document.Redirect",
     name: "Advanced Security Document Permission Redirect",
     weight: 2e3,
-    overwrites: ["Umb.UserGranularPermission.Document"],
-    forEntityTypes: ["document"],
     element: () => import("./uas-granular-permission-redirect.element-x1yxkse-.js"),
     meta: {
       schemaType: "DocumentPermissionPresentationModel",
-      label: "#user_permissionsGranular",
-      description: "#uas_redirectMessage"
+      // labelKey resolves via localize.term() — 'user_permissionsEntityGroup_document'
+      // gives "Documents" in Umbraco's built-in localization files.
+      labelKey: "user_permissionsEntityGroup_document"
     }
   },
   // ─── Workspace (Access Viewer) ────────────────────────────────────────────

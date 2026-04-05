@@ -65,7 +65,6 @@ export interface RoleInfo {
   alias: string;
   name: string;
   isEveryone: boolean;
-  defaultVerbs: string[];
 }
 
 /** A pending verb-level change for a node in the Security Editor. */

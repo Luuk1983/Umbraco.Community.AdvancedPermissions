@@ -1,0 +1,241 @@
+{
+  "actions": [
+    {
+      "change": "Import",
+      "details": [
+        {
+          "change": "Update",
+          "name": "Key",
+          "newValue": "1f7056d2-60d7-41e8-b5ad-55038cf354a4",
+          "oldValue": "da0f23fe-35b5-4c30-9d6f-2f898efc52f0",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Name",
+          "newValue": "Example",
+          "oldValue": "(None)",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Icon",
+          "newValue": "icon-document",
+          "oldValue": "icon-folder",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Description",
+          "newValue": "(Blank)",
+          "oldValue": "(None)",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "AllowAtRoot",
+          "newValue": "True",
+          "oldValue": "False",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Allowed",
+          "newValue": "example",
+          "oldValue": "(Blank)",
+          "path": "/Structure",
+          "success": true
+        }
+      ],
+      "handler": "ContentTypeHandler",
+      "itemType": "IContentType",
+      "key": "1f7056d2-60d7-41e8-b5ad-55038cf354a4",
+      "message": "",
+      "name": "Example",
+      "success": true
+    },
+    {
+      "change": "Import",
+      "details": [
+        {
+          "change": "Update",
+          "name": "Path",
+          "newValue": "-1,0",
+          "oldValue": "(Blank)",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Level",
+          "newValue": "1",
+          "oldValue": "0",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Key",
+          "newValue": "0f1c76fd-9898-453e-9d43-2d8deebef726",
+          "oldValue": "592da877-6c54-481c-80c3-8ab2f7734aed",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "CreateDate",
+          "newValue": "4/4/2026 7:34:40 PM",
+          "oldValue": "1/1/0001 12:00:00 AM",
+          "path": "",
+          "success": true
+        }
+      ],
+      "handler": "ContentHandler",
+      "itemType": "IContent",
+      "key": "0f1c76fd-9898-453e-9d43-2d8deebef726",
+      "message": "",
+      "name": "Example root",
+      "success": true
+    },
+    {
+      "change": "Import",
+      "details": [
+        {
+          "change": "Update",
+          "name": "Path",
+          "newValue": "-1,1057,0",
+          "oldValue": "(Blank)",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Level",
+          "newValue": "2",
+          "oldValue": "0",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Key",
+          "newValue": "86260cc2-f41f-4d28-a223-9a77047a9bc2",
+          "oldValue": "5f84751f-5e4e-454a-8a4e-f1d91501271c",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "CreateDate",
+          "newValue": "4/4/2026 7:34:51 PM",
+          "oldValue": "1/1/0001 12:00:00 AM",
+          "path": "",
+          "success": true
+        }
+      ],
+      "handler": "ContentHandler",
+      "itemType": "IContent",
+      "key": "86260cc2-f41f-4d28-a223-9a77047a9bc2",
+      "message": "",
+      "name": "Example1",
+      "success": true
+    },
+    {
+      "change": "Import",
+      "details": [
+        {
+          "change": "Update",
+          "name": "Path",
+          "newValue": "-1,1057,0",
+          "oldValue": "(Blank)",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Level",
+          "newValue": "2",
+          "oldValue": "0",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Key",
+          "newValue": "5d910648-9f49-4c28-8e1d-6f5a737125a2",
+          "oldValue": "23c4f8e5-6f8b-4b19-a6a0-67e2df0808b6",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "CreateDate",
+          "newValue": "4/4/2026 7:34:59 PM",
+          "oldValue": "1/1/0001 12:00:00 AM",
+          "path": "",
+          "success": true
+        }
+      ],
+      "handler": "ContentHandler",
+      "itemType": "IContent",
+      "key": "5d910648-9f49-4c28-8e1d-6f5a737125a2",
+      "message": "",
+      "name": "Example2",
+      "success": true
+    },
+    {
+      "change": "Import",
+      "details": [
+        {
+          "change": "Update",
+          "name": "Path",
+          "newValue": "-1,1057,0",
+          "oldValue": "(Blank)",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Level",
+          "newValue": "2",
+          "oldValue": "0",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "Key",
+          "newValue": "94df59d1-b3bf-458d-89ae-0c21bee7ac78",
+          "oldValue": "dbaeae08-3331-4e85-a24f-1a2601569ceb",
+          "path": "",
+          "success": true
+        },
+        {
+          "change": "Update",
+          "name": "CreateDate",
+          "newValue": "4/4/2026 7:35:08 PM",
+          "oldValue": "1/1/0001 12:00:00 AM",
+          "path": "",
+          "success": true
+        }
+      ],
+      "handler": "ContentHandler",
+      "itemType": "IContent",
+      "key": "94df59d1-b3bf-458d-89ae-0c21bee7ac78",
+      "message": "",
+      "name": "Example3",
+      "success": true
+    }
+  ],
+  "changes": 5,
+  "date": "2026-04-05T17:18:26.3350834+02:00",
+  "filePath": "",
+  "method": "Import",
+  "total": 52,
+  "username": "admin@example.test"
+}

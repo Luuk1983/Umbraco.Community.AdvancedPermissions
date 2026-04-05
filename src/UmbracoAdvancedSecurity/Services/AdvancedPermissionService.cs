@@ -85,18 +85,11 @@ public sealed class AdvancedPermissionService(
         string roleAlias,
         Guid nodeKey,
         IReadOnlyList<Guid> pathFromRoot,
-        IReadOnlySet<string> roleDefaultVerbs,
         IEnumerable<string>? verbs = null,
         CancellationToken cancellationToken = default)
     {
         // Resolve as if user has exactly this role plus $everyone — uses L1 cache for entries
         var roles = new List<string> { roleAlias, AdvancedSecurityConstants.EveryoneRoleAlias };
-        var groupDefaults = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
-        {
-            [roleAlias] = roleDefaultVerbs,
-            [AdvancedSecurityConstants.EveryoneRoleAlias] =
-                new HashSet<string>(AdvancedSecurityConstants.EveryoneDefaultVerbs, StringComparer.Ordinal),
-        };
 
         var storedEntries = await GetEntriesForRolesAndPathAsync(roles, pathFromRoot, cancellationToken);
 
@@ -104,7 +97,6 @@ public sealed class AdvancedPermissionService(
             TargetNodeKey: nodeKey,
             PathFromRoot: pathFromRoot,
             RoleAliases: roles,
-            GroupDefaultVerbsByRole: groupDefaults,
             StoredEntries: storedEntries);
 
         var verbList = verbs ?? AdvancedSecurityConstants.AllVerbs;
@@ -162,25 +154,13 @@ public sealed class AdvancedPermissionService(
         roleAliases.AddRange(groups.Select(g => g.Alias));
         roleAliases.Add(AdvancedSecurityConstants.EveryoneRoleAlias);
 
-        // Build group defaults: Umbraco group permissions map to virtual root Allow entries
-        var groupDefaultVerbsByRole = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal);
-        foreach (var group in groups)
-        {
-            groupDefaultVerbsByRole[group.Alias] =
-                new HashSet<string>(group.Permissions, StringComparer.Ordinal);
-        }
-
-        // $everyone always gets Allow Read by default
-        groupDefaultVerbsByRole[AdvancedSecurityConstants.EveryoneRoleAlias] =
-            new HashSet<string>(AdvancedSecurityConstants.EveryoneDefaultVerbs, StringComparer.Ordinal);
-
+        // Load stored entries (including root-level null-NodeKey entries which act as defaults)
         var storedEntries = await GetEntriesForRolesAndPathAsync(roleAliases, pathFromRoot, cancellationToken);
 
         return new PermissionResolutionContext(
             TargetNodeKey: nodeKey,
             PathFromRoot: pathFromRoot,
             RoleAliases: roleAliases,
-            GroupDefaultVerbsByRole: groupDefaultVerbsByRole,
             StoredEntries: storedEntries);
     }
 

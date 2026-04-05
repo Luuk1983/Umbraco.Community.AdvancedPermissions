@@ -11,6 +11,7 @@ using UmbracoAdvancedSecurity.Core.Services;
 using UmbracoAdvancedSecurity.Data.Context;
 using UmbracoAdvancedSecurity.Data.Repositories;
 using UmbracoAdvancedSecurity.Data.Migrations;
+using UmbracoAdvancedSecurity.Migrations;
 using UmbracoAdvancedSecurity.Notifications;
 using UmbracoAdvancedSecurity.Services;
 
@@ -109,14 +110,20 @@ public sealed class AdvancedSecurityComposer : IComposer
     /// <param name="builder">The Umbraco builder.</param>
     private static void RegisterNotificationHandlers(IUmbracoBuilder builder)
     {
-        // Apply EF Core migrations on application startup
+        // 1. Apply EF Core schema migrations (schema must exist before data import)
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartingNotification, AdvancedSecurityDatabaseMigration>();
+
+        // 2. Import native Umbraco permissions on first boot (runs after schema migration)
+        builder.AddNotificationAsyncHandler<UmbracoApplicationStartingNotification, AdvancedSecurityDataImport>();
 
         // Invalidate caches when content structure or user/group membership changes
         builder.AddNotificationHandler<ContentMovedNotification, AdvancedPermissionCacheInvalidator>();
         builder.AddNotificationHandler<ContentMovedToRecycleBinNotification, AdvancedPermissionCacheInvalidator>();
         builder.AddNotificationHandler<UserGroupSavedNotification, AdvancedPermissionCacheInvalidator>();
         builder.AddNotificationHandler<UserSavedNotification, AdvancedPermissionCacheInvalidator>();
+
+        // Seed root permission entries for newly created user groups
+        builder.AddNotificationAsyncHandler<UserGroupSavedNotification, UserGroupPermissionSeeder>();
     }
 
     /// <summary>

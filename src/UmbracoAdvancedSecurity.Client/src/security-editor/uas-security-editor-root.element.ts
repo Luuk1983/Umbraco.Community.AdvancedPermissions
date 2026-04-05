@@ -137,11 +137,6 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
 
   // ── Computed ─────────────────────────────────────────────────────────────
 
-  get #selectedRoleDefaultVerbs(): ReadonlySet<string> {
-    const role = this._roles.find((r) => r.alias === this._selectedRole);
-    return new Set(role?.defaultVerbs ?? []);
-  }
-
   get #roleOptions() {
     return [
       { name: this.#localize.term('uas_rolePlaceholder'), value: '' },
@@ -413,11 +408,9 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
     const pendingCls = isPending ? ' pending' : '';
 
     if (entries.length === 0) {
-      const isDefault = node.key === 'virtual-root' && this.#selectedRoleDefaultVerbs.has(verb);
-      const cls = isDefault ? 'allow' : 'inherit';
       return html`
         <td class="perm-td" title=${verb} @click=${() => this.#openPicker(node, verb)}>
-          <div class="perm-block uniform ${cls}${pendingCls}">${isDefault ? '\u2713' : '\u2014'}</div>
+          <div class="perm-block uniform inherit${pendingCls}">\u2014</div>
         </td>
       `;
     }

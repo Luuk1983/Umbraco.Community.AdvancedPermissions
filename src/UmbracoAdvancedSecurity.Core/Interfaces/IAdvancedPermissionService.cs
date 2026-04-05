@@ -91,10 +91,6 @@ public interface IAdvancedPermissionService
     /// <param name="pathFromRoot">
     /// The ordered list of node keys from root to the target node (inclusive).
     /// </param>
-    /// <param name="roleDefaultVerbs">
-    /// The default permission verbs for the given role (from Umbraco group defaults).
-    /// Pass an empty set for the <c>$everyone</c> role or custom/virtual roles.
-    /// </param>
     /// <param name="verbs">The verbs to resolve. Resolves all standard verbs if <see langword="null"/>.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <returns>A dictionary mapping each verb to its effective permission.</returns>
@@ -102,7 +98,6 @@ public interface IAdvancedPermissionService
         string roleAlias,
         Guid nodeKey,
         IReadOnlyList<Guid> pathFromRoot,
-        IReadOnlySet<string> roleDefaultVerbs,
         IEnumerable<string>? verbs = null,
         CancellationToken cancellationToken = default);
 

@@ -22,12 +22,16 @@ namespace UmbracoAdvancedSecurity.Core.Services;
 /// it does not block the walk and does not apply to descendants.
 /// </para>
 /// <para>
+/// If no entry is found in the content path, root-level entries (<c>NodeKey = null</c>) are
+/// checked as a virtual-root fallback. These represent the role's default permissions.
+/// </para>
+/// <para>
 /// After collecting one result per role, the priority order determines the final outcome:
 /// <list type="number">
 ///   <item>Explicit Deny from any role (entry on target node itself)</item>
 ///   <item>Explicit Allow from any role (entry on target node itself)</item>
-///   <item>Implicit Deny from any role (inherited from ancestor)</item>
-///   <item>Implicit Allow from any role (inherited or from group defaults)</item>
+///   <item>Implicit Deny from any role (inherited from ancestor or root-level entry)</item>
+///   <item>Implicit Allow from any role (inherited from ancestor or root-level entry)</item>
 ///   <item>No opinion from any role → Deny (safe by default)</item>
 /// </list>
 /// </para>
@@ -68,8 +72,7 @@ public sealed class PermissionResolver : IPermissionResolver
 
     /// <summary>
     /// Resolves the permission for a single role on the given verb by walking the path
-    /// from target to root and finding the first applicable entry.
-    /// Falls back to group defaults if no stored entry is found.
+    /// from target to root, then falling back to root-level entries (<c>NodeKey = null</c>).
     /// </summary>
     /// <param name="context">The full resolution context.</param>
     /// <param name="roleAlias">The role to resolve for.</param>
@@ -116,17 +119,21 @@ public sealed class PermissionResolver : IPermissionResolver
             }
         }
 
-        // No stored entry found anywhere in the path.
-        // Check if this role's group defaults include the verb (virtual root entry with ThisNodeAndDescendants scope).
-        if (context.GroupDefaultVerbsByRole.TryGetValue(roleAlias, out var defaultVerbs)
-            && defaultVerbs.Contains(verb))
+        // No entry found in the content path. Check for root-level entries (NodeKey = null).
+        // These act as the virtual-root defaults with implicit (inherited) semantics.
+        var rootEntry = context.StoredEntries
+            .FirstOrDefault(e => e.NodeKey == null
+                              && string.Equals(e.RoleAlias, roleAlias, StringComparison.Ordinal)
+                              && string.Equals(e.Verb, verb, StringComparison.Ordinal));
+
+        if (rootEntry is not null)
         {
             return new RolePermissionResult(
                 RoleAlias: roleAlias,
-                State: PermissionState.Allow,
-                IsExplicit: false,         // Group defaults are always implicit (inherited from virtual root)
-                SourceNodeKey: null,       // null = virtual root
-                SourceScope: PermissionScope.ThisNodeAndDescendants);
+                State: rootEntry.State,
+                IsExplicit: false,     // Root-level entries are always implicit (virtual root)
+                SourceNodeKey: null,   // null = virtual root
+                SourceScope: rootEntry.Scope);
         }
 
         // Role has no opinion on this verb.

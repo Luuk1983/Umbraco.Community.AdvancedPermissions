@@ -22,15 +22,13 @@ public class PermissionResolverTests
         Guid rootKey,
         Guid targetKey,
         IReadOnlyList<AdvancedPermissionEntry> entries,
-        IReadOnlyList<string>? roles = null,
-        IReadOnlyDictionary<string, IReadOnlySet<string>>? groupDefaults = null)
+        IReadOnlyList<string>? roles = null)
     {
         var roleList = roles ?? [AdvancedSecurityConstants.EveryoneRoleAlias];
         return new PermissionResolutionContext(
             TargetNodeKey: targetKey,
             PathFromRoot: [rootKey, targetKey],
             RoleAliases: roleList,
-            GroupDefaultVerbsByRole: groupDefaults ?? new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             StoredEntries: entries);
     }
 
@@ -137,7 +135,6 @@ public class PermissionResolverTests
             TargetNodeKey: child,
             PathFromRoot: [root, parent, child],
             RoleAliases: [AdvancedSecurityConstants.EveryoneRoleAlias],
-            GroupDefaultVerbsByRole: new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             StoredEntries: [entry]);
 
         var result = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbRead);
@@ -161,7 +158,6 @@ public class PermissionResolverTests
             TargetNodeKey: child,
             PathFromRoot: [root, parent, child],
             RoleAliases: [AdvancedSecurityConstants.EveryoneRoleAlias],
-            GroupDefaultVerbsByRole: new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             StoredEntries: [entry]);
 
         var result = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbRead);
@@ -187,7 +183,6 @@ public class PermissionResolverTests
             TargetNodeKey: child,
             PathFromRoot: [root, parent, child],
             RoleAliases: [AdvancedSecurityConstants.EveryoneRoleAlias],
-            GroupDefaultVerbsByRole: new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             StoredEntries: [entryOnParent]);
 
         var childResult = _resolver.Resolve(childCtx, AdvancedSecurityConstants.VerbRead);
@@ -199,7 +194,6 @@ public class PermissionResolverTests
             TargetNodeKey: parent,
             PathFromRoot: [root, parent],
             RoleAliases: [AdvancedSecurityConstants.EveryoneRoleAlias],
-            GroupDefaultVerbsByRole: new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             StoredEntries: [entryOnParent]);
 
         var parentResult = _resolver.Resolve(parentCtx, AdvancedSecurityConstants.VerbRead);
@@ -225,14 +219,12 @@ public class PermissionResolverTests
         var allowDescendants = Entry(newsOverview, "editors", AdvancedSecurityConstants.VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly, id: 2);
 
         var roles = new[] { "editors" };
-        var groupDefaults = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal);
 
         // Resolve Delete for news overview itself (depth 0)
         var overviewCtx = new PermissionResolutionContext(
             TargetNodeKey: newsOverview,
             PathFromRoot: [root, newsOverview],
             RoleAliases: roles,
-            GroupDefaultVerbsByRole: groupDefaults,
             StoredEntries: [denyOnOverview, allowDescendants]);
 
         var overviewResult = _resolver.Resolve(overviewCtx, AdvancedSecurityConstants.VerbDelete);
@@ -244,7 +236,6 @@ public class PermissionResolverTests
             TargetNodeKey: newsArticle,
             PathFromRoot: [root, newsOverview, newsArticle],
             RoleAliases: roles,
-            GroupDefaultVerbsByRole: groupDefaults,
             StoredEntries: [denyOnOverview, allowDescendants]);
 
         var articleResult = _resolver.Resolve(articleCtx, AdvancedSecurityConstants.VerbDelete);
@@ -276,7 +267,6 @@ public class PermissionResolverTests
             TargetNodeKey: child,
             PathFromRoot: [root, parent, child],
             RoleAliases: ["editors"],
-            GroupDefaultVerbsByRole: new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             StoredEntries: [parentDeny, childAllow]);
 
         var result = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbRead);
@@ -303,7 +293,6 @@ public class PermissionResolverTests
             TargetNodeKey: target,
             PathFromRoot: [root, target],
             RoleAliases: ["$everyone", "editors"],
-            GroupDefaultVerbsByRole: new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             StoredEntries: [denyFromEveryone, allowFromEditors]);
 
         var result = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbDelete);
@@ -326,32 +315,29 @@ public class PermissionResolverTests
         // Role A denies Read via inheritance from parent
         var denyFromRoleA = Entry(parent, "roleA", AdvancedSecurityConstants.VerbRead, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, id: 1);
 
-        // Role B allows Read via group default (virtual root)
-        var groupDefaults = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
-        {
-            ["roleB"] = new HashSet<string>(StringComparer.Ordinal) { AdvancedSecurityConstants.VerbRead },
-        };
+        // Role B allows Read via root-level entry (null NodeKey = virtual root default)
+        var roleBDefault = Entry(null, "roleB", AdvancedSecurityConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 2);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: child,
             PathFromRoot: [root, parent, child],
             RoleAliases: ["roleA", "roleB"],
-            GroupDefaultVerbsByRole: groupDefaults,
-            StoredEntries: [denyFromRoleA]);
+            StoredEntries: [denyFromRoleA, roleBDefault]);
 
         var result = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbRead);
 
-        // Implicit Deny from roleA beats Implicit Allow from roleB's group defaults
+        // Implicit Deny from roleA beats Implicit Allow from roleB's root-level default
         Assert.False(result.IsAllowed);
         Assert.False(result.IsExplicit);
     }
 
     // ───────────────────────────────────────────────────────────────────────
-    // Group defaults (virtual root entries)
+    // Root-level entries (virtual root defaults, NodeKey = null)
     // ───────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Group defaults act as implicit Allow entries at the virtual root with ThisNodeAndDescendants scope.
+    /// Root-level entries (NodeKey = null) act as implicit Allow entries at the virtual root.
+    /// They provide an allow when no path entry overrides them.
     /// </summary>
     [Fact]
     public void Resolve_GroupDefault_ProvidesImplicitAllow_WhenNoStoredEntries()
@@ -359,24 +345,22 @@ public class PermissionResolverTests
         var root = Guid.NewGuid();
         var target = Guid.NewGuid();
 
-        var groupDefaults = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
-        {
-            ["editors"] = new HashSet<string>(StringComparer.Ordinal) { AdvancedSecurityConstants.VerbRead, AdvancedSecurityConstants.VerbCreate },
-        };
+        // Root-level entries (null NodeKey) act as virtual root defaults
+        var editorReadDefault = Entry(null, "editors", AdvancedSecurityConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 1);
+        var editorCreateDefault = Entry(null, "editors", AdvancedSecurityConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 2);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: target,
             PathFromRoot: [root, target],
             RoleAliases: ["editors"],
-            GroupDefaultVerbsByRole: groupDefaults,
-            StoredEntries: []);
+            StoredEntries: [editorReadDefault, editorCreateDefault]);
 
         var readResult = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbRead);
         Assert.True(readResult.IsAllowed);
-        Assert.False(readResult.IsExplicit); // from group defaults = implicit
+        Assert.False(readResult.IsExplicit); // from root-level entry = implicit
 
         var deleteResult = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbDelete);
-        Assert.False(deleteResult.IsAllowed); // not in group defaults, no stored entry → deny
+        Assert.False(deleteResult.IsAllowed); // no root-level entry for Delete, no path entry → deny
     }
 
     // ───────────────────────────────────────────────────────────────────────
@@ -396,7 +380,6 @@ public class PermissionResolverTests
             TargetNodeKey: target,
             PathFromRoot: [root, target],
             RoleAliases: [AdvancedSecurityConstants.EveryoneRoleAlias],
-            GroupDefaultVerbsByRole: new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             StoredEntries: []);
 
         var result = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbDelete);
@@ -411,7 +394,7 @@ public class PermissionResolverTests
     // ───────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// The Everyone role default is Allow Read. This should give implicit allow on any node.
+    /// The Everyone role root-level entry for Read should give implicit allow on any node.
     /// </summary>
     [Fact]
     public void Resolve_EveryoneDefaultRead_IsImplicitAllow()
@@ -419,22 +402,19 @@ public class PermissionResolverTests
         var root = Guid.NewGuid();
         var target = Guid.NewGuid();
 
-        var groupDefaults = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
-        {
-            [AdvancedSecurityConstants.EveryoneRoleAlias] = new HashSet<string>(StringComparer.Ordinal) { AdvancedSecurityConstants.VerbRead },
-        };
+        // Root-level entry (null NodeKey) for $everyone acts as the virtual root default
+        var everyoneDefault = Entry(null, AdvancedSecurityConstants.EveryoneRoleAlias, AdvancedSecurityConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 1);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: target,
             PathFromRoot: [root, target],
             RoleAliases: [AdvancedSecurityConstants.EveryoneRoleAlias],
-            GroupDefaultVerbsByRole: groupDefaults,
-            StoredEntries: []);
+            StoredEntries: [everyoneDefault]);
 
         var result = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbRead);
 
         Assert.True(result.IsAllowed);
-        Assert.False(result.IsExplicit); // from group defaults = implicit
+        Assert.False(result.IsExplicit); // from root-level entry = implicit
     }
 
     /// <summary>
@@ -457,7 +437,6 @@ public class PermissionResolverTests
             TargetNodeKey: child,
             PathFromRoot: [root, parent, child],
             RoleAliases: ["$everyone", "editors"],
-            GroupDefaultVerbsByRole: new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             StoredEntries: [everyoneDeny, editorsAllow]);
 
         var result = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbDelete);
@@ -488,7 +467,6 @@ public class PermissionResolverTests
             TargetNodeKey: deepTarget,
             PathFromRoot: nodes,
             RoleAliases: ["editors"],
-            GroupDefaultVerbsByRole: new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             StoredEntries: [rootEntry]);
 
         var result = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbRead);
@@ -510,17 +488,15 @@ public class PermissionResolverTests
         var root = Guid.NewGuid();
         var target = Guid.NewGuid();
 
-        var groupDefaults = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
-        {
-            ["editors"] = new HashSet<string>(StringComparer.Ordinal) { AdvancedSecurityConstants.VerbRead, AdvancedSecurityConstants.VerbCreate },
-        };
+        // Root-level entries (null NodeKey) act as virtual root defaults for editors
+        var editorReadDefault = Entry(null, "editors", AdvancedSecurityConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 1);
+        var editorCreateDefault = Entry(null, "editors", AdvancedSecurityConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 2);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: target,
             PathFromRoot: [root, target],
             RoleAliases: ["editors"],
-            GroupDefaultVerbsByRole: groupDefaults,
-            StoredEntries: []);
+            StoredEntries: [editorReadDefault, editorCreateDefault]);
 
         var verbs = new[] { AdvancedSecurityConstants.VerbRead, AdvancedSecurityConstants.VerbCreate, AdvancedSecurityConstants.VerbDelete };
         var results = _resolver.ResolveAll(ctx, verbs);
@@ -556,7 +532,8 @@ public class PermissionResolverTests
     }
 
     /// <summary>
-    /// When a group default provides the allow, the reasoning should mark it as from a group default.
+    /// When a root-level entry (null NodeKey) provides the allow, the reasoning should mark it
+    /// as from a group default (IsFromGroupDefault = true, SourceNodeKey = null).
     /// </summary>
     [Fact]
     public void Resolve_GroupDefault_ReasoningIsMarkedAsFromGroupDefault()
@@ -564,17 +541,14 @@ public class PermissionResolverTests
         var root = Guid.NewGuid();
         var target = Guid.NewGuid();
 
-        var groupDefaults = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
-        {
-            ["editors"] = new HashSet<string>(StringComparer.Ordinal) { AdvancedSecurityConstants.VerbRead },
-        };
+        // Root-level entry (null NodeKey) acts as virtual root default
+        var editorDefault = Entry(null, "editors", AdvancedSecurityConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 1);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: target,
             PathFromRoot: [root, target],
             RoleAliases: ["editors"],
-            GroupDefaultVerbsByRole: groupDefaults,
-            StoredEntries: []);
+            StoredEntries: [editorDefault]);
 
         var result = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbRead);
 
@@ -603,7 +577,6 @@ public class PermissionResolverTests
             TargetNodeKey: target,
             PathFromRoot: [root, target],
             RoleAliases: ["$everyone", "admins"],
-            GroupDefaultVerbsByRole: new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             StoredEntries: [adminAllow, everyoneDeny]);
 
         var result = _resolver.Resolve(ctx, AdvancedSecurityConstants.VerbDelete);

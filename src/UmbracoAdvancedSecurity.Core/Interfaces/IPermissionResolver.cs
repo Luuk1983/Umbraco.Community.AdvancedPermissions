@@ -29,7 +29,7 @@ public interface IPermissionResolver
     /// Resolves the effective permission for a single verb given the provided context.
     /// </summary>
     /// <param name="context">
-    /// All data required for resolution: path, roles, group defaults, and stored entries.
+    /// All data required for resolution: path, roles, and stored entries (including root-level defaults).
     /// </param>
     /// <param name="verb">The permission verb to resolve, e.g. <c>Umb.Document.Read</c>.</param>
     /// <returns>
@@ -42,7 +42,7 @@ public interface IPermissionResolver
     /// Resolves effective permissions for multiple verbs given the provided context.
     /// </summary>
     /// <param name="context">
-    /// All data required for resolution: path, roles, group defaults, and stored entries.
+    /// All data required for resolution: path, roles, and stored entries (including root-level defaults).
     /// </param>
     /// <param name="verbs">The permission verbs to resolve.</param>
     /// <returns>

@@ -13,12 +13,10 @@ namespace UmbracoAdvancedSecurity.Controllers;
 /// </summary>
 /// <param name="permissionService">The advanced permission service.</param>
 /// <param name="entityService">The Umbraco entity service (for path resolution).</param>
-/// <param name="userGroupService">The Umbraco user group service (for role defaults lookup).</param>
 [ApiVersion("1.0")]
 public sealed class AdvancedSecurityEffectiveController(
     IAdvancedPermissionService permissionService,
-    IEntityService entityService,
-    IUserGroupService userGroupService)
+    IEntityService entityService)
     : AdvancedSecurityControllerBase
 {
     /// <summary>
@@ -84,14 +82,8 @@ public sealed class AdvancedSecurityEffectiveController(
             });
         }
 
-        // Look up default verbs for this role from Umbraco user group settings
-        var group = await userGroupService.GetAsync(roleAlias);
-        var defaultVerbs = group is not null
-            ? (IReadOnlySet<string>)new HashSet<string>(group.Permissions, StringComparer.Ordinal)
-            : new HashSet<string>();
-
         var resolved = await permissionService.ResolveForRoleAsync(
-            roleAlias, nodeKey, pathFromRoot, defaultVerbs, cancellationToken: cancellationToken);
+            roleAlias, nodeKey, pathFromRoot, cancellationToken: cancellationToken);
 
         var items = resolved.Values.Select(MapEffective).ToList();
         return Ok(new EffectivePermissionsResponseModel(nodeKey, items));

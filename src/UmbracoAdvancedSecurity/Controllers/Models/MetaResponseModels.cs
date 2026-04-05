@@ -13,9 +13,4 @@ public sealed record VerbResponseModel(string Verb, string DisplayName);
 /// <param name="Alias">The role alias used in permission entries.</param>
 /// <param name="Name">The display name of the role.</param>
 /// <param name="IsEveryone">Whether this is the virtual Everyone role.</param>
-/// <param name="DefaultVerbs">
-/// The default permission verbs for this role at the virtual root level.
-/// For <c>$everyone</c> this comes from <see cref="UmbracoAdvancedSecurity.Core.Constants.AdvancedSecurityConstants.EveryoneDefaultVerbs"/>.
-/// For user groups this comes from the Umbraco group's native permission settings.
-/// </param>
-public sealed record RoleResponseModel(string Alias, string Name, bool IsEveryone, IReadOnlyList<string> DefaultVerbs);
+public sealed record RoleResponseModel(string Alias, string Name, bool IsEveryone);

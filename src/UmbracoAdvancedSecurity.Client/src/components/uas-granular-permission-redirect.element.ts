@@ -1,12 +1,15 @@
 import { html, css, customElement, property } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 
 /**
  * Replaces the built-in document granular permissions UI with a message
- * directing users to the Advanced Security section.
+ * directing users to the Security Editor in the Users section.
  */
 @customElement('uas-granular-permission-redirect')
 export class UasGranularPermissionRedirectElement extends UmbLitElement {
+  #localize = new UmbLocalizationController(this);
+
   /** Set by the parent granular-permissions component — accepted but unused. */
   @property({ attribute: false })
   permissions: Array<unknown> = [];
@@ -19,12 +22,7 @@ export class UasGranularPermissionRedirectElement extends UmbLitElement {
     return html`
       <div id="message">
         <uui-icon name="icon-lock"></uui-icon>
-        <p>
-          Document permissions for this user group are managed by the
-          <strong>Advanced Security</strong> package. Open the
-          <em>Advanced Security &gt; Security Editor</em> section to configure
-          permissions.
-        </p>
+        <p>${this.#localize.term('uas_redirectMessage')}</p>
       </div>
     `;
   }

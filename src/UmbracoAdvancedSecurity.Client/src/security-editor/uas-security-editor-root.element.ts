@@ -1,6 +1,7 @@
 import { html, css, nothing, customElement, state, query } from '@umbraco-cms/backoffice/external/lit';
 import type { TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type {
   VerbInfo,
@@ -19,37 +20,70 @@ type PendingVerbEntries = Array<{ state: PermissionState; scope: PermissionScope
 /** Map of verb → pending entries for a single node. */
 type PendingNodeChanges = Map<string, PendingVerbEntries>;
 
-const SCOPE_OPTIONS: ReadonlyArray<{
-  value: string;
-  label: string;
-  state?: PermissionState;
-  scope?: PermissionScope;
-}> = [
-  { value: 'inherit', label: 'Inherit (remove entry)' },
-  { value: 'allow-nd', label: 'Allow — This node and descendants', state: 'Allow', scope: 'ThisNodeAndDescendants' },
-  { value: 'allow-n', label: 'Allow — This node only', state: 'Allow', scope: 'ThisNodeOnly' },
-  { value: 'allow-d', label: 'Allow — Descendants only', state: 'Allow', scope: 'DescendantsOnly' },
-  { value: 'deny-nd', label: 'Deny — This node and descendants', state: 'Deny', scope: 'ThisNodeAndDescendants' },
-  { value: 'deny-n', label: 'Deny — This node only', state: 'Deny', scope: 'ThisNodeOnly' },
-  { value: 'deny-d', label: 'Deny — Descendants only', state: 'Deny', scope: 'DescendantsOnly' },
-];
+/** Decomposed dialog state from stored entries. */
+interface DecomposedPermission {
+  nodeState: 'inherit' | 'allow' | 'deny';
+  descState: 'inherit' | 'allow' | 'deny';
+  sameAsNode: boolean;
+}
 
-/** Simplified options for the virtual root "Content" node — no scope variants since it always applies to all descendants. */
-const VIRTUAL_ROOT_OPTIONS: ReadonlyArray<{
-  value: string;
-  label: string;
-  state?: PermissionState;
-  scope?: PermissionScope;
-}> = [
-  { value: 'inherit', label: 'Not set (remove entry)' },
-  { value: 'allow-nd', label: 'Allow (all content)', state: 'Allow', scope: 'ThisNodeAndDescendants' },
-  { value: 'deny-nd', label: 'Deny (all content)', state: 'Deny', scope: 'ThisNodeAndDescendants' },
-];
+/**
+ * Decompose stored entries (using backend scope model) into the dialog's UI state.
+ * This handles all combinations of scopes and supports both single and dual entries per verb.
+ */
+function decomposeEntries(entries: ReadonlyArray<{ state: PermissionState; scope: PermissionScope }>): DecomposedPermission {
+  let nodeState: 'inherit' | 'allow' | 'deny' = 'inherit';
+  let descState: 'inherit' | 'allow' | 'deny' = 'inherit';
 
-function scopeAbbr(scope: string): string {
-  if (scope === 'ThisNodeAndDescendants') return 'N+D';
-  if (scope === 'ThisNodeOnly') return 'N';
-  return 'D';
+  for (const e of entries) {
+    const s = e.state === 'Allow' ? 'allow' as const : 'deny' as const;
+    switch (e.scope) {
+      case 'ThisNodeAndDescendants':
+        nodeState = s;
+        descState = s;
+        break;
+      case 'ThisNodeOnly':
+        nodeState = s;
+        break;
+      case 'DescendantsOnly':
+        descState = s;
+        break;
+    }
+  }
+
+  const sameAsNode = nodeState === descState;
+  return { nodeState, descState, sameAsNode };
+}
+
+/**
+ * Compose dialog state back into stored entries (using backend scope model).
+ * Returns 0, 1, or 2 entries depending on the combination.
+ */
+function composeEntries(
+  nodeState: 'inherit' | 'allow' | 'deny',
+  descState: 'inherit' | 'allow' | 'deny',
+  sameAsNode: boolean,
+): PendingVerbEntries {
+  const effectiveDesc = sameAsNode ? nodeState : descState;
+
+  // Both inherit → no entries
+  if (nodeState === 'inherit' && effectiveDesc === 'inherit') return [];
+
+  // Both same → single ThisNodeAndDescendants entry
+  if (nodeState === effectiveDesc) {
+    const state: PermissionState = nodeState === 'allow' ? 'Allow' : 'Deny';
+    return [{ state, scope: 'ThisNodeAndDescendants' }];
+  }
+
+  // Different states → up to 2 entries
+  const result: PendingVerbEntries = [];
+  if (nodeState !== 'inherit') {
+    result.push({ state: nodeState === 'allow' ? 'Allow' : 'Deny', scope: 'ThisNodeOnly' });
+  }
+  if (effectiveDesc !== 'inherit') {
+    result.push({ state: effectiveDesc === 'allow' ? 'Allow' : 'Deny', scope: 'DescendantsOnly' });
+  }
+  return result;
 }
 
 /**
@@ -58,6 +92,8 @@ function scopeAbbr(scope: string): string {
  */
 @customElement('uas-security-editor-root')
 export class UasSecurityEditorRootElement extends UmbLitElement {
+  #localize = new UmbLocalizationController(this);
+
   // ── Metadata ────────────────────────────────────────────────────────────
   @state() private _roles: RoleInfo[] = [];
   @state() private _verbs: VerbInfo[] = [];
@@ -75,10 +111,13 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
    */
   @state() private _pendingChanges: Map<string, PendingNodeChanges> = new Map();
 
-  // ── Scope picker dialog ──────────────────────────────────────────────────
+  // ── Permission dialog ───────────────────────────────────────────────────
   @state() private _pickerNode: TreeNodeState | null = null;
   @state() private _pickerVerb: string | null = null;
-  @state() private _pickerValue = 'inherit';
+  @state() private _pickerIsVirtualRoot = false;
+  @state() private _pickerNodeState: 'inherit' | 'allow' | 'deny' = 'inherit';
+  @state() private _pickerDescState: 'inherit' | 'allow' | 'deny' = 'inherit';
+  @state() private _pickerSameAsNode = true;
 
   @query('.scope-dialog') private _scopeDialog!: HTMLDialogElement;
 
@@ -105,21 +144,13 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
 
   get #roleOptions() {
     return [
-      { name: '— Select a role —', value: '' },
+      { name: this.#localize.term('uas_rolePlaceholder'), value: '' },
       ...this._roles.map((r) => ({
-        name: `${r.name}${r.isEveryone ? ' (Everyone)' : ''}`,
+        name: `${r.name}${r.isEveryone ? ` ${this.#localize.term('uas_everyoneSuffix')}` : ''}`,
         value: r.alias,
         selected: r.alias === this._selectedRole,
       })),
     ];
-  }
-
-  /** Scope options to show in the picker — simplified for the virtual root, full for real nodes. */
-  get #currentScopeOptions() {
-    if (this._pickerNode?.key === 'virtual-root') {
-      return VIRTUAL_ROOT_OPTIONS;
-    }
-    return SCOPE_OPTIONS;
   }
 
   // ── Data loading ────────────────────────────────────────────────────────
@@ -146,7 +177,7 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
       ]);
       const virtualRoot: TreeNodeState = {
         key: 'virtual-root',
-        name: 'Content',
+        name: this.#localize.term('uas_contentRoot'),
         icon: 'icon-folder',
         hasChildren: false,
         entries: virtualEntries,
@@ -198,20 +229,47 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
     return false;
   }
 
-  // ── Scope picker ─────────────────────────────────────────────────────────
+  // ── Permission dialog ───────────────────────────────────────────────────
 
   #openPicker(node: TreeNodeState, verb: string): void {
     this._pickerNode = node;
     this._pickerVerb = verb;
-    this._pickerValue = this.#entriesToPickerValue(this.#getCellEntries(node, verb));
+    this._pickerIsVirtualRoot = node.key === 'virtual-root';
+
+    const entries = this.#getCellEntries(node, verb);
+
+    if (this._pickerIsVirtualRoot) {
+      // Virtual root: simple mode — only nodeState matters
+      const first = entries[0];
+      this._pickerNodeState = first ? (first.state === 'Allow' ? 'allow' : 'deny') : 'inherit';
+      this._pickerDescState = 'inherit';
+      this._pickerSameAsNode = true;
+    } else {
+      const decomposed = decomposeEntries(entries);
+      this._pickerNodeState = decomposed.nodeState;
+      this._pickerDescState = decomposed.descState;
+      this._pickerSameAsNode = decomposed.sameAsNode;
+    }
+
     void this.updateComplete.then(() => this._scopeDialog.showModal());
   }
 
   #applyPicker(): void {
     if (!this._pickerNode || !this._pickerVerb) return;
-    const option = this.#currentScopeOptions.find((o) => o.value === this._pickerValue);
-    const newEntries: PendingVerbEntries =
-      option?.state != null ? [{ state: option.state, scope: option.scope! }] : [];
+
+    let newEntries: PendingVerbEntries;
+
+    if (this._pickerIsVirtualRoot) {
+      // Virtual root always uses ThisNodeAndDescendants
+      if (this._pickerNodeState === 'inherit') {
+        newEntries = [];
+      } else {
+        const state: PermissionState = this._pickerNodeState === 'allow' ? 'Allow' : 'Deny';
+        newEntries = [{ state, scope: 'ThisNodeAndDescendants' }];
+      }
+    } else {
+      newEntries = composeEntries(this._pickerNodeState, this._pickerDescState, this._pickerSameAsNode);
+    }
 
     const nodeKey = this._pickerNode.key;
     const verb = this._pickerVerb;
@@ -262,9 +320,9 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
       }
       this._pendingChanges = new Map();
       clearEffectivePermissionCache();
-      this.#notificationContext?.peek('positive', { data: { message: 'Permissions saved.' } });
+      this.#notificationContext?.peek('positive', { data: { message: this.#localize.term('uas_permissionsSaved') } });
     } catch (err) {
-      this.#notificationContext?.peek('danger', { data: { message: `Save failed: ${String(err)}` } });
+      this.#notificationContext?.peek('danger', { data: { message: this.#localize.term('uas_saveFailed', String(err)) } });
     } finally {
       this._saving = false;
     }
@@ -289,16 +347,27 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
     return node.entries.filter((e) => e.verb === verb);
   }
 
-  #entriesToPickerValue(entries: PendingVerbEntries | PermissionEntry[]): string {
-    if (entries.length === 0) return 'inherit';
-    const first = entries[0];
-    const stateKey = first.state === 'Deny' ? 'deny' : 'allow';
-    const scopeMap: Record<string, string> = {
-      ThisNodeAndDescendants: 'nd',
-      ThisNodeOnly: 'n',
-      DescendantsOnly: 'd',
-    };
-    return `${stateKey}-${scopeMap[first.scope] ?? 'nd'}`;
+  /**
+   * Get the cell rendering info for a set of entries.
+   * Returns either a uniform cell (same state for node+desc) or a split cell.
+   */
+  #getCellInfo(entries: ReadonlyArray<{ state: PermissionState; scope: PermissionScope }>): {
+    split: boolean;
+    nodeClass: string;
+    descClass: string;
+  } {
+    if (entries.length === 0) {
+      return { split: false, nodeClass: 'inherit', descClass: 'inherit' };
+    }
+
+    const d = decomposeEntries(entries);
+    const toClass = (s: 'inherit' | 'allow' | 'deny') => s;
+
+    if (d.sameAsNode) {
+      return { split: false, nodeClass: toClass(d.nodeState), descClass: toClass(d.nodeState) };
+    }
+
+    return { split: true, nodeClass: toClass(d.nodeState), descClass: toClass(d.descState) };
   }
 
   // ── Rendering ─────────────────────────────────────────────────────────────
@@ -314,47 +383,151 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
     const hasPending = this._pendingChanges.has(node.key);
     return html`
       <tr class=${hasPending ? 'row-pending' : ''}>
-        <td class="node-cell" style="--depth: ${depth}">
-          ${node.hasChildren || node.children
-            ? html`<uui-button compact look="default" label=${node.expanded ? 'Collapse' : 'Expand'} @click=${() => void this.#toggleExpand(node)}>
-                ${node.loading ? html`<uui-loader-circle></uui-loader-circle>` : node.expanded ? '▾' : '▸'}
-              </uui-button>`
-            : html`<span class="expand-spacer"></span>`}
-          <umb-icon name=${node.icon ?? 'icon-document'}></umb-icon>
-          <span class="node-name">${node.name}</span>
+        <td class="node-cell">
+          <div class="node-inner" style="--depth: ${depth}">
+            ${node.hasChildren || node.children
+              ? html`<uui-button compact look="default"
+                  label=${node.expanded ? this.#localize.term('uas_collapse') : this.#localize.term('uas_expand')}
+                  @click=${() => void this.#toggleExpand(node)}>
+                  ${node.loading ? html`<uui-loader-circle></uui-loader-circle>` : node.expanded ? '▾' : '▸'}
+                </uui-button>`
+              : html`<span class="expand-spacer"></span>`}
+            <umb-icon name=${node.icon ?? 'icon-document'}></umb-icon>
+            <span class="node-name">${node.name}</span>
+          </div>
         </td>
         ${this._verbs.map((v) => this.#renderCell(node, v.verb))}
       </tr>
     `;
   }
 
+  #stateIcon(cls: string): string {
+    if (cls === 'allow') return '\u2713';  // ✓
+    if (cls === 'deny') return '\u2717';   // ✗
+    return '\u2014';                        // —
+  }
+
   #renderCell(node: TreeNodeState, verb: string) {
     const entries = this.#getCellEntries(node, verb);
     const isPending = this._pendingChanges.get(node.key)?.has(verb) ?? false;
+    const pendingCls = isPending ? ' pending' : '';
 
     if (entries.length === 0) {
       const isDefault = node.key === 'virtual-root' && this.#selectedRoleDefaultVerbs.has(verb);
+      const cls = isDefault ? 'allow' : 'inherit';
       return html`
-        <td
-          class="perm-cell ${isDefault ? 'default-allow' : 'inherit'} ${isPending ? 'cell-pending' : ''}"
-          title=${verb}
-          @click=${() => this.#openPicker(node, verb)}>
-          ${isDefault ? 'Allow' : '—'}
+        <td class="perm-td" title=${verb} @click=${() => this.#openPicker(node, verb)}>
+          <div class="perm-block uniform ${cls}${pendingCls}">${isDefault ? '\u2713' : '\u2014'}</div>
         </td>
       `;
     }
 
-    const hasDeny = entries.some((e) => e.state === 'Deny');
-    const scopes = [...new Set(entries.map((e) => scopeAbbr(e.scope)))].join('/');
-    const label = `${hasDeny ? 'D' : 'A'} ${scopes}`;
+    const info = this.#getCellInfo(entries);
+
+    if (!info.split) {
+      return html`
+        <td class="perm-td" title=${verb} @click=${() => this.#openPicker(node, verb)}>
+          <div class="perm-block uniform ${info.nodeClass}${pendingCls}">${this.#stateIcon(info.nodeClass)}</div>
+        </td>
+      `;
+    }
 
     return html`
-      <td
-        class="perm-cell ${hasDeny ? 'deny' : 'allow'} ${isPending ? 'cell-pending' : ''}"
-        title=${verb}
-        @click=${() => this.#openPicker(node, verb)}>
-        ${label}
+      <td class="perm-td" title=${verb} @click=${() => this.#openPicker(node, verb)}>
+        <div class="perm-block split${pendingCls}">
+          <span class="half ${info.nodeClass}">${this.#stateIcon(info.nodeClass)}</span>
+          <span class="half ${info.descClass}">${this.#stateIcon(info.descClass)}</span>
+        </div>
       </td>
+    `;
+  }
+
+  #renderDialog(): TemplateResult {
+    const verbName = this._pickerVerb?.split('.').pop() ?? '';
+
+    return html`
+      <dialog
+        class="scope-dialog"
+        @close=${() => {
+          this._pickerNode = null;
+          this._pickerVerb = null;
+        }}>
+        <uui-dialog-layout
+          headline=${this.#localize.term('uas_dialogHeadline', verbName)}>
+          <p class="dialog-node">
+            ${this.#localize.term('uas_dialogNodeLabel')}: <strong>${this._pickerNode?.name ?? ''}</strong>
+          </p>
+
+          ${this._pickerIsVirtualRoot ? this.#renderVirtualRootOptions() : this.#renderNodeOptions()}
+
+          <div slot="actions">
+            <uui-button look="outline" @click=${() => this._scopeDialog.close()}>
+              ${this.#localize.term('uas_cancel')}
+            </uui-button>
+            <uui-button look="primary" color="positive" @click=${() => this.#applyPicker()}>
+              ${this.#localize.term('uas_apply')}
+            </uui-button>
+          </div>
+        </uui-dialog-layout>
+      </dialog>
+    `;
+  }
+
+  #renderVirtualRootOptions(): TemplateResult {
+    return html`
+      <div class="dialog-options">
+        <uui-radio-group
+          .value=${this._pickerNodeState}
+          @change=${(e: Event) => { this._pickerNodeState = (e.target as HTMLInputElement).value as 'inherit' | 'allow' | 'deny'; }}>
+          <uui-radio value="inherit" label=${this.#localize.term('uas_virtualRootInherit')} class="opt-inherit"></uui-radio>
+          <uui-radio value="allow" label=${this.#localize.term('uas_virtualRootAllow')} class="opt-allow"></uui-radio>
+          <uui-radio value="deny" label=${this.#localize.term('uas_virtualRootDeny')} class="opt-deny"></uui-radio>
+        </uui-radio-group>
+      </div>
+    `;
+  }
+
+  #renderNodeOptions(): TemplateResult {
+    return html`
+      <div class="dialog-sections">
+        <!-- This node -->
+        <div class="dialog-section">
+          <h4>${this.#localize.term('uas_thisNodeSection')}</h4>
+          <uui-radio-group
+            .value=${this._pickerNodeState}
+            @change=${(e: Event) => { this._pickerNodeState = (e.target as HTMLInputElement).value as 'inherit' | 'allow' | 'deny'; }}>
+            <uui-radio value="inherit" label=${this.#localize.term('uas_inherit')} class="opt-inherit"></uui-radio>
+            <uui-radio value="allow" label=${this.#localize.term('uas_allow')} class="opt-allow"></uui-radio>
+            <uui-radio value="deny" label=${this.#localize.term('uas_deny')} class="opt-deny"></uui-radio>
+          </uui-radio-group>
+        </div>
+
+        <!-- Descendants -->
+        <div class="dialog-section">
+          <h4>${this.#localize.term('uas_descendantsSection')}</h4>
+          <uui-toggle
+            label=${this.#localize.term('uas_sameAsNode')}
+            ?checked=${this._pickerSameAsNode}
+            @change=${(e: Event) => {
+              this._pickerSameAsNode = (e.target as HTMLInputElement).checked;
+              if (this._pickerSameAsNode) {
+                this._pickerDescState = this._pickerNodeState;
+              }
+            }}>${this.#localize.term('uas_sameAsNode')}</uui-toggle>
+          <uui-radio-group
+            class=${this._pickerSameAsNode ? 'radio-disabled' : ''}
+            .value=${this._pickerSameAsNode ? this._pickerNodeState : this._pickerDescState}
+            @change=${(e: Event) => {
+              if (!this._pickerSameAsNode) {
+                this._pickerDescState = (e.target as HTMLInputElement).value as 'inherit' | 'allow' | 'deny';
+              }
+            }}>
+            <uui-radio value="inherit" label=${this.#localize.term('uas_inherit')} class="opt-inherit" ?disabled=${this._pickerSameAsNode}></uui-radio>
+            <uui-radio value="allow" label=${this.#localize.term('uas_allow')} class="opt-allow" ?disabled=${this._pickerSameAsNode}></uui-radio>
+            <uui-radio value="deny" label=${this.#localize.term('uas_deny')} class="opt-deny" ?disabled=${this._pickerSameAsNode}></uui-radio>
+          </uui-radio-group>
+        </div>
+      </div>
     `;
   }
 
@@ -362,13 +535,13 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
     const hasPending = this._pendingChanges.size > 0;
 
     return html`
-      <umb-body-layout headline="Security Editor">
+      <umb-body-layout headline=${this.#localize.term('uas_editorHeadline')}>
         <div class="toolbar">
           <div class="role-picker">
-            <label>Role:</label>
+            <label>${this.#localize.term('uas_roleLabel')}:</label>
             <uui-select
-              label="Role"
-              placeholder="— Select a role —"
+              label=${this.#localize.term('uas_roleLabel')}
+              placeholder=${this.#localize.term('uas_rolePlaceholder')}
               .options=${this.#roleOptions}
               @change=${(e: Event) => {
                 this._selectedRole = (e.target as HTMLInputElement).value;
@@ -380,18 +553,18 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
           ${hasPending
             ? html`
                 <uui-button look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#saveChanges()}>
-                  Save Changes
+                  ${this.#localize.term('uas_saveChanges')}
                 </uui-button>
                 <uui-button look="outline" @click=${() => { this._pendingChanges = new Map(); }}>
-                  Discard
+                  ${this.#localize.term('uas_discard')}
                 </uui-button>
               `
             : nothing}
         </div>
 
-        ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
+        ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
         ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
-        ${!this._selectedRole ? html`<p class="empty-msg">Select a role above to manage its permissions.</p>` : nothing}
+        ${!this._selectedRole ? html`<p class="empty-msg">${this.#localize.term('uas_selectRolePrompt')}</p>` : nothing}
 
         ${this._selectedRole && !this._loading && this._treeNodes.length > 0
           ? html`
@@ -399,7 +572,7 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
                 <table>
                   <thead>
                     <tr>
-                      <th class="node-header">Content Node</th>
+                      <th class="node-header">${this.#localize.term('uas_contentNodeHeader')}</th>
                       ${this._verbs.map((v) => html`<th class="verb-header" title=${v.verb}>${v.displayName}</th>`)}
                     </tr>
                   </thead>
@@ -412,37 +585,8 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
           : nothing}
       </umb-body-layout>
 
-      <!-- Scope picker modal — rendered outside umb-body-layout so it always layers on top -->
-      <dialog
-        class="scope-dialog"
-        @close=${() => {
-          this._pickerNode = null;
-          this._pickerVerb = null;
-        }}>
-        <uui-dialog-layout
-          headline="Set Permission: ${this._pickerVerb?.split('.').pop() ?? ''}">
-          <p class="dialog-node">Node: <strong>${this._pickerNode?.name ?? ''}</strong></p>
-          <div class="dialog-options">
-            <uui-radio-group
-              .value=${this._pickerValue}
-              @change=${(e: Event) => { this._pickerValue = (e.target as HTMLInputElement).value; }}>
-              ${this.#currentScopeOptions.map(
-                (opt) => html`
-                  <uui-radio
-                    value=${opt.value}
-                    label=${opt.label}
-                    class=${opt.state === 'Allow' ? 'opt-allow' : opt.state === 'Deny' ? 'opt-deny' : 'opt-inherit'}>
-                  </uui-radio>
-                `,
-              )}
-            </uui-radio-group>
-          </div>
-          <div slot="actions">
-            <uui-button look="outline" @click=${() => this._scopeDialog.close()}>Cancel</uui-button>
-            <uui-button look="primary" color="positive" @click=${() => this.#applyPicker()}>Apply</uui-button>
-          </div>
-        </uui-dialog-layout>
-      </dialog>
+      <!-- Permission dialog — rendered outside umb-body-layout so it always layers on top -->
+      ${this.#renderDialog()}
     `;
   }
 
@@ -496,14 +640,14 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
 
     /* ── Table ────────────────────────────────────────────────── */
     .table-wrap {
-      overflow: auto;
+      overflow-x: auto;
     }
 
     table {
-      border-collapse: collapse;
       width: 100%;
-      min-width: max-content;
-      font-size: 13px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
     }
 
     thead {
@@ -513,48 +657,59 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
     }
 
     th {
-      padding: 8px 10px;
-      text-align: left;
-      border-bottom: 2px solid var(--uui-color-border, #ddd);
-      white-space: nowrap;
+      padding: 6px 4px;
+      text-align: center;
+      border-bottom: 1px solid var(--uui-color-border, #ddd);
       font-weight: 600;
-      background: var(--uui-color-surface-alt, #f5f5f5);
+      font-size: 11px;
+      line-height: 1.2;
+      background: var(--uui-color-surface, #fff);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--uui-color-text-alt, #666);
     }
 
     th.node-header {
-      min-width: 240px;
+      width: 40%;
+      text-align: left;
+      padding-left: 8px;
       position: sticky;
       left: 0;
       z-index: 3;
-    }
-
-    th.verb-header {
-      min-width: 72px;
-      text-align: center;
+      font-size: 12px;
+      color: var(--uui-color-text, #333);
     }
 
     td {
-      border-bottom: 1px solid var(--uui-color-border, #eee);
+      border-bottom: 1px solid var(--uui-color-border, #f0f0f0);
     }
 
     tr:hover td {
-      background-color: var(--uui-color-surface-emphasis, #f8f8f8);
+      background-color: var(--uui-color-surface-emphasis, #fafafa);
     }
 
     tr.row-pending td {
-      background-color: color-mix(in srgb, oklch(85% 0.15 90) 15%, transparent);
+      background-color: color-mix(in srgb, oklch(85% 0.15 90) 12%, transparent);
     }
 
     /* ── Node cell ────────────────────────────────────────────── */
     td.node-cell {
-      padding: 5px 8px 5px calc(var(--depth, 0) * 20px + 8px);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      min-width: 240px;
+      padding: 0;
       position: sticky;
       left: 0;
       background: inherit;
+      vertical-align: middle;
+    }
+
+    .node-inner {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 8px 0 calc(var(--depth, 0) * 18px + 8px);
+      height: 32px;
+      white-space: nowrap;
+      overflow: hidden;
     }
 
     .expand-spacer {
@@ -563,61 +718,100 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
     }
 
     .node-name {
-      white-space: nowrap;
+      font-size: 12px;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 180px;
     }
 
-    /* ── Permission cells ─────────────────────────────────────── */
-    .perm-cell {
+    /* ── Permission blocks ────────────────────────────────────── */
+    .perm-td {
+      padding: 3px;
       text-align: center;
-      padding: 5px 4px;
+      vertical-align: middle;
+    }
+
+    .perm-block {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 26px;
+      border: 1px solid var(--uui-color-border, #ddd);
+      border-radius: 4px;
       cursor: pointer;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .perm-block:hover {
+      border-color: var(--uui-color-border-emphasis, #bbb);
+    }
+
+    .perm-block.pending {
+      border-color: var(--uui-color-warning-standalone, #f59e0b);
+      border-style: dashed;
+      border-width: 2px;
+    }
+
+    /* ── Uniform block ────────────────────────────────────────── */
+    .perm-block.uniform {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .perm-block.inherit {
+      color: var(--uui-color-text-alt, #ccc);
+      border-color: var(--uui-color-border, #e8e8e8);
+    }
+
+    .perm-block.allow {
+      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
+      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
+      border-color: color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
+    }
+
+    .perm-block.deny {
+      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
+      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
+      border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
+    }
+
+    /* ── Split block — two halves ─────────────────────────────── */
+    .perm-block.split {
+      padding: 0;
+    }
+
+    .perm-block.split > .half {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      height: 100%;
       font-size: 11px;
       font-weight: 700;
-      min-width: 72px;
-      user-select: none;
     }
 
-    .perm-cell:hover {
-      opacity: 0.8;
+    .half.inherit {
+      color: var(--uui-color-text-alt, #ccc);
     }
 
-    .perm-cell.inherit {
-      color: var(--uui-color-text-alt, #aaa);
+    .half.allow {
+      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
+      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
     }
 
-    .perm-cell.allow {
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 22%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 90%, #000);
+    .half.deny {
+      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
+      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
     }
 
-    .perm-cell.deny {
-      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 18%, transparent);
-      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 90%, #000);
-    }
-
-    .perm-cell.default-allow {
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 10%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 60%, #888);
-      border: 1px dashed color-mix(in srgb, var(--uui-color-positive, #34a853) 40%, transparent);
-      font-style: italic;
-    }
-
-    .perm-cell.cell-pending {
-      outline: 2px dashed var(--uui-color-warning-standalone, #f59e0b);
-      outline-offset: -2px;
-    }
-
-    /* ── Scope dialog ─────────────────────────────────────────── */
+    /* ── Permission dialog ────────────────────────────────────── */
     .scope-dialog {
       border: none;
       border-radius: 8px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
       padding: 0;
-      min-width: 320px;
-      max-width: 480px;
+      min-width: 420px;
+      max-width: 540px;
     }
 
     .scope-dialog::backdrop {
@@ -632,6 +826,29 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
 
     .dialog-options {
       margin-bottom: 8px;
+    }
+
+    .dialog-sections {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 8px;
+    }
+
+    .dialog-section h4 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--uui-color-text, #333);
+    }
+
+    .dialog-section uui-toggle {
+      margin-bottom: 8px;
+    }
+
+    .radio-disabled {
+      opacity: 0.4;
+      pointer-events: none;
     }
 
     uui-radio.opt-allow {

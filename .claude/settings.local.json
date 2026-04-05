@@ -4,7 +4,8 @@
       "Skill(umbraco-cms-backoffice-skills:umbraco-backoffice)",
       "WebFetch(domain:github.com)",
       "Bash(npx tsc:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(node -e \"const fs=require\\(''fs''\\); fs.writeFileSync\\(''C:/Users/LuukPeters/.claude/plans/noble-swimming-kettle-agent-aa6219f8496ddf9a0.md'', ''placeholder'', ''utf8''\\); console.log\\(''ok''\\);\")"
     ]
   }
 }

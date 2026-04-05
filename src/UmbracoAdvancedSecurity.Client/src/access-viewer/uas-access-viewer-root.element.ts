@@ -1,6 +1,7 @@
 import { html, css, nothing, customElement, state, query } from '@umbraco-cms/backoffice/external/lit';
 import type { TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type {
   VerbInfo,
@@ -32,6 +33,8 @@ type ViewerMode = 'role' | 'user';
  */
 @customElement('uas-access-viewer-root')
 export class UasAccessViewerRootElement extends UmbLitElement {
+  #localize = new UmbLocalizationController(this);
+
   // ── Metadata ────────────────────────────────────────────────────────────
   @state() private _roles: RoleInfo[] = [];
   @state() private _verbs: VerbInfo[] = [];
@@ -85,9 +88,9 @@ export class UasAccessViewerRootElement extends UmbLitElement {
 
   get #roleOptions() {
     return [
-      { name: '— Select a role —', value: '' },
+      { name: this.#localize.term('uas_rolePlaceholder'), value: '' },
       ...this._roles.map((r) => ({
-        name: `${r.name}${r.isEveryone ? ' (Everyone)' : ''}`,
+        name: `${r.name}${r.isEveryone ? ` ${this.#localize.term('uas_everyoneSuffix')}` : ''}`,
         value: r.alias,
         selected: r.alias === this._selectedRole,
       })),
@@ -205,14 +208,18 @@ export class UasAccessViewerRootElement extends UmbLitElement {
   #renderRow(node: ViewerTreeNode, depth: number): TemplateResult {
     return html`
       <tr>
-        <td class="node-cell" style="--depth: ${depth}">
-          ${node.hasChildren || node.children
-            ? html`<uui-button compact look="default" label=${node.expanded ? 'Collapse' : 'Expand'} @click=${() => void this.#toggleExpand(node)}>
-                ${node.loading ? html`<uui-loader-circle></uui-loader-circle>` : node.expanded ? '▾' : '▸'}
-              </uui-button>`
-            : html`<span class="expand-spacer"></span>`}
-          <umb-icon name=${node.icon ?? 'icon-document'}></umb-icon>
-          <span class="node-name">${node.name}</span>
+        <td class="node-cell">
+          <div class="node-inner" style="--depth: ${depth}">
+            ${node.hasChildren || node.children
+              ? html`<uui-button compact look="default"
+                  label=${node.expanded ? this.#localize.term('uas_collapse') : this.#localize.term('uas_expand')}
+                  @click=${() => void this.#toggleExpand(node)}>
+                  ${node.loading ? html`<uui-loader-circle></uui-loader-circle>` : node.expanded ? '▾' : '▸'}
+                </uui-button>`
+              : html`<span class="expand-spacer"></span>`}
+            <umb-icon name=${node.icon ?? 'icon-document'}></umb-icon>
+            <span class="node-name">${node.name}</span>
+          </div>
         </td>
         ${this._verbs.map((v) => this.#renderEffectiveCell(node, v.verb))}
       </tr>
@@ -221,20 +228,18 @@ export class UasAccessViewerRootElement extends UmbLitElement {
 
   #renderEffectiveCell(node: ViewerTreeNode, verb: string) {
     if (!node.effectivePerms) {
-      return html`<td class="perm-cell loading-cell" title=${verb}>…</td>`;
+      return html`<td class="perm-td" title=${verb}><div class="perm-block loading">\u2026</div></td>`;
     }
 
     const perm = node.effectivePerms.get(verb);
     const isAllowed = perm?.isAllowed ?? false;
-    const colorClass = isAllowed ? 'allow' : 'deny';
-    const label = isAllowed ? 'Allow' : 'Deny';
+    const cls = isAllowed ? 'allow' : 'deny';
+    const icon = isAllowed ? '\u2713' : '\u2717';
 
     return html`
-      <td
-        class="perm-cell ${colorClass}"
-        title="${label} — click for reasoning"
+      <td class="perm-td" title=${this.#localize.term('uas_clickForReasoning', isAllowed ? this.#localize.term('uas_allow') : this.#localize.term('uas_deny'))}
         @click=${() => this.#openReasoning(node, verb)}>
-        ${label}
+        <div class="perm-block ${cls}">${icon}</div>
       </td>
     `;
   }
@@ -243,48 +248,48 @@ export class UasAccessViewerRootElement extends UmbLitElement {
     const stateClass = step.state === 'Allow' ? 'step-allow' : 'step-deny';
     return html`
       <li class="reasoning-step ${stateClass}">
-        <span class="step-state">${step.state}</span>
+        <span class="step-state">${step.state === 'Allow' ? this.#localize.term('uas_allow') : this.#localize.term('uas_deny')}</span>
         <span class="step-role">${step.contributingRole}</span>
         ${step.isFromGroupDefault
-          ? html`<span class="step-source">group default</span>`
+          ? html`<span class="step-source">${this.#localize.term('uas_groupDefault')}</span>`
           : step.sourceNodeKey
             ? html`<span class="step-source">
-                from node · ${step.sourceScope ?? ''}
-                ${step.isExplicit ? '' : '(inherited)'}
+                ${this.#localize.term('uas_fromNode')} \u00b7 ${step.sourceScope ?? ''}
+                ${step.isExplicit ? '' : this.#localize.term('uas_inherited')}
               </span>`
             : nothing}
-        ${!step.isExplicit ? html`<span class="step-implicit">implicit</span>` : nothing}
+        ${!step.isExplicit ? html`<span class="step-implicit">${this.#localize.term('uas_resultImplicit')}</span>` : nothing}
       </li>
     `;
   }
 
   override render() {
     return html`
-      <umb-body-layout headline="Access Viewer">
+      <umb-body-layout headline=${this.#localize.term('uas_viewerHeadline')}>
         <div class="toolbar">
           <!-- Mode toggle -->
           <uui-button-group>
             <uui-button
               look=${this._mode === 'role' ? 'primary' : 'secondary'}
-              label="By Role"
+              label=${this.#localize.term('uas_byRole')}
               @click=${() => { this._mode = 'role'; this._treeNodes = []; }}>
-              By Role
+              ${this.#localize.term('uas_byRole')}
             </uui-button>
             <uui-button
               look=${this._mode === 'user' ? 'primary' : 'secondary'}
-              label="By User"
+              label=${this.#localize.term('uas_byUser')}
               @click=${() => { this._mode = 'user'; this._treeNodes = []; }}>
-              By User
+              ${this.#localize.term('uas_byUser')}
             </uui-button>
           </uui-button-group>
 
           ${this._mode === 'role'
             ? html`
                 <div class="subject-picker">
-                  <label>Role:</label>
+                  <label>${this.#localize.term('uas_roleLabel')}:</label>
                   <uui-select
-                    label="Role"
-                    placeholder="— Select a role —"
+                    label=${this.#localize.term('uas_roleLabel')}
+                    placeholder=${this.#localize.term('uas_rolePlaceholder')}
                     .options=${this.#roleOptions}
                     @change=${(e: Event) => {
                       this._selectedRole = (e.target as HTMLInputElement).value;
@@ -295,7 +300,7 @@ export class UasAccessViewerRootElement extends UmbLitElement {
               `
             : html`
                 <div class="subject-picker">
-                  <label>User:</label>
+                  <label>${this.#localize.term('uas_userLabel')}:</label>
                   <umb-user-input
                     max="1"
                     @change=${(e: Event) => {
@@ -313,13 +318,13 @@ export class UasAccessViewerRootElement extends UmbLitElement {
         </div>
 
         <div class="legend">
-          <span class="legend-item allow">Allow</span>
-          <span class="legend-item deny">Deny</span>
+          <span class="legend-item allow">${this.#localize.term('uas_legendAllow')}</span>
+          <span class="legend-item deny">${this.#localize.term('uas_legendDeny')}</span>
         </div>
 
-        ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
+        ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
         ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
-        ${!this.#subject ? html`<p class="empty-msg">Select a role or user to view effective permissions.</p>` : nothing}
+        ${!this.#subject ? html`<p class="empty-msg">${this.#localize.term('uas_selectSubjectPrompt')}</p>` : nothing}
 
         ${this.#subject && !this._loading && this._treeNodes.length > 0
           ? html`
@@ -327,7 +332,7 @@ export class UasAccessViewerRootElement extends UmbLitElement {
                 <table>
                   <thead>
                     <tr>
-                      <th class="node-header">Content Node</th>
+                      <th class="node-header">${this.#localize.term('uas_contentNodeHeader')}</th>
                       ${this._verbs.map((v) => html`<th class="verb-header" title=${v.verb}>${v.displayName}</th>`)}
                     </tr>
                   </thead>
@@ -349,26 +354,30 @@ export class UasAccessViewerRootElement extends UmbLitElement {
           this._reasoningPerm = null;
         }}>
         <uui-dialog-layout
-          headline="Permission Reasoning: ${this._reasoningVerb?.split('.').pop() ?? ''}">
-          <p class="dialog-node">Node: <strong>${this._reasoningNode?.name ?? ''}</strong></p>
+          headline=${this.#localize.term('uas_reasoningHeadline', this._reasoningVerb?.split('.').pop() ?? '')}>
+          <p class="dialog-node">
+            ${this.#localize.term('uas_reasoningNodeLabel')}: <strong>${this._reasoningNode?.name ?? ''}</strong>
+          </p>
 
           ${this._reasoningPerm
             ? html`
                 <div class="reasoning-result ${this._reasoningPerm.isAllowed ? 'result-allow' : 'result-deny'}">
-                  <strong>${this._reasoningPerm.isAllowed ? 'Allowed' : 'Denied'}</strong>
-                  — ${this._reasoningPerm.isExplicit ? 'explicit (set directly on this node)' : 'implicit (inherited or from group defaults)'}
+                  <strong>${this._reasoningPerm.isAllowed ? this.#localize.term('uas_resultAllowed') : this.#localize.term('uas_resultDenied')}</strong>
+                  \u2014 ${this._reasoningPerm.isExplicit ? this.#localize.term('uas_resultExplicit') : this.#localize.term('uas_resultImplicit')}
                 </div>
-                <h3 class="reasoning-list-title">Contributing factors:</h3>
+                <h3 class="reasoning-list-title">${this.#localize.term('uas_contributingFactors')}</h3>
                 ${this._reasoningPerm.reasoning.length > 0
                   ? html`<ul class="reasoning-list">
                       ${this._reasoningPerm.reasoning.map((step) => this.#renderReasoningStep(step))}
                     </ul>`
-                  : html`<p class="no-reasoning">No explicit entries found — effective permission comes from system defaults.</p>`}
+                  : html`<p class="no-reasoning">${this.#localize.term('uas_noReasoningEntries')}</p>`}
               `
-            : html`<p class="no-reasoning">No effective permission data available for this verb.</p>`}
+            : html`<p class="no-reasoning">${this.#localize.term('uas_noReasoningData')}</p>`}
 
           <div slot="actions">
-            <uui-button look="primary" @click=${() => this._reasoningDialog.close()}>Close</uui-button>
+            <uui-button look="primary" @click=${() => this._reasoningDialog.close()}>
+              ${this.#localize.term('uas_close')}
+            </uui-button>
           </div>
         </uui-dialog-layout>
       </dialog>
@@ -442,14 +451,14 @@ export class UasAccessViewerRootElement extends UmbLitElement {
 
     /* ── Table ────────────────────────────────────────────────── */
     .table-wrap {
-      overflow: auto;
+      overflow-x: auto;
     }
 
     table {
-      border-collapse: collapse;
       width: 100%;
-      min-width: max-content;
-      font-size: 13px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
     }
 
     thead {
@@ -459,44 +468,55 @@ export class UasAccessViewerRootElement extends UmbLitElement {
     }
 
     th {
-      padding: 8px 10px;
-      text-align: left;
-      border-bottom: 2px solid var(--uui-color-border, #ddd);
-      white-space: nowrap;
+      padding: 6px 4px;
+      text-align: center;
+      border-bottom: 1px solid var(--uui-color-border, #ddd);
       font-weight: 600;
-      background: var(--uui-color-surface-alt, #f5f5f5);
+      font-size: 11px;
+      line-height: 1.2;
+      background: var(--uui-color-surface, #fff);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--uui-color-text-alt, #666);
     }
 
     th.node-header {
-      min-width: 240px;
+      width: 40%;
+      text-align: left;
+      padding-left: 8px;
       position: sticky;
       left: 0;
       z-index: 3;
-    }
-
-    th.verb-header {
-      min-width: 72px;
-      text-align: center;
+      font-size: 12px;
+      color: var(--uui-color-text, #333);
     }
 
     td {
-      border-bottom: 1px solid var(--uui-color-border, #eee);
+      border-bottom: 1px solid var(--uui-color-border, #f0f0f0);
     }
 
     tr:hover td {
-      background-color: var(--uui-color-surface-emphasis, #f8f8f8);
+      background-color: var(--uui-color-surface-emphasis, #fafafa);
     }
 
     /* ── Node cell ────────────────────────────────────────────── */
     td.node-cell {
-      padding: 5px 8px 5px calc(var(--depth, 0) * 20px + 8px);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      min-width: 240px;
+      padding: 0;
       position: sticky;
       left: 0;
       background: inherit;
+      vertical-align: middle;
+    }
+
+    .node-inner {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 8px 0 calc(var(--depth, 0) * 18px + 8px);
+      height: 32px;
+      white-space: nowrap;
+      overflow: hidden;
     }
 
     .expand-spacer {
@@ -505,51 +525,66 @@ export class UasAccessViewerRootElement extends UmbLitElement {
     }
 
     .node-name {
-      white-space: nowrap;
+      font-size: 12px;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 180px;
     }
 
-    /* ── Effective permission cells ───────────────────────────── */
-    .perm-cell {
+    /* ── Permission blocks ────────────────────────────────────── */
+    .perm-td {
+      padding: 3px;
       text-align: center;
-      padding: 5px 4px;
+      vertical-align: middle;
       cursor: pointer;
+    }
+
+    .perm-block {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 26px;
+      border: 1px solid var(--uui-color-border, #ddd);
+      border-radius: 4px;
+      user-select: none;
+      overflow: hidden;
       font-size: 13px;
       font-weight: 700;
-      min-width: 72px;
-      user-select: none;
     }
 
-    .perm-cell.loading-cell {
+    .perm-block:hover {
+      border-color: var(--uui-color-border-emphasis, #bbb);
+    }
+
+    .perm-block.loading {
       color: var(--uui-color-text-alt, #aaa);
       font-size: 11px;
       font-weight: 400;
     }
 
-    .perm-cell.allow {
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 90%, #000);
+    .perm-block.allow {
+      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
+      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
+      border-color: color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
     }
 
-    .perm-cell.deny {
-      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
-      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 90%, #000);
+    .perm-block.deny {
+      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
+      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
+      border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
     }
 
-    .perm-cell:hover {
-      opacity: 0.8;
-    }
-
-    /* ── Legend items (reuse cell colors) ─────────────────────── */
+    /* ── Legend ───────────────────────────────────────────────── */
     .legend-item.allow {
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 90%, #000);
+      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
+      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
+      border: 1px solid color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
+      border-radius: 4px;
     }
     .legend-item.deny {
-      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
-      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 90%, #000);
+      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
+      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
+      border: 1px solid color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
+      border-radius: 4px;
     }
 
     /* ── Reasoning dialog ─────────────────────────────────────── */

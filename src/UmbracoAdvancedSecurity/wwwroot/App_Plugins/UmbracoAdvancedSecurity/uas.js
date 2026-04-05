@@ -6,31 +6,21 @@ const e = [
     name: "Umbraco Advanced Security Entry Point",
     js: () => import("./entrypoint-Jm72DZvJ.js")
   },
-  // ─── Section ─────────────────────────────────────────────────────────────
-  {
-    type: "section",
-    alias: "UAS.Section.AdvancedSecurity",
-    name: "Advanced Security Section",
-    meta: {
-      label: "Advanced Security",
-      pathname: "advanced-security"
-    }
-  },
-  // ─── Section Sidebar App ──────────────────────────────────────────────────
+  // ─── Section Sidebar App (inside Users section) ───────────────────────────
   {
     type: "sectionSidebarApp",
     kind: "menu",
     alias: "UAS.SidebarApp.AdvancedSecurity",
     name: "Advanced Security Sidebar",
-    weight: 100,
+    weight: 50,
     conditions: [
       {
         alias: "Umb.Condition.SectionAlias",
-        match: "UAS.Section.AdvancedSecurity"
+        match: "Umb.Section.Users"
       }
     ],
     meta: {
-      label: "Advanced Security",
+      label: "#uas_sectionLabel",
       menu: "UAS.Menu.AdvancedSecurity"
     }
   },
@@ -47,7 +37,7 @@ const e = [
     name: "Security Editor Menu Item",
     weight: 100,
     meta: {
-      label: "Security Editor",
+      label: "#uas_securityEditor",
       icon: "icon-lock",
       entityType: "uas-security-editor",
       menus: ["UAS.Menu.AdvancedSecurity"]
@@ -57,9 +47,9 @@ const e = [
     type: "menuItem",
     alias: "UAS.MenuItem.AccessViewer",
     name: "Access Viewer Menu Item",
-    weight: 200,
+    weight: 50,
     meta: {
-      label: "Access Viewer",
+      label: "#uas_accessViewer",
       icon: "icon-eye",
       entityType: "uas-access-viewer",
       menus: ["UAS.Menu.AdvancedSecurity"]
@@ -73,11 +63,11 @@ const e = [
     meta: {
       entityType: "uas-security-editor"
     },
-    element: () => import("./uas-security-editor-root.element-B8sCfOMl.js")
+    element: () => import("./uas-security-editor-root.element-DGShFjwq.js")
   },
   // ─── Granular Permission Override ─────────────────────────────────────────
   // Replaces the built-in document granular permissions UI with a redirect
-  // message pointing users to the Advanced Security section.
+  // message pointing users to the Security Editor in the Users section.
   {
     type: "userGranularPermission",
     alias: "UAS.UserGranularPermission.Document.Redirect",
@@ -85,11 +75,11 @@ const e = [
     weight: 2e3,
     overwrites: ["Umb.UserGranularPermission.Document"],
     forEntityTypes: ["document"],
-    element: () => import("./uas-granular-permission-redirect.element-Cp_9BQVn.js"),
+    element: () => import("./uas-granular-permission-redirect.element-x1yxkse-.js"),
     meta: {
       schemaType: "DocumentPermissionPresentationModel",
       label: "#user_permissionsGranular",
-      description: "Document permissions are managed by the Advanced Security package."
+      description: "#uas_redirectMessage"
     }
   },
   // ─── Workspace (Access Viewer) ────────────────────────────────────────────
@@ -100,7 +90,35 @@ const e = [
     meta: {
       entityType: "uas-access-viewer"
     },
-    element: () => import("./uas-access-viewer-root.element-DiJbNBTI.js")
+    element: () => import("./uas-access-viewer-root.element-BpqlsKzY.js")
+  },
+  // ─── Localization ─────────────────────────────────────────────────────────
+  {
+    type: "localization",
+    alias: "UAS.Localization.En",
+    name: "Advanced Security English Localization",
+    meta: {
+      culture: "en"
+    },
+    js: () => import("./en-BRmlpm2n.js")
+  },
+  {
+    type: "localization",
+    alias: "UAS.Localization.Nl",
+    name: "Advanced Security Dutch Localization",
+    meta: {
+      culture: "nl"
+    },
+    js: () => import("./nl-nASR5uCX.js")
+  },
+  {
+    type: "localization",
+    alias: "UAS.Localization.De",
+    name: "Advanced Security German Localization",
+    meta: {
+      culture: "de"
+    },
+    js: () => import("./de-CYWjgqlm.js")
   }
 ];
 export {

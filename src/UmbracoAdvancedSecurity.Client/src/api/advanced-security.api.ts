@@ -56,15 +56,24 @@ export async function getVerbs(): Promise<VerbInfo[]> {
   return (await apiFetch('/verbs')).json() as Promise<VerbInfo[]>;
 }
 
+/** Builds a RequestInit with an optional AbortSignal, handling exactOptionalPropertyTypes. */
+function withSignal(signal?: AbortSignal, extra?: RequestInit): RequestInit {
+  const opts: RequestInit = { ...extra };
+  if (signal) {
+    opts.signal = signal;
+  }
+  return opts;
+}
+
 /** Returns root content nodes with stored permission entries for the given role. */
-export async function getTreeRoot(roleAlias: string): Promise<TreeNode[]> {
-  return (await apiFetch(`/tree/root?roleAlias=${encodeURIComponent(roleAlias)}`)).json() as Promise<TreeNode[]>;
+export async function getTreeRoot(roleAlias: string, signal?: AbortSignal): Promise<TreeNode[]> {
+  return (await apiFetch(`/tree/root?roleAlias=${encodeURIComponent(roleAlias)}`, withSignal(signal))).json() as Promise<TreeNode[]>;
 }
 
 /** Returns children of a content node with stored permission entries for the given role. */
-export async function getTreeChildren(parentKey: string, roleAlias: string): Promise<TreeNode[]> {
+export async function getTreeChildren(parentKey: string, roleAlias: string, signal?: AbortSignal): Promise<TreeNode[]> {
   return (
-    await apiFetch(`/tree/children?parentKey=${parentKey}&roleAlias=${encodeURIComponent(roleAlias)}`)
+    await apiFetch(`/tree/children?parentKey=${parentKey}&roleAlias=${encodeURIComponent(roleAlias)}`, withSignal(signal))
   ).json() as Promise<TreeNode[]>;
 }
 
@@ -84,19 +93,19 @@ export async function savePermissions(
 }
 
 /** Returns stored permission entries for a node+role combination. */
-export async function getPermissions(nodeKey: string | null, roleAlias: string): Promise<PermissionEntry[]> {
+export async function getPermissions(nodeKey: string | null, roleAlias: string, signal?: AbortSignal): Promise<PermissionEntry[]> {
   const keyParam = nodeKey ? `nodeKey=${nodeKey}&` : '';
-  return (await apiFetch(`/permissions?${keyParam}roleAlias=${encodeURIComponent(roleAlias)}`)).json() as Promise<PermissionEntry[]>;
+  return (await apiFetch(`/permissions?${keyParam}roleAlias=${encodeURIComponent(roleAlias)}`, withSignal(signal))).json() as Promise<PermissionEntry[]>;
 }
 
 /** Resolves effective permissions for a user at a content node. */
-export async function getEffectiveForUser(userKey: string, nodeKey: string): Promise<EffectivePermissions> {
-  return (await apiFetch(`/effective?userKey=${userKey}&nodeKey=${nodeKey}`)).json() as Promise<EffectivePermissions>;
+export async function getEffectiveForUser(userKey: string, nodeKey: string, signal?: AbortSignal): Promise<EffectivePermissions> {
+  return (await apiFetch(`/effective?userKey=${userKey}&nodeKey=${nodeKey}`, withSignal(signal))).json() as Promise<EffectivePermissions>;
 }
 
 /** Resolves effective permissions for a role at a content node. */
-export async function getEffectiveForRole(roleAlias: string, nodeKey: string): Promise<EffectivePermissions> {
+export async function getEffectiveForRole(roleAlias: string, nodeKey: string, signal?: AbortSignal): Promise<EffectivePermissions> {
   return (
-    await apiFetch(`/effective/by-role?roleAlias=${encodeURIComponent(roleAlias)}&nodeKey=${nodeKey}`)
+    await apiFetch(`/effective/by-role?roleAlias=${encodeURIComponent(roleAlias)}&nodeKey=${nodeKey}`, withSignal(signal))
   ).json() as Promise<EffectivePermissions>;
 }

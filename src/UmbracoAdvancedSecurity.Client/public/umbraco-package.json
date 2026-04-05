@@ -1,5 +1,5 @@
 {
-  "$schema": "../../umbraco-package-schema.json",
+  "$schema": "../node_modules/@umbraco-cms/backoffice/umbraco-package-schema.json",
   "name": "Umbraco Advanced Security",
   "version": "1.0.0",
   "allowPublicAccess": false,

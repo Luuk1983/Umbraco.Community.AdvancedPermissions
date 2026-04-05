@@ -57,6 +57,7 @@ export class UasAccessViewerRootElement extends UmbLitElement {
   @query('.reasoning-dialog') private _reasoningDialog!: HTMLDialogElement;
 
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
+  #loadAbortController: AbortController | null = null;
 
   constructor() {
     super();
@@ -68,6 +69,11 @@ export class UasAccessViewerRootElement extends UmbLitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     void this.#loadMeta();
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.#loadAbortController?.abort();
   }
 
   // ── Data loading ─────────────────────────────────────────────────────────
@@ -99,13 +105,21 @@ export class UasAccessViewerRootElement extends UmbLitElement {
 
   async #loadTree(): Promise<void> {
     if (!this.#subject) return;
+
+    // Cancel any in-flight load from a previous selection
+    this.#loadAbortController?.abort();
+    const controller = new AbortController();
+    this.#loadAbortController = controller;
+
     this._loading = true;
     this._error = null;
     this._treeNodes = [];
 
     try {
       // Use security editor tree endpoint to get root nodes (entries not needed, just structure)
-      const nodes = await getTreeRoot('$everyone'); // any valid role to get tree structure
+      const nodes = await getTreeRoot('$everyone', controller.signal);
+      if (controller.signal.aborted) return;
+
       this._treeNodes = nodes.map((n) => ({
         key: n.key,
         name: n.name,
@@ -115,22 +129,90 @@ export class UasAccessViewerRootElement extends UmbLitElement {
         loading: false,
         effectivePerms: null,
       }));
-      // Load effective permissions for each root node
-      await Promise.all(this._treeNodes.map((n) => this.#loadEffective(n)));
+      // Load effective permissions for root nodes in batches to avoid request flooding
+      await this.#loadEffectiveBatch(this._treeNodes, controller.signal);
     } catch (err) {
+      if (controller.signal.aborted) return;
       this._error = String(err);
     } finally {
-      this._loading = false;
+      if (!controller.signal.aborted) this._loading = false;
     }
   }
 
-  async #loadEffective(node: ViewerTreeNode): Promise<void> {
+  /**
+   * Reloads effective permissions for all loaded nodes without rebuilding the tree.
+   * Preserves expanded state and children.
+   */
+  async #reloadEffective(): Promise<void> {
+    if (!this.#subject || this._treeNodes.length === 0) return;
+
+    // Cancel any in-flight load
+    this.#loadAbortController?.abort();
+    const controller = new AbortController();
+    this.#loadAbortController = controller;
+
+    this._loading = true;
+    this._error = null;
+
+    // Clear effective permissions on all loaded nodes
+    this.#clearEffectiveRecursive(this._treeNodes);
+    this._treeNodes = [...this._treeNodes]; // trigger re-render to show loading state
+
+    try {
+      // Reload effective permissions for root nodes
+      await this.#loadEffectiveBatch(this._treeNodes, controller.signal);
+      if (controller.signal.aborted) return;
+
+      // Reload for any expanded children
+      await this.#reloadExpandedChildren(this._treeNodes, controller.signal);
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      this._error = String(err);
+    } finally {
+      if (!controller.signal.aborted) this._loading = false;
+    }
+  }
+
+  #clearEffectiveRecursive(nodes: ViewerTreeNode[]): void {
+    for (const node of nodes) {
+      node.effectivePerms = null;
+      if (node.children) this.#clearEffectiveRecursive(node.children);
+    }
+  }
+
+  async #reloadExpandedChildren(nodes: ViewerTreeNode[], signal: AbortSignal): Promise<void> {
+    for (const node of nodes) {
+      if (node.children && node.expanded) {
+        await this.#loadEffectiveBatch(node.children, signal);
+        if (signal.aborted) return;
+        await this.#reloadExpandedChildren(node.children, signal);
+        if (signal.aborted) return;
+      }
+    }
+  }
+
+  /**
+   * Loads effective permissions for a batch of nodes, throttled to avoid
+   * flooding the server with too many simultaneous requests.
+   */
+  async #loadEffectiveBatch(nodes: ViewerTreeNode[], signal: AbortSignal): Promise<void> {
+    const batchSize = 8;
+    for (let i = 0; i < nodes.length; i += batchSize) {
+      if (signal.aborted) return;
+      const batch = nodes.slice(i, i + batchSize);
+      await Promise.all(batch.map((n) => this.#loadEffective(n, signal)));
+    }
+  }
+
+  async #loadEffective(node: ViewerTreeNode, signal?: AbortSignal): Promise<void> {
     if (!this.#subject) return;
     try {
       const result =
         this._mode === 'role'
-          ? await getEffectiveForRole(this._selectedRole, node.key)
-          : await getEffectiveForUser(this._resolvedUserKey, node.key);
+          ? await getEffectiveForRole(this._selectedRole, node.key, signal)
+          : await getEffectiveForUser(this._resolvedUserKey, node.key, signal);
+
+      if (signal?.aborted) return;
 
       const permsMap = new Map<string, EffectivePermission>();
       for (const p of result.permissions) {
@@ -139,7 +221,7 @@ export class UasAccessViewerRootElement extends UmbLitElement {
       node.effectivePerms = permsMap;
       this._treeNodes = [...this._treeNodes]; // trigger re-render
     } catch {
-      // Non-fatal: leave effectivePerms null
+      // Non-fatal: leave effectivePerms null (shows loading indicator)
     }
   }
 
@@ -165,7 +247,8 @@ export class UasAccessViewerRootElement extends UmbLitElement {
         effectivePerms: null,
       }));
       this.#updateNode(node.key, { expanded: true, loading: false, children: childNodes });
-      await Promise.all(childNodes.map((cn) => this.#loadEffective(cn)));
+      // Load effective permissions in batches
+      await this.#loadEffectiveBatch(childNodes, this.#loadAbortController?.signal ?? new AbortController().signal);
     } catch (err) {
       this.#updateNode(node.key, { loading: false });
       this.#notificationContext?.peek('danger', { data: { message: String(err) } });
@@ -272,13 +355,31 @@ export class UasAccessViewerRootElement extends UmbLitElement {
             <uui-button
               look=${this._mode === 'role' ? 'primary' : 'secondary'}
               label=${this.#localize.term('uas_byRole')}
-              @click=${() => { this._mode = 'role'; this._treeNodes = []; }}>
+              @click=${() => {
+                this._mode = 'role';
+                this.#loadAbortController?.abort();
+                if (this._selectedRole && this._treeNodes.length > 0) {
+                  void this.#reloadEffective();
+                } else {
+                  this.#clearEffectiveRecursive(this._treeNodes);
+                  this._treeNodes = [...this._treeNodes];
+                }
+              }}>
               ${this.#localize.term('uas_byRole')}
             </uui-button>
             <uui-button
               look=${this._mode === 'user' ? 'primary' : 'secondary'}
               label=${this.#localize.term('uas_byUser')}
-              @click=${() => { this._mode = 'user'; this._treeNodes = []; }}>
+              @click=${() => {
+                this._mode = 'user';
+                this.#loadAbortController?.abort();
+                if (this._resolvedUserKey && this._treeNodes.length > 0) {
+                  void this.#reloadEffective();
+                } else {
+                  this.#clearEffectiveRecursive(this._treeNodes);
+                  this._treeNodes = [...this._treeNodes];
+                }
+              }}>
               ${this.#localize.term('uas_byUser')}
             </uui-button>
           </uui-button-group>
@@ -292,8 +393,14 @@ export class UasAccessViewerRootElement extends UmbLitElement {
                     placeholder=${this.#localize.term('uas_rolePlaceholder')}
                     .options=${this.#roleOptions}
                     @change=${(e: Event) => {
-                      this._selectedRole = (e.target as HTMLInputElement).value;
-                      void this.#loadTree();
+                      const newRole = (e.target as HTMLInputElement).value;
+                      const hadTree = this._treeNodes.length > 0 && this._selectedRole !== '';
+                      this._selectedRole = newRole;
+                      if (hadTree && newRole) {
+                        void this.#reloadEffective();
+                      } else {
+                        void this.#loadTree();
+                      }
                     }}>
                   </uui-select>
                 </div>
@@ -305,10 +412,16 @@ export class UasAccessViewerRootElement extends UmbLitElement {
                     max="1"
                     @change=${(e: Event) => {
                       const value = (e.target as HTMLInputElement).value ?? '';
+                      const hadTree = this._treeNodes.length > 0 && this._resolvedUserKey !== '';
                       this._resolvedUserKey = value;
                       if (value) {
-                        void this.#loadTree();
+                        if (hadTree) {
+                          void this.#reloadEffective();
+                        } else {
+                          void this.#loadTree();
+                        }
                       } else {
+                        this.#loadAbortController?.abort();
                         this._treeNodes = [];
                       }
                     }}>

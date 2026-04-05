@@ -97,6 +97,11 @@ public class AdvancedSecurityDbContext : DbContext
             // Index for node-level lookups (all roles for a node)
             entity.HasIndex(e => e.NodeKey)
                 .HasDatabaseName("IX_AdvancedSecurityPermission_NodeKey");
+
+            // Unique constraint to prevent duplicate entries for the same node+role+verb+scope
+            entity.HasIndex(e => new { e.NodeKey, e.RoleAlias, e.Verb, e.Scope })
+                .IsUnique()
+                .HasDatabaseName("IX_AdvancedSecurityPermission_Unique");
         });
     }
 }

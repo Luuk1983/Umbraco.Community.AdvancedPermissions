@@ -3,6 +3,10 @@
     <Project Path="src/UmbracoAdvancedSecurity.Core/UmbracoAdvancedSecurity.Core.csproj" />
     <Project Path="src/UmbracoAdvancedSecurity.Data/UmbracoAdvancedSecurity.Data.csproj" />
     <Project Path="src/UmbracoAdvancedSecurity/UmbracoAdvancedSecurity.csproj" />
+    <Project Path="src/UmbracoAdvancedSecurity.Client/UmbracoAdvancedSecurity.Client.esproj">
+      <Build />
+      <Deploy />
+    </Project>
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/UmbracoAdvancedSecurity.Core.Tests/UmbracoAdvancedSecurity.Core.Tests.csproj" />

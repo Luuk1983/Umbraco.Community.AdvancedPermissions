@@ -64,6 +64,24 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedSecur
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<AdvancedPermissionEntry>> GetByNodesAndRoleAsync(
+        IEnumerable<Guid> nodeKeys,
+        string roleAlias,
+        CancellationToken cancellationToken = default)
+    {
+        var keyList = nodeKeys.Select(k => (Guid?)k).ToList();
+
+        await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var entities = await db.Permissions
+            .Where(p => p.RoleAlias == roleAlias && keyList.Contains(p.NodeKey))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return entities.ConvertAll(MapToDomain);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<AdvancedPermissionEntry>> GetByRolesAndNodesAsync(
         IEnumerable<string> roleAliases,
         IEnumerable<Guid?> nodeKeys,
@@ -93,27 +111,28 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedSecur
 
         await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        // Remove all existing entries for this node+role combination
-        var existing = await db.Permissions
+        // Remove all existing entries for this node+role combination in a single DELETE statement
+        await db.Permissions
             .Where(p => p.NodeKey == nodeKey && p.RoleAlias == roleAlias)
-            .ToListAsync(cancellationToken);
-
-        db.Permissions.RemoveRange(existing);
+            .ExecuteDeleteAsync(cancellationToken);
 
         // Add the new entries
-        foreach (var (verb, state, scope) in newEntries)
+        if (newEntries.Count > 0)
         {
-            db.Permissions.Add(new AdvancedPermissionEntity
+            foreach (var (verb, state, scope) in newEntries)
             {
-                NodeKey = nodeKey,
-                RoleAlias = roleAlias,
-                Verb = verb,
-                State = state,
-                Scope = scope,
-            });
-        }
+                db.Permissions.Add(new AdvancedPermissionEntity
+                {
+                    NodeKey = nodeKey,
+                    RoleAlias = roleAlias,
+                    Verb = verb,
+                    State = state,
+                    Scope = scope,
+                });
+            }
 
-        await db.SaveChangesAsync(cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
+        }
     }
 
     /// <inheritdoc />
@@ -125,17 +144,11 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedSecur
     {
         await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        var entities = await db.Permissions
+        await db.Permissions
             .Where(p => p.NodeKey == nodeKey
                      && p.RoleAlias == roleAlias
                      && p.Verb == verb)
-            .ToListAsync(cancellationToken);
-
-        if (entities.Count > 0)
-        {
-            db.Permissions.RemoveRange(entities);
-            await db.SaveChangesAsync(cancellationToken);
-        }
+            .ExecuteDeleteAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -145,15 +158,9 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedSecur
     {
         await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        var entities = await db.Permissions
+        await db.Permissions
             .Where(p => p.NodeKey == nodeKey)
-            .ToListAsync(cancellationToken);
-
-        if (entities.Count > 0)
-        {
-            db.Permissions.RemoveRange(entities);
-            await db.SaveChangesAsync(cancellationToken);
-        }
+            .ExecuteDeleteAsync(cancellationToken);
     }
 
     /// <summary>

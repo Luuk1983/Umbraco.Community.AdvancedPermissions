@@ -66,6 +66,11 @@ namespace UmbracoAdvancedSecurity.Data.Migrations.SqlServer
                     b.HasIndex("NodeKey", "RoleAlias")
                         .HasDatabaseName("IX_AdvancedSecurityPermission_NodeKey_RoleAlias");
 
+                    b.HasIndex("NodeKey", "RoleAlias", "Verb", "Scope")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AdvancedSecurityPermission_Unique")
+                        .HasFilter("[NodeKey] IS NOT NULL");
+
                     b.ToTable("AdvancedSecurityPermission", (string)null);
                 });
 #pragma warning restore 612, 618

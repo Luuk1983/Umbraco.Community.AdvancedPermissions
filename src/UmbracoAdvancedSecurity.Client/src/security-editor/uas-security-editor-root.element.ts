@@ -122,6 +122,7 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
   @query('.scope-dialog') private _scopeDialog!: HTMLDialogElement;
 
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
+  #loadAbortController: AbortController | null = null;
 
   constructor() {
     super();
@@ -133,6 +134,11 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     void this.#loadMeta();
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.#loadAbortController?.abort();
   }
 
   // ── Computed ─────────────────────────────────────────────────────────────
@@ -162,14 +168,22 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
 
   async #loadTree(): Promise<void> {
     if (!this._selectedRole) return;
+
+    // Cancel any in-flight load from a previous role selection
+    this.#loadAbortController?.abort();
+    const controller = new AbortController();
+    this.#loadAbortController = controller;
+
     this._loading = true;
     this._error = null;
     this._treeNodes = [];
     try {
       const [virtualEntries, nodes] = await Promise.all([
-        getPermissions(null, this._selectedRole),
-        getTreeRoot(this._selectedRole),
+        getPermissions(null, this._selectedRole, controller.signal),
+        getTreeRoot(this._selectedRole, controller.signal),
       ]);
+      if (controller.signal.aborted) return;
+
       const virtualRoot: TreeNodeState = {
         key: 'virtual-root',
         name: this.#localize.term('uas_contentRoot'),
@@ -181,9 +195,127 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
       };
       this._treeNodes = [virtualRoot, ...nodes.map((n) => ({ ...n, expanded: false, loading: false }))];
     } catch (err) {
+      if (controller.signal.aborted) return;
       this._error = String(err);
     } finally {
-      this._loading = false;
+      if (!controller.signal.aborted) this._loading = false;
+    }
+  }
+
+  /**
+   * Reloads only the permission entries for the current tree structure without
+   * rebuilding the tree. Preserves expanded state and children. Used when switching roles.
+   */
+  async #reloadPermissions(): Promise<void> {
+    if (!this._selectedRole || this._treeNodes.length === 0) return;
+
+    // Cancel any in-flight load from a previous role selection
+    this.#loadAbortController?.abort();
+    const controller = new AbortController();
+    this.#loadAbortController = controller;
+
+    this._loading = true;
+    this._error = null;
+
+    try {
+      // Reload virtual root entries
+      const virtualEntries = await getPermissions(null, this._selectedRole, controller.signal);
+      if (controller.signal.aborted) return;
+
+      // Clear entries on all existing nodes and reload their entries
+      this.#clearEntriesRecursive(this._treeNodes);
+
+      // Set virtual root entries
+      const virtualRoot = this._treeNodes.find((n) => n.key === 'virtual-root');
+      if (virtualRoot) {
+        virtualRoot.entries = virtualEntries;
+      }
+
+      // Reload entries for visible (loaded) nodes
+      await this.#reloadNodeEntries(this._treeNodes, controller.signal);
+      if (controller.signal.aborted) return;
+
+      this._treeNodes = [...this._treeNodes]; // trigger re-render
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      this._error = String(err);
+    } finally {
+      if (!controller.signal.aborted) this._loading = false;
+    }
+  }
+
+  #clearEntriesRecursive(nodes: TreeNodeState[]): void {
+    for (const node of nodes) {
+      node.entries = [];
+      if (node.children) {
+        this.#clearEntriesRecursive(node.children);
+      }
+    }
+  }
+
+  async #reloadNodeEntries(nodes: TreeNodeState[], signal: AbortSignal): Promise<void> {
+    // Collect all non-virtual node keys that have been loaded (root level + expanded children)
+    const keys: string[] = [];
+    this.#collectLoadedKeys(nodes, keys);
+
+    if (keys.length === 0) return;
+
+    // Use the tree endpoint which batch-loads entries per role
+    const [rootNodes] = await Promise.all([
+      getTreeRoot(this._selectedRole, signal),
+    ]);
+    if (signal.aborted) return;
+
+    // Build a map from key → entries
+    const entryMap = new Map<string, typeof rootNodes[0]['entries']>();
+    for (const n of rootNodes) {
+      entryMap.set(n.key, n.entries);
+    }
+
+    // Apply entries to existing tree nodes at root level
+    for (const node of nodes) {
+      if (node.key === 'virtual-root') continue;
+      const entries = entryMap.get(node.key);
+      if (entries) node.entries = entries;
+    }
+
+    // For expanded children, reload their entries
+    for (const node of nodes) {
+      if (node.children && node.expanded) {
+        const childEntries = await getTreeChildren(node.key, this._selectedRole, signal);
+        if (signal.aborted) return;
+        const childMap = new Map(childEntries.map((c) => [c.key, c.entries]));
+        for (const child of node.children) {
+          const entries = childMap.get(child.key);
+          if (entries) child.entries = entries;
+        }
+        // Recurse for deeply expanded subtrees
+        await this.#reloadChildEntries(node.children, signal);
+        if (signal.aborted) return;
+      }
+    }
+  }
+
+  async #reloadChildEntries(nodes: TreeNodeState[], signal: AbortSignal): Promise<void> {
+    for (const node of nodes) {
+      if (node.children && node.expanded) {
+        const childEntries = await getTreeChildren(node.key, this._selectedRole, signal);
+        if (signal.aborted) return;
+        const childMap = new Map(childEntries.map((c) => [c.key, c.entries]));
+        for (const child of node.children) {
+          const entries = childMap.get(child.key);
+          if (entries) child.entries = entries;
+        }
+        await this.#reloadChildEntries(node.children, signal);
+        if (signal.aborted) return;
+      }
+    }
+  }
+
+  #collectLoadedKeys(nodes: TreeNodeState[], keys: string[]): void {
+    for (const node of nodes) {
+      if (node.key !== 'virtual-root') keys.push(node.key);
+      if (node.children) this.#collectLoadedKeys(node.children, keys);
     }
   }
 
@@ -537,9 +669,15 @@ export class UasSecurityEditorRootElement extends UmbLitElement {
               placeholder=${this.#localize.term('uas_rolePlaceholder')}
               .options=${this.#roleOptions}
               @change=${(e: Event) => {
-                this._selectedRole = (e.target as HTMLInputElement).value;
+                const newRole = (e.target as HTMLInputElement).value;
+                const hadTree = this._treeNodes.length > 0 && this._selectedRole !== '';
+                this._selectedRole = newRole;
                 this._pendingChanges = new Map();
-                void this.#loadTree();
+                if (hadTree && newRole) {
+                  void this.#reloadPermissions();
+                } else {
+                  void this.#loadTree();
+                }
               }}>
             </uui-select>
           </div>

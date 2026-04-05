@@ -122,6 +122,11 @@ public sealed class AdvancedSecurityComposer : IComposer
         builder.AddNotificationHandler<UserGroupSavedNotification, AdvancedPermissionCacheInvalidator>();
         builder.AddNotificationHandler<UserSavedNotification, AdvancedPermissionCacheInvalidator>();
 
+        // Clean up orphaned permission entries when content is permanently deleted.
+        // ContentDeletedNotification fires per-item even during "empty recycle bin", so a
+        // separate ContentEmptiedRecycleBinNotification handler is not needed.
+        builder.AddNotificationAsyncHandler<ContentDeletedNotification, AdvancedPermissionCleanup>();
+
         // Seed root permission entries for newly created user groups
         builder.AddNotificationAsyncHandler<UserGroupSavedNotification, UserGroupPermissionSeeder>();
     }

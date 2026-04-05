@@ -70,20 +70,19 @@ public sealed class AdvancedContentPermissionService(
             }
         }
 
-        // Resolve advanced security permissions for each content item and verb
+        // Resolve advanced security permissions for each content item — all verbs in one call.
+        // Share a single ID-to-Key cache across all path lookups to avoid redundant DB calls.
+        var idToKeyCache = new Dictionary<int, Guid>();
         foreach (TreeEntityPath entityPath in entityPaths)
         {
-            IReadOnlyList<Guid> pathFromRoot = BuildPathFromRoot(entityPath.Path);
+            IReadOnlyList<Guid> pathFromRoot = BuildPathFromRoot(entityPath.Path, idToKeyCache);
 
-            foreach (var verb in permissionsToCheck)
+            var allPerms = await advancedPermissionService.ResolveAllAsync(
+                user.Key, entityPath.Key, pathFromRoot, permissionsToCheck);
+
+            if (allPerms.Values.Any(p => !p.IsAllowed))
             {
-                var effective = await advancedPermissionService.ResolveAsync(
-                    user.Key, entityPath.Key, pathFromRoot, verb);
-
-                if (!effective.IsAllowed)
-                {
-                    return ContentAuthorizationStatus.UnauthorizedMissingPermissionAccess;
-                }
+                return ContentAuthorizationStatus.UnauthorizedMissingPermissionAccess;
             }
         }
 
@@ -108,6 +107,9 @@ public sealed class AdvancedContentPermissionService(
             return ContentAuthorizationStatus.NotFound;
         }
 
+        // Share a single ID-to-Key cache across all descendant path lookups
+        var idToKeyCache = new Dictionary<int, Guid>();
+
         while (page * pageSize < total)
         {
             // Order descendants from shallowest to deepest to allow early exit
@@ -129,18 +131,14 @@ public sealed class AdvancedContentPermissionService(
                     continue;
                 }
 
-                IReadOnlyList<Guid> pathFromRoot = BuildPathFromRoot(descendant.Path);
+                IReadOnlyList<Guid> pathFromRoot = BuildPathFromRoot(descendant.Path, idToKeyCache);
 
-                foreach (var verb in permissionsToCheck)
+                var allPerms = await advancedPermissionService.ResolveAllAsync(
+                    user.Key, descendant.Key, pathFromRoot, permissionsToCheck);
+
+                if (allPerms.Values.Any(p => !p.IsAllowed))
                 {
-                    var effective = await advancedPermissionService.ResolveAsync(
-                        user.Key, descendant.Key, pathFromRoot, verb);
-
-                    if (!effective.IsAllowed)
-                    {
-                        denied.Add(descendant);
-                        break;
-                    }
+                    denied.Add(descendant);
                 }
             }
         }
@@ -221,6 +219,7 @@ public sealed class AdvancedContentPermissionService(
         }
 
         int[]? startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
+        var idToKeyCache = new Dictionary<int, Guid>();
 
         foreach (TreeEntityPath entityPath in entityPaths)
         {
@@ -230,22 +229,12 @@ public sealed class AdvancedContentPermissionService(
                 continue;
             }
 
-            IReadOnlyList<Guid> pathFromRoot = BuildPathFromRoot(entityPath.Path);
-            var authorized = true;
+            IReadOnlyList<Guid> pathFromRoot = BuildPathFromRoot(entityPath.Path, idToKeyCache);
 
-            foreach (var verb in permissionsToCheck)
-            {
-                var effective = await advancedPermissionService.ResolveAsync(
-                    user.Key, entityPath.Key, pathFromRoot, verb);
+            var allPerms = await advancedPermissionService.ResolveAllAsync(
+                user.Key, entityPath.Key, pathFromRoot, permissionsToCheck);
 
-                if (!effective.IsAllowed)
-                {
-                    authorized = false;
-                    break;
-                }
-            }
-
-            if (authorized)
+            if (allPerms.Values.All(p => p.IsAllowed))
             {
                 authorizedKeys.Add(entityPath.Key);
             }
@@ -257,14 +246,20 @@ public sealed class AdvancedContentPermissionService(
     /// <summary>
     /// Parses an Umbraco content path string (e.g. <c>"-1,1001,1002,1003"</c>) and returns the ordered
     /// list of content node Guids from the root down to the target node.
+    /// Maintains an in-memory cache of ID-to-Key mappings to reduce database calls when resolving
+    /// multiple paths within a single authorization operation.
     /// </summary>
     /// <remarks>
     /// The root node (<c>-1</c>) is excluded from the result because it is a virtual node.
     /// Group defaults cover the "virtual root" layer via the resolution algorithm.
     /// </remarks>
     /// <param name="path">The Umbraco path string, e.g. <c>"-1,1001,1002"</c>.</param>
+    /// <param name="idToKeyCache">
+    /// Optional dictionary that accumulates ID-to-Key mappings across multiple calls.
+    /// Prevents repeated database lookups for ancestors shared by sibling content nodes.
+    /// </param>
     /// <returns>An ordered list of Guids for the real content nodes in the path.</returns>
-    private IReadOnlyList<Guid> BuildPathFromRoot(string path)
+    private IReadOnlyList<Guid> BuildPathFromRoot(string path, Dictionary<int, Guid>? idToKeyCache = null)
     {
         int[] pathIds = path.Split(',')
             .Select(int.Parse)
@@ -276,14 +271,36 @@ public sealed class AdvancedContentPermissionService(
             return [];
         }
 
-        var idToKey = entityService
-            .GetAll(UmbracoObjectTypes.Document, pathIds)
-            .ToDictionary(e => e.Id, e => e.Key);
+        // Find IDs that are not yet cached
+        int[] uncachedIds = idToKeyCache is null
+            ? pathIds
+            : pathIds.Where(id => !idToKeyCache.ContainsKey(id)).ToArray();
+
+        if (uncachedIds.Length > 0)
+        {
+            var fetched = entityService
+                .GetAll(UmbracoObjectTypes.Document, uncachedIds)
+                .ToDictionary(e => e.Id, e => e.Key);
+
+            if (idToKeyCache is not null)
+            {
+                foreach (var kvp in fetched)
+                {
+                    idToKeyCache[kvp.Key] = kvp.Value;
+                }
+            }
+            else
+            {
+                idToKeyCache = fetched;
+            }
+        }
+
+        idToKeyCache ??= [];
 
         var result = new List<Guid>(pathIds.Length);
         foreach (var id in pathIds)
         {
-            if (idToKey.TryGetValue(id, out var key))
+            if (idToKeyCache.TryGetValue(id, out var key))
             {
                 result.Add(key);
             }

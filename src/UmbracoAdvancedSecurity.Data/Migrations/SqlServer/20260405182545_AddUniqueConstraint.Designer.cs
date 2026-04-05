@@ -2,50 +2,60 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UmbracoAdvancedSecurity.Data.Context;
 
 #nullable disable
 
-namespace UmbracoAdvancedSecurity.Data.Migrations.Sqlite
+namespace UmbracoAdvancedSecurity.Data.Migrations.SqlServer
 {
-    [DbContext(typeof(AdvancedSecurityDbContextSqlite))]
-    partial class AdvancedSecurityDbContextSqliteModelSnapshot : ModelSnapshot
+    [DbContext(typeof(AdvancedSecurityDbContextSqlServer))]
+    [Migration("20260405182545_AddUniqueConstraint")]
+    partial class AddUniqueConstraint
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("UmbracoAdvancedSecurity.Data.Entities.AdvancedPermissionEntity", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("Id");
 
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<Guid?>("NodeKey")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("uniqueidentifier")
                         .HasColumnName("NodeKey");
 
                     b.Property<string>("RoleAlias")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("RoleAlias");
 
                     b.Property<int>("Scope")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("Scope");
 
                     b.Property<int>("State")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("State");
 
                     b.Property<string>("Verb")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("Verb");
 
                     b.HasKey("Id");
@@ -61,7 +71,8 @@ namespace UmbracoAdvancedSecurity.Data.Migrations.Sqlite
 
                     b.HasIndex("NodeKey", "RoleAlias", "Verb", "Scope")
                         .IsUnique()
-                        .HasDatabaseName("IX_AdvancedSecurityPermission_Unique");
+                        .HasDatabaseName("IX_AdvancedSecurityPermission_Unique")
+                        .HasFilter("[NodeKey] IS NOT NULL");
 
                     b.ToTable("AdvancedSecurityPermission", (string)null);
                 });

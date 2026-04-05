@@ -75,6 +75,13 @@ public sealed class AdvancedPermissionService(
         repository.GetByNodeAndRoleAsync(nodeKey, roleAlias, cancellationToken);
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<AdvancedPermissionEntry>> GetEntriesByNodesAndRoleAsync(
+        IEnumerable<Guid> nodeKeys,
+        string roleAlias,
+        CancellationToken cancellationToken = default) =>
+        repository.GetByNodesAndRoleAsync(nodeKeys, roleAlias, cancellationToken);
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<AdvancedPermissionEntry>> GetEntriesByNodeAsync(
         Guid? nodeKey,
         CancellationToken cancellationToken = default) =>

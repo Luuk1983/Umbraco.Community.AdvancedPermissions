@@ -25,6 +25,12 @@ public sealed class AdvancedPermissionCache(AppCaches appCaches)
     private const string L1Prefix = "UAS.L1.";
     private const string L2Prefix = "UAS.L2.";
 
+    /// <summary>L1 entries change infrequently — 30 minute safety-net TTL.</summary>
+    private static readonly TimeSpan L1Ttl = TimeSpan.FromMinutes(30);
+
+    /// <summary>L2 resolved results are more sensitive — 10 minute TTL.</summary>
+    private static readonly TimeSpan L2Ttl = TimeSpan.FromMinutes(10);
+
     // ──────────────────────────────────────────
     // L1: stored entries per role (all nodes)
     // ──────────────────────────────────────────
@@ -43,7 +49,7 @@ public sealed class AdvancedPermissionCache(AppCaches appCaches)
     /// <param name="roleAlias">The role alias.</param>
     /// <param name="entries">The entries to cache.</param>
     public void SetRoleEntries(string roleAlias, IReadOnlyList<AdvancedPermissionEntry> entries) =>
-        appCaches.RuntimeCache.InsertCacheItem(L1Prefix + roleAlias, () => entries);
+        appCaches.RuntimeCache.InsertCacheItem(L1Prefix + roleAlias, () => entries, L1Ttl);
 
     /// <summary>
     /// Removes the L1 cache entry for a specific role.
@@ -81,7 +87,7 @@ public sealed class AdvancedPermissionCache(AppCaches appCaches)
     /// <param name="nodeKey">The content node key.</param>
     /// <param name="resolved">The fully resolved permissions for all verbs.</param>
     public void SetResolved(Guid userKey, Guid nodeKey, IReadOnlyDictionary<string, EffectivePermission> resolved) =>
-        appCaches.RuntimeCache.InsertCacheItem($"{L2Prefix}{userKey}.{nodeKey}", () => resolved);
+        appCaches.RuntimeCache.InsertCacheItem($"{L2Prefix}{userKey}.{nodeKey}", () => resolved, L2Ttl);
 
     /// <summary>
     /// Removes all L2 cache entries for a specific user.

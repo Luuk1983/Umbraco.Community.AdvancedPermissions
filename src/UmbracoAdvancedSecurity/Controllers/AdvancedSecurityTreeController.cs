@@ -60,7 +60,8 @@ public sealed class AdvancedSecurityTreeController(
     }
 
     /// <summary>
-    /// Maps a collection of entity slims to tree node response models, loading their permission entries.
+    /// Maps a collection of entity slims to tree node response models, loading their permission entries
+    /// in a single batch query to avoid N+1 database round trips.
     /// </summary>
     /// <param name="nodes">The content node entities to map.</param>
     /// <param name="roleAlias">The role alias to load entries for.</param>
@@ -71,18 +72,29 @@ public sealed class AdvancedSecurityTreeController(
         string roleAlias,
         CancellationToken cancellationToken)
     {
-        var result = new List<TreeNodeResponseModel>();
+        var nodeList = nodes.ToList();
 
-        foreach (var node in nodes)
+        // Single batch query for all nodes instead of one query per node
+        var allEntries = await permissionService.GetEntriesByNodesAndRoleAsync(
+            nodeList.Select(n => n.Key), roleAlias, cancellationToken);
+
+        // Group entries by node key for fast lookup
+        var entriesByNode = allEntries
+            .Where(e => e.NodeKey.HasValue)
+            .GroupBy(e => e.NodeKey!.Value)
+            .ToDictionary(g => g.Key, g => g.Select(MapEntry).ToList());
+
+        var result = new List<TreeNodeResponseModel>(nodeList.Count);
+        foreach (var node in nodeList)
         {
-            var entries = await permissionService.GetEntriesAsync(node.Key, roleAlias, cancellationToken);
             var icon = node is IContentEntitySlim contentSlim ? contentSlim.ContentTypeIcon : null;
+            entriesByNode.TryGetValue(node.Key, out var nodeEntries);
             result.Add(new TreeNodeResponseModel(
                 node.Key,
                 node.Name ?? string.Empty,
                 icon,
                 node.HasChildren,
-                entries.Select(MapEntry).ToList()));
+                nodeEntries ?? []));
         }
 
         return result;

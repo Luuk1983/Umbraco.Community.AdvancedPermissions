@@ -71,6 +71,19 @@ public interface IAdvancedPermissionService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets the raw permission entries for a set of nodes and a single role in one batch.
+    /// Used by the tree controller to avoid N+1 queries when rendering children.
+    /// </summary>
+    /// <param name="nodeKeys">The content node keys to load entries for.</param>
+    /// <param name="roleAlias">The role alias.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <returns>All stored entries for the given nodes and role.</returns>
+    Task<IReadOnlyList<AdvancedPermissionEntry>> GetEntriesByNodesAndRoleAsync(
+        IEnumerable<Guid> nodeKeys,
+        string roleAlias,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets all raw permission entries for a specific node across all roles.
     /// Used by the Security Editor to show the full permission picture for a node.
     /// </summary>

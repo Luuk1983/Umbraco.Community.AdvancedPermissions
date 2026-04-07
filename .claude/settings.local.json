@@ -5,7 +5,10 @@
       "WebFetch(domain:github.com)",
       "Bash(npx tsc:*)",
       "Bash(npm run:*)",
-      "Bash(node -e \"const fs=require\\(''fs''\\); fs.writeFileSync\\(''C:/Users/LuukPeters/.claude/plans/noble-swimming-kettle-agent-aa6219f8496ddf9a0.md'', ''placeholder'', ''utf8''\\); console.log\\(''ok''\\);\")"
+      "Bash(node -e \"const fs=require\\(''fs''\\); fs.writeFileSync\\(''C:/Users/LuukPeters/.claude/plans/noble-swimming-kettle-agent-aa6219f8496ddf9a0.md'', ''placeholder'', ''utf8''\\); console.log\\(''ok''\\);\")",
+      "Bash(grep -r \"pagination\\\\|skip\\\\|take\" C:githubUmbracoVersionsv17srcUmbraco.Web.UI.Clientsrcpackagesuserusercollection --include=*.ts -l)",
+      "Bash(grep -r \"uui-pagination\\\\|\\\\.total\\\\|\\\\.current\" C:githubUmbracoVersionsv17srcUmbraco.Web.UI.Clientsrcpackages --include=*.ts -l)",
+      "Bash(grep -r \"uui-combobox\\\\|umb-user\\\\|user.*input\" C:/github/UmbracoVersions/v17/src/Umbraco.Web.UI.Client/src/packages/user --include=*.ts --include=*.html)"
     ]
   }
 }

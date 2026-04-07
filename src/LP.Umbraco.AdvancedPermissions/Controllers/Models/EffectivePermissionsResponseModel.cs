@@ -30,13 +30,16 @@ public sealed record EffectivePermissionItem(
 /// <param name="ContributingRole">The role alias that contributed.</param>
 /// <param name="State">The state contributed by this role: <c>Allow</c> or <c>Deny</c>.</param>
 /// <param name="IsExplicit">Whether this contribution is from an entry on the target node itself.</param>
-/// <param name="SourceNodeKey">The node where the entry was found, or <see langword="null"/> for group defaults.</param>
+/// <param name="SourceNodeKey">
+/// The node where the entry was found.
+/// <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> indicates a virtual-root (group default) entry.
+/// </param>
 /// <param name="SourceScope">The scope of the source entry, or <see langword="null"/> for group defaults.</param>
 /// <param name="IsFromGroupDefault">Whether this contribution comes from Umbraco group default permissions.</param>
 public sealed record ReasoningItem(
     string ContributingRole,
     string State,
     bool IsExplicit,
-    Guid? SourceNodeKey,
+    Guid SourceNodeKey,
     string? SourceScope,
     bool IsFromGroupDefault);

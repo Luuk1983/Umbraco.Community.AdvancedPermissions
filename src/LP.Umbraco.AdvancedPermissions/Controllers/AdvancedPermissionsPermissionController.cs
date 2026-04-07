@@ -20,7 +20,9 @@ public sealed class AdvancedPermissionsPermissionController(IAdvancedPermissionS
     /// Gets all stored permission entries for a specific node and role.
     /// </summary>
     /// <param name="cancellationToken">Token to support cancellation.</param>
-    /// <param name="nodeKey">The content node key, or <see langword="null"/> for root-level entries.</param>
+    /// <param name="nodeKey">
+    /// The content node key. Use <c>ffffffff-ffff-ffff-ffff-ffffffffffff</c> for virtual-root entries.
+    /// </param>
     /// <param name="roleAlias">The role alias to filter by.</param>
     /// <returns>The stored entries for the given node and role.</returns>
     [HttpGet("permissions")]
@@ -29,7 +31,7 @@ public sealed class AdvancedPermissionsPermissionController(IAdvancedPermissionS
     [EndpointSummary("Gets permission entries for a node and role.")]
     public async Task<IActionResult> GetPermissions(
         CancellationToken cancellationToken,
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias)
     {
         var entries = await permissionService.GetEntriesAsync(nodeKey, roleAlias, cancellationToken);
@@ -40,7 +42,9 @@ public sealed class AdvancedPermissionsPermissionController(IAdvancedPermissionS
     /// Gets all stored permission entries for a specific node across all roles.
     /// </summary>
     /// <param name="cancellationToken">Token to support cancellation.</param>
-    /// <param name="nodeKey">The content node key, or <see langword="null"/> for root-level entries.</param>
+    /// <param name="nodeKey">
+    /// The content node key. Use <c>ffffffff-ffff-ffff-ffff-ffffffffffff</c> for virtual-root entries.
+    /// </param>
     /// <returns>All stored entries for the given node.</returns>
     [HttpGet("permissions/by-node")]
     [MapToApiVersion("1.0")]
@@ -48,7 +52,7 @@ public sealed class AdvancedPermissionsPermissionController(IAdvancedPermissionS
     [EndpointSummary("Gets all permission entries for a node (all roles).")]
     public async Task<IActionResult> GetPermissionsByNode(
         CancellationToken cancellationToken,
-        Guid? nodeKey)
+        Guid nodeKey)
     {
         var entries = await permissionService.GetEntriesByNodeAsync(nodeKey, cancellationToken);
         return Ok(entries.Select(MapEntry).ToList());
@@ -115,7 +119,9 @@ public sealed class AdvancedPermissionsPermissionController(IAdvancedPermissionS
     /// Removes a specific permission entry, reverting it to the inherited state.
     /// </summary>
     /// <param name="cancellationToken">Token to support cancellation.</param>
-    /// <param name="nodeKey">The content node key, or <see langword="null"/> for root-level entries.</param>
+    /// <param name="nodeKey">
+    /// The content node key. Use <c>ffffffff-ffff-ffff-ffff-ffffffffffff</c> for virtual-root entries.
+    /// </param>
     /// <param name="roleAlias">The role alias.</param>
     /// <param name="verb">The permission verb to remove.</param>
     /// <returns><see cref="StatusCodes.Status200OK"/> on success.</returns>
@@ -125,7 +131,7 @@ public sealed class AdvancedPermissionsPermissionController(IAdvancedPermissionS
     [EndpointSummary("Removes a specific permission entry (reverts to inherit).")]
     public async Task<IActionResult> DeletePermission(
         CancellationToken cancellationToken,
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         string verb)
     {

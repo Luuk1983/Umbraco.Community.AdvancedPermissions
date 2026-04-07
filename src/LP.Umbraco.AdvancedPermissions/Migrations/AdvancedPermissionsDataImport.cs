@@ -95,7 +95,8 @@ public sealed class AdvancedPermissionsDataImport(
         // $everyone always gets Allow Read at the virtual root
         entries.Add(new AdvancedPermissionEntity
         {
-            NodeKey = null,
+            Id = Guid.NewGuid(),
+            NodeKey = AdvancedPermissionsConstants.VirtualRootNodeKey,
             RoleAlias = AdvancedPermissionsConstants.EveryoneRoleAlias,
             Verb = AdvancedPermissionsConstants.VerbRead,
             State = PermissionState.Allow,
@@ -133,7 +134,7 @@ public sealed class AdvancedPermissionsDataImport(
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Group defaults become root-level (<c>NodeKey = null</c>) Allow entries with
+    /// Group defaults become virtual-root (<c>NodeKey = VirtualRootNodeKey</c>) Allow entries with
     /// <see cref="PermissionScope.ThisNodeAndDescendants"/>, replicating the "fallback to defaults
     /// for any node with no explicit permissions" behaviour of the native system.
     /// </para>
@@ -151,12 +152,13 @@ public sealed class AdvancedPermissionsDataImport(
     {
         var defaultVerbs = group.Permissions.ToHashSet(StringComparer.Ordinal);
 
-        // Root-level Allow entries for each verb in the group's native defaults
+        // Virtual-root Allow entries for each verb in the group's native defaults
         foreach (var verb in defaultVerbs)
         {
             entries.Add(new AdvancedPermissionEntity
             {
-                NodeKey = null,
+                Id = Guid.NewGuid(),
+                NodeKey = AdvancedPermissionsConstants.VirtualRootNodeKey,
                 RoleAlias = group.Alias,
                 Verb = verb,
                 State = PermissionState.Allow,
@@ -180,6 +182,7 @@ public sealed class AdvancedPermissionsDataImport(
             {
                 entries.Add(new AdvancedPermissionEntity
                 {
+                    Id = Guid.NewGuid(),
                     NodeKey = nodeKey,
                     RoleAlias = group.Alias,
                     Verb = verb,
@@ -194,6 +197,7 @@ public sealed class AdvancedPermissionsDataImport(
             {
                 entries.Add(new AdvancedPermissionEntity
                 {
+                    Id = Guid.NewGuid(),
                     NodeKey = nodeKey,
                     RoleAlias = group.Alias,
                     Verb = verb,

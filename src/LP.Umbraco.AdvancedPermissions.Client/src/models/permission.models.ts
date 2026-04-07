@@ -4,10 +4,16 @@ export type PermissionState = 'Allow' | 'Deny';
 /** Scope of a single permission entry relative to the node it is set on. */
 export type PermissionScope = 'ThisNodeOnly' | 'ThisNodeAndDescendants' | 'DescendantsOnly';
 
+/**
+ * Sentinel GUID used as the NodeKey for virtual-root (default) permission entries.
+ * Replaces null to make the column non-nullable and eliminate the risk of accidental null matches.
+ */
+export const VIRTUAL_ROOT_NODE_KEY = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
+
 /** A stored permission entry returned from the API. */
 export interface PermissionEntry {
-  id: number;
-  nodeKey: string | null;
+  id: string;
+  nodeKey: string;
   roleAlias: string;
   verb: string;
   state: PermissionState;
@@ -35,7 +41,7 @@ export interface ReasoningStep {
   contributingRole: string;
   state: string;
   isExplicit: boolean;
-  sourceNodeKey: string | null;
+  sourceNodeKey: string;
   sourceScope: string | null;
   isFromGroupDefault: boolean;
 }

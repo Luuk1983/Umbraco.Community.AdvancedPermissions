@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.SqlServer
+namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.Sqlite
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -15,13 +15,12 @@ namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.SqlServer
                 name: "AdvancedPermission",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    NodeKey = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    RoleAlias = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    Verb = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    State = table.Column<int>(type: "int", nullable: false),
-                    Scope = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    NodeKey = table.Column<Guid>(type: "TEXT", nullable: false),
+                    RoleAlias = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
+                    Verb = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
+                    State = table.Column<int>(type: "INTEGER", nullable: false),
+                    Scope = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -47,8 +46,7 @@ namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.SqlServer
                 name: "IX_AdvancedPermission_Unique",
                 table: "AdvancedPermission",
                 columns: new[] { "NodeKey", "RoleAlias", "Verb", "Scope" },
-                unique: true,
-                filter: "[NodeKey] IS NOT NULL");
+                unique: true);
         }
 
         /// <inheritdoc />

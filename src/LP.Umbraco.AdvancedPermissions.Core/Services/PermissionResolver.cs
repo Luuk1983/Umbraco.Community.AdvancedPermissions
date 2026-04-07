@@ -1,3 +1,4 @@
+using LP.Umbraco.AdvancedPermissions.Core.Constants;
 using LP.Umbraco.AdvancedPermissions.Core.Interfaces;
 using LP.Umbraco.AdvancedPermissions.Core.Models;
 
@@ -22,8 +23,8 @@ namespace LP.Umbraco.AdvancedPermissions.Core.Services;
 /// it does not block the walk and does not apply to descendants.
 /// </para>
 /// <para>
-/// If no entry is found in the content path, root-level entries (<c>NodeKey = null</c>) are
-/// checked as a virtual-root fallback. These represent the role's default permissions.
+/// If no entry is found in the content path, virtual-root entries (<c>NodeKey = VirtualRootNodeKey</c>) are
+/// checked as a fallback. These represent the role's default permissions.
 /// </para>
 /// <para>
 /// After collecting one result per role, the priority order determines the final outcome:
@@ -72,7 +73,7 @@ public sealed class PermissionResolver : IPermissionResolver
 
     /// <summary>
     /// Resolves the permission for a single role on the given verb by walking the path
-    /// from target to root, then falling back to root-level entries (<c>NodeKey = null</c>).
+    /// from target to root, then falling back to virtual-root entries (<c>NodeKey = VirtualRootNodeKey</c>).
     /// </summary>
     /// <param name="context">The full resolution context.</param>
     /// <param name="roleAlias">The role to resolve for.</param>
@@ -119,10 +120,10 @@ public sealed class PermissionResolver : IPermissionResolver
             }
         }
 
-        // No entry found in the content path. Check for root-level entries (NodeKey = null).
+        // No entry found in the content path. Check for virtual-root entries (NodeKey = VirtualRootNodeKey).
         // These act as the virtual-root defaults with implicit (inherited) semantics.
         var rootEntry = context.StoredEntries
-            .FirstOrDefault(e => e.NodeKey == null
+            .FirstOrDefault(e => e.NodeKey == AdvancedPermissionsConstants.VirtualRootNodeKey
                               && string.Equals(e.RoleAlias, roleAlias, StringComparison.Ordinal)
                               && string.Equals(e.Verb, verb, StringComparison.Ordinal));
 
@@ -131,8 +132,8 @@ public sealed class PermissionResolver : IPermissionResolver
             return new RolePermissionResult(
                 RoleAlias: roleAlias,
                 State: rootEntry.State,
-                IsExplicit: false,     // Root-level entries are always implicit (virtual root)
-                SourceNodeKey: null,   // null = virtual root
+                IsExplicit: false,     // Virtual-root entries are always implicit
+                SourceNodeKey: AdvancedPermissionsConstants.VirtualRootNodeKey,
                 SourceScope: rootEntry.Scope);
         }
 
@@ -248,7 +249,7 @@ public sealed class PermissionResolver : IPermissionResolver
                 IsExplicit: r.IsExplicit,
                 SourceNodeKey: r.SourceNodeKey,
                 SourceScope: r.SourceScope,
-                IsFromGroupDefault: r.SourceNodeKey is null))
+                IsFromGroupDefault: r.SourceNodeKey == AdvancedPermissionsConstants.VirtualRootNodeKey))
             .ToList();
     }
 }

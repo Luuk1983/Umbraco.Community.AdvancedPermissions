@@ -47,12 +47,14 @@ public interface IAdvancedPermissionService
     /// <summary>
     /// Gets the raw permission entries for a specific node and role.
     /// </summary>
-    /// <param name="nodeKey">The content node key, or <see langword="null"/> for root-level entries.</param>
+    /// <param name="nodeKey">
+    /// The content node key. Use <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> for virtual-root entries.
+    /// </param>
     /// <param name="roleAlias">The role alias.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <returns>The stored entries for the node and role.</returns>
     Task<IReadOnlyList<AdvancedPermissionEntry>> GetEntriesAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         CancellationToken cancellationToken = default);
 
@@ -60,12 +62,14 @@ public interface IAdvancedPermissionService
     /// Saves permission entries for a node and role, replacing any existing entries.
     /// Invalidates the relevant cache entries.
     /// </summary>
-    /// <param name="nodeKey">The content node key, or <see langword="null"/> for root-level entries.</param>
+    /// <param name="nodeKey">
+    /// The content node key. Use <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> for virtual-root entries.
+    /// </param>
     /// <param name="roleAlias">The role alias.</param>
     /// <param name="entries">The new entries to store.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     Task SaveEntriesAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         IEnumerable<(string Verb, PermissionState State, PermissionScope Scope)> entries,
         CancellationToken cancellationToken = default);
@@ -87,11 +91,13 @@ public interface IAdvancedPermissionService
     /// Gets all raw permission entries for a specific node across all roles.
     /// Used by the Security Editor to show the full permission picture for a node.
     /// </summary>
-    /// <param name="nodeKey">The content node key, or <see langword="null"/> for root-level entries.</param>
+    /// <param name="nodeKey">
+    /// The content node key. Use <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> for virtual-root entries.
+    /// </param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <returns>All stored entries for the node.</returns>
     Task<IReadOnlyList<AdvancedPermissionEntry>> GetEntriesByNodeAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -118,12 +124,14 @@ public interface IAdvancedPermissionService
     /// Removes a specific permission entry (reverts it to inherit).
     /// Invalidates the relevant cache entries.
     /// </summary>
-    /// <param name="nodeKey">The content node key, or <see langword="null"/> for root-level entries.</param>
+    /// <param name="nodeKey">
+    /// The content node key. Use <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> for virtual-root entries.
+    /// </param>
     /// <param name="roleAlias">The role alias.</param>
     /// <param name="verb">The permission verb to remove.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     Task DeleteEntryAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         string verb,
         CancellationToken cancellationToken = default);

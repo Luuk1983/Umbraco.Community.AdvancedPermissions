@@ -32,15 +32,15 @@ public class PermissionResolverTests
             StoredEntries: entries);
     }
 
-    /// <summary>Creates an entry with a given id (default 1).</summary>
+    /// <summary>Creates an entry with a generated id.</summary>
     private static AdvancedPermissionEntry Entry(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         string verb,
         PermissionState state,
         PermissionScope scope,
-        int id = 1)
-        => new(id, nodeKey, roleAlias, verb, state, scope);
+        Guid? id = null)
+        => new(id ?? Guid.NewGuid(), nodeKey, roleAlias, verb, state, scope);
 
     // ───────────────────────────────────────────────────────────────────────
     // Single role, single entry — all three scopes
@@ -215,8 +215,8 @@ public class PermissionResolverTests
         var newsOverview = Guid.NewGuid();
         var newsArticle = Guid.NewGuid();
 
-        var denyOnOverview = Entry(newsOverview, "editors", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, id: 1);
-        var allowDescendants = Entry(newsOverview, "editors", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly, id: 2);
+        var denyOnOverview = Entry(newsOverview, "editors", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+        var allowDescendants = Entry(newsOverview, "editors", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly);
 
         var roles = new[] { "editors" };
 
@@ -259,9 +259,9 @@ public class PermissionResolverTests
         var child = Guid.NewGuid();
 
         // Parent denies Read for all descendants
-        var parentDeny = Entry(parent, "editors", AdvancedPermissionsConstants.VerbRead, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, id: 1);
+        var parentDeny = Entry(parent, "editors", AdvancedPermissionsConstants.VerbRead, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants);
         // Child explicitly allows Read
-        var childAllow = Entry(child, "editors", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, id: 2);
+        var childAllow = Entry(child, "editors", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: child,
@@ -286,8 +286,8 @@ public class PermissionResolverTests
         var root = Guid.NewGuid();
         var target = Guid.NewGuid();
 
-        var denyFromEveryone = Entry(target, "$everyone", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, id: 1);
-        var allowFromEditors = Entry(target, "editors", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly, id: 2);
+        var denyFromEveryone = Entry(target, "$everyone", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+        var allowFromEditors = Entry(target, "editors", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: target,
@@ -313,10 +313,10 @@ public class PermissionResolverTests
         var child = Guid.NewGuid();
 
         // Role A denies Read via inheritance from parent
-        var denyFromRoleA = Entry(parent, "roleA", AdvancedPermissionsConstants.VerbRead, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, id: 1);
+        var denyFromRoleA = Entry(parent, "roleA", AdvancedPermissionsConstants.VerbRead, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants);
 
-        // Role B allows Read via root-level entry (null NodeKey = virtual root default)
-        var roleBDefault = Entry(null, "roleB", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 2);
+        // Role B allows Read via virtual-root entry (VirtualRootNodeKey = default for all nodes)
+        var roleBDefault = Entry(AdvancedPermissionsConstants.VirtualRootNodeKey, "roleB", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: child,
@@ -326,17 +326,17 @@ public class PermissionResolverTests
 
         var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbRead);
 
-        // Implicit Deny from roleA beats Implicit Allow from roleB's root-level default
+        // Implicit Deny from roleA beats Implicit Allow from roleB's virtual-root default
         Assert.False(result.IsAllowed);
         Assert.False(result.IsExplicit);
     }
 
     // ───────────────────────────────────────────────────────────────────────
-    // Root-level entries (virtual root defaults, NodeKey = null)
+    // Virtual-root entries (default permissions, NodeKey = VirtualRootNodeKey)
     // ───────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Root-level entries (NodeKey = null) act as implicit Allow entries at the virtual root.
+    /// Virtual-root entries (NodeKey = VirtualRootNodeKey) act as implicit Allow entries.
     /// They provide an allow when no path entry overrides them.
     /// </summary>
     [Fact]
@@ -345,9 +345,9 @@ public class PermissionResolverTests
         var root = Guid.NewGuid();
         var target = Guid.NewGuid();
 
-        // Root-level entries (null NodeKey) act as virtual root defaults
-        var editorReadDefault = Entry(null, "editors", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 1);
-        var editorCreateDefault = Entry(null, "editors", AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 2);
+        // Virtual-root entries (VirtualRootNodeKey) act as global defaults
+        var editorReadDefault = Entry(AdvancedPermissionsConstants.VirtualRootNodeKey, "editors", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
+        var editorCreateDefault = Entry(AdvancedPermissionsConstants.VirtualRootNodeKey, "editors", AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: target,
@@ -357,10 +357,10 @@ public class PermissionResolverTests
 
         var readResult = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbRead);
         Assert.True(readResult.IsAllowed);
-        Assert.False(readResult.IsExplicit); // from root-level entry = implicit
+        Assert.False(readResult.IsExplicit); // from virtual-root entry = implicit
 
         var deleteResult = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
-        Assert.False(deleteResult.IsAllowed); // no root-level entry for Delete, no path entry → deny
+        Assert.False(deleteResult.IsAllowed); // no virtual-root entry for Delete, no path entry → deny
     }
 
     // ───────────────────────────────────────────────────────────────────────
@@ -394,7 +394,7 @@ public class PermissionResolverTests
     // ───────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// The Everyone role root-level entry for Read should give implicit allow on any node.
+    /// The Everyone role virtual-root entry for Read should give implicit allow on any node.
     /// </summary>
     [Fact]
     public void Resolve_EveryoneDefaultRead_IsImplicitAllow()
@@ -402,8 +402,8 @@ public class PermissionResolverTests
         var root = Guid.NewGuid();
         var target = Guid.NewGuid();
 
-        // Root-level entry (null NodeKey) for $everyone acts as the virtual root default
-        var everyoneDefault = Entry(null, AdvancedPermissionsConstants.EveryoneRoleAlias, AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 1);
+        // Virtual-root entry (VirtualRootNodeKey) for $everyone acts as the global default
+        var everyoneDefault = Entry(AdvancedPermissionsConstants.VirtualRootNodeKey, AdvancedPermissionsConstants.EveryoneRoleAlias, AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: target,
@@ -414,7 +414,7 @@ public class PermissionResolverTests
         var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbRead);
 
         Assert.True(result.IsAllowed);
-        Assert.False(result.IsExplicit); // from root-level entry = implicit
+        Assert.False(result.IsExplicit); // from virtual-root entry = implicit
     }
 
     /// <summary>
@@ -429,9 +429,9 @@ public class PermissionResolverTests
         var child = Guid.NewGuid();
 
         // Everyone denies Delete at parent (ThisNodeAndDescendants) → implicit at child
-        var everyoneDeny = Entry(parent, "$everyone", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, id: 1);
+        var everyoneDeny = Entry(parent, "$everyone", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants);
         // Editors explicitly allow Delete on child
-        var editorsAllow = Entry(child, "editors", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly, id: 2);
+        var editorsAllow = Entry(child, "editors", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: child,
@@ -488,9 +488,9 @@ public class PermissionResolverTests
         var root = Guid.NewGuid();
         var target = Guid.NewGuid();
 
-        // Root-level entries (null NodeKey) act as virtual root defaults for editors
-        var editorReadDefault = Entry(null, "editors", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 1);
-        var editorCreateDefault = Entry(null, "editors", AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 2);
+        // Virtual-root entries (VirtualRootNodeKey) act as global defaults for editors
+        var editorReadDefault = Entry(AdvancedPermissionsConstants.VirtualRootNodeKey, "editors", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
+        var editorCreateDefault = Entry(AdvancedPermissionsConstants.VirtualRootNodeKey, "editors", AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: target,
@@ -532,8 +532,8 @@ public class PermissionResolverTests
     }
 
     /// <summary>
-    /// When a root-level entry (null NodeKey) provides the allow, the reasoning should mark it
-    /// as from a group default (IsFromGroupDefault = true, SourceNodeKey = null).
+    /// When a virtual-root entry (VirtualRootNodeKey) provides the allow, the reasoning should mark it
+    /// as from a group default (IsFromGroupDefault = true, SourceNodeKey = VirtualRootNodeKey).
     /// </summary>
     [Fact]
     public void Resolve_GroupDefault_ReasoningIsMarkedAsFromGroupDefault()
@@ -541,8 +541,8 @@ public class PermissionResolverTests
         var root = Guid.NewGuid();
         var target = Guid.NewGuid();
 
-        // Root-level entry (null NodeKey) acts as virtual root default
-        var editorDefault = Entry(null, "editors", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, id: 1);
+        // Virtual-root entry (VirtualRootNodeKey) acts as global default
+        var editorDefault = Entry(AdvancedPermissionsConstants.VirtualRootNodeKey, "editors", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: target,
@@ -554,7 +554,7 @@ public class PermissionResolverTests
 
         Assert.Single(result.Reasoning);
         Assert.True(result.Reasoning[0].IsFromGroupDefault);
-        Assert.Null(result.Reasoning[0].SourceNodeKey); // null = virtual root
+        Assert.Equal(AdvancedPermissionsConstants.VirtualRootNodeKey, result.Reasoning[0].SourceNodeKey);
     }
 
     // ───────────────────────────────────────────────────────────────────────
@@ -570,8 +570,8 @@ public class PermissionResolverTests
         var root = Guid.NewGuid();
         var target = Guid.NewGuid();
 
-        var adminAllow = Entry(target, "admins", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly, id: 1);
-        var everyoneDeny = Entry(target, "$everyone", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, id: 2);
+        var adminAllow = Entry(target, "admins", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly);
+        var everyoneDeny = Entry(target, "$everyone", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
 
         var ctx = new PermissionResolutionContext(
             TargetNodeKey: target,

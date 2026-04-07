@@ -18,7 +18,7 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
 {
     /// <inheritdoc />
     public async Task<IReadOnlyList<AdvancedPermissionEntry>> GetByNodeAndRoleAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         CancellationToken cancellationToken = default)
     {
@@ -35,7 +35,7 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<AdvancedPermissionEntry>> GetByNodeAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         CancellationToken cancellationToken = default)
     {
         await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -69,7 +69,7 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
         string roleAlias,
         CancellationToken cancellationToken = default)
     {
-        var keyList = nodeKeys.Select(k => (Guid?)k).ToList();
+        var keyList = nodeKeys.ToList();
 
         await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
@@ -84,7 +84,7 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
     /// <inheritdoc />
     public async Task<IReadOnlyList<AdvancedPermissionEntry>> GetByRolesAndNodesAsync(
         IEnumerable<string> roleAliases,
-        IEnumerable<Guid?> nodeKeys,
+        IEnumerable<Guid> nodeKeys,
         CancellationToken cancellationToken = default)
     {
         var roleList = roleAliases.ToList();
@@ -102,7 +102,7 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
 
     /// <inheritdoc />
     public async Task SaveAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         IEnumerable<(string Verb, PermissionState State, PermissionScope Scope)> entries,
         CancellationToken cancellationToken = default)
@@ -123,6 +123,7 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
             {
                 db.Permissions.Add(new AdvancedPermissionEntity
                 {
+                    Id = Guid.NewGuid(),
                     NodeKey = nodeKey,
                     RoleAlias = roleAlias,
                     Verb = verb,
@@ -137,7 +138,7 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
 
     /// <inheritdoc />
     public async Task DeleteAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         string verb,
         CancellationToken cancellationToken = default)

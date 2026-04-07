@@ -80,9 +80,10 @@ export async function getTreeChildren(parentKey: string, roleAlias: string, sign
 /**
  * Saves (replaces) all permission entries for a specific node and role.
  * Pass an empty `entries` array to clear all entries and revert to inherited behaviour.
+ * Use VIRTUAL_ROOT_NODE_KEY for virtual-root (default) entries.
  */
 export async function savePermissions(
-  nodeKey: string | null,
+  nodeKey: string,
   roleAlias: string,
   entries: Array<{ verb: string; state: PermissionState; scope: PermissionScope }>,
 ): Promise<void> {
@@ -92,10 +93,9 @@ export async function savePermissions(
   });
 }
 
-/** Returns stored permission entries for a node+role combination. */
-export async function getPermissions(nodeKey: string | null, roleAlias: string, signal?: AbortSignal): Promise<PermissionEntry[]> {
-  const keyParam = nodeKey ? `nodeKey=${nodeKey}&` : '';
-  return (await apiFetch(`/permissions?${keyParam}roleAlias=${encodeURIComponent(roleAlias)}`, withSignal(signal))).json() as Promise<PermissionEntry[]>;
+/** Returns stored permission entries for a node+role combination. Use VIRTUAL_ROOT_NODE_KEY for virtual-root entries. */
+export async function getPermissions(nodeKey: string, roleAlias: string, signal?: AbortSignal): Promise<PermissionEntry[]> {
+  return (await apiFetch(`/permissions?nodeKey=${nodeKey}&roleAlias=${encodeURIComponent(roleAlias)}`, withSignal(signal))).json() as Promise<PermissionEntry[]>;
 }
 
 /** Resolves effective permissions for a user at a content node. */

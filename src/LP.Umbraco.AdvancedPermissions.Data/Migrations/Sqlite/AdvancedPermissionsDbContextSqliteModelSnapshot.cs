@@ -19,12 +19,11 @@ namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.Sqlite
 
             modelBuilder.Entity("LP.Umbraco.AdvancedPermissions.Data.Entities.AdvancedPermissionEntity", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT")
                         .HasColumnName("Id");
 
-                    b.Property<Guid?>("NodeKey")
+                    b.Property<Guid>("NodeKey")
                         .HasColumnType("TEXT")
                         .HasColumnName("NodeKey");
 

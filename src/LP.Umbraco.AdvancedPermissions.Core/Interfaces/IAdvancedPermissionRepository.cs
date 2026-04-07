@@ -10,23 +10,27 @@ public interface IAdvancedPermissionRepository
     /// <summary>
     /// Gets all permission entries for a specific node and role.
     /// </summary>
-    /// <param name="nodeKey">The content node key, or <see langword="null"/> for root-level entries.</param>
+    /// <param name="nodeKey">
+    /// The content node key. Use <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> for virtual-root entries.
+    /// </param>
     /// <param name="roleAlias">The role alias to filter by.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <returns>All entries matching the node and role.</returns>
     Task<IReadOnlyList<AdvancedPermissionEntry>> GetByNodeAndRoleAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets all permission entries for a specific node across all roles.
     /// </summary>
-    /// <param name="nodeKey">The content node key, or <see langword="null"/> for root-level entries.</param>
+    /// <param name="nodeKey">
+    /// The content node key. Use <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> for virtual-root entries.
+    /// </param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <returns>All entries for the given node.</returns>
     Task<IReadOnlyList<AdvancedPermissionEntry>> GetByNodeAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -45,12 +49,14 @@ public interface IAdvancedPermissionRepository
     /// Used for batch resolution (e.g., checking permissions for many nodes in one query).
     /// </summary>
     /// <param name="roleAliases">The role aliases to include.</param>
-    /// <param name="nodeKeys">The node keys to include. Pass <see langword="null"/> items to include root entries.</param>
+    /// <param name="nodeKeys">
+    /// The node keys to include. Include <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> to include virtual-root entries.
+    /// </param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <returns>All matching entries.</returns>
     Task<IReadOnlyList<AdvancedPermissionEntry>> GetByRolesAndNodesAsync(
         IEnumerable<string> roleAliases,
-        IEnumerable<Guid?> nodeKeys,
+        IEnumerable<Guid> nodeKeys,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -69,14 +75,16 @@ public interface IAdvancedPermissionRepository
     /// <summary>
     /// Saves permission entries for a node and role, replacing any existing entries for that combination.
     /// </summary>
-    /// <param name="nodeKey">The content node key, or <see langword="null"/> for root-level entries.</param>
+    /// <param name="nodeKey">
+    /// The content node key. Use <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> for virtual-root entries.
+    /// </param>
     /// <param name="roleAlias">The role alias.</param>
     /// <param name="entries">
     /// The new entries to store. Pass an empty collection to remove all entries (revert to inherit).
     /// </param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     Task SaveAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         IEnumerable<(string Verb, PermissionState State, PermissionScope Scope)> entries,
         CancellationToken cancellationToken = default);
@@ -84,12 +92,14 @@ public interface IAdvancedPermissionRepository
     /// <summary>
     /// Removes a specific permission entry, reverting it to the inherited/default state.
     /// </summary>
-    /// <param name="nodeKey">The content node key, or <see langword="null"/> for root-level entries.</param>
+    /// <param name="nodeKey">
+    /// The content node key. Use <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> for virtual-root entries.
+    /// </param>
     /// <param name="roleAlias">The role alias.</param>
     /// <param name="verb">The permission verb to remove.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     Task DeleteAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         string verb,
         CancellationToken cancellationToken = default);

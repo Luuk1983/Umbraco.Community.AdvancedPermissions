@@ -69,7 +69,7 @@ public sealed class AdvancedPermissionService(
 
     /// <inheritdoc />
     public Task<IReadOnlyList<AdvancedPermissionEntry>> GetEntriesAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         CancellationToken cancellationToken = default) =>
         repository.GetByNodeAndRoleAsync(nodeKey, roleAlias, cancellationToken);
@@ -83,7 +83,7 @@ public sealed class AdvancedPermissionService(
 
     /// <inheritdoc />
     public Task<IReadOnlyList<AdvancedPermissionEntry>> GetEntriesByNodeAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         CancellationToken cancellationToken = default) =>
         repository.GetByNodeAsync(nodeKey, cancellationToken);
 
@@ -112,7 +112,7 @@ public sealed class AdvancedPermissionService(
 
     /// <inheritdoc />
     public async Task SaveEntriesAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         IEnumerable<(string Verb, PermissionState State, PermissionScope Scope)> entries,
         CancellationToken cancellationToken = default)
@@ -126,7 +126,7 @@ public sealed class AdvancedPermissionService(
 
     /// <inheritdoc />
     public async Task DeleteEntryAsync(
-        Guid? nodeKey,
+        Guid nodeKey,
         string roleAlias,
         string verb,
         CancellationToken cancellationToken = default)
@@ -161,7 +161,7 @@ public sealed class AdvancedPermissionService(
         roleAliases.AddRange(groups.Select(g => g.Alias));
         roleAliases.Add(AdvancedPermissionsConstants.EveryoneRoleAlias);
 
-        // Load stored entries (including root-level null-NodeKey entries which act as defaults)
+        // Load stored entries (including virtual-root entries which act as global defaults)
         var storedEntries = await GetEntriesForRolesAndPathAsync(roleAliases, pathFromRoot, cancellationToken);
 
         return new PermissionResolutionContext(
@@ -184,10 +184,10 @@ public sealed class AdvancedPermissionService(
         IReadOnlyList<Guid> pathFromRoot,
         CancellationToken cancellationToken)
     {
-        // Build a set of node keys that are relevant (path + null for root-level entries)
-        var pathSet = new HashSet<Guid?>(pathFromRoot.Select(k => (Guid?)k))
+        // Build a set of node keys that are relevant (path + VirtualRootNodeKey for global default entries)
+        var pathSet = new HashSet<Guid>(pathFromRoot)
         {
-            null, // include root-level (null NodeKey) entries
+            AdvancedPermissionsConstants.VirtualRootNodeKey, // include virtual-root entries
         };
 
         var result = new List<AdvancedPermissionEntry>();

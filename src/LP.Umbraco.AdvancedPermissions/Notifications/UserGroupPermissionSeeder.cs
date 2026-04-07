@@ -46,11 +46,12 @@ public sealed class UserGroupPermissionSeeder(
                     continue;
                 }
 
-                // New group — seed root entries from native group permissions
+                // New group — seed virtual-root entries from native group permissions
                 var entriesToAdd = group.Permissions
                     .Select(verb => new AdvancedPermissionEntity
                     {
-                        NodeKey = null,
+                        Id = Guid.NewGuid(),
+                        NodeKey = AdvancedPermissionsConstants.VirtualRootNodeKey,
                         RoleAlias = group.Alias,
                         Verb = verb,
                         State = PermissionState.Allow,

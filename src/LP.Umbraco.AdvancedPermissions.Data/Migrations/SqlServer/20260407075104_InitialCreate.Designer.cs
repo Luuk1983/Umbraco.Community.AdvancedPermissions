@@ -3,52 +3,56 @@ using System;
 using LP.Umbraco.AdvancedPermissions.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.Sqlite
+namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.SqlServer
 {
-    [DbContext(typeof(AdvancedPermissionsDbContextSqlite))]
-    [Migration("20260405195528_InitialCreate")]
+    [DbContext(typeof(AdvancedPermissionsDbContextSqlServer))]
+    [Migration("20260407075104_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("LP.Umbraco.AdvancedPermissions.Data.Entities.AdvancedPermissionEntity", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
                         .HasColumnName("Id");
 
-                    b.Property<Guid?>("NodeKey")
-                        .HasColumnType("TEXT")
+                    b.Property<Guid>("NodeKey")
+                        .HasColumnType("uniqueidentifier")
                         .HasColumnName("NodeKey");
 
                     b.Property<string>("RoleAlias")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("RoleAlias");
 
                     b.Property<int>("Scope")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("Scope");
 
                     b.Property<int>("State")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("State");
 
                     b.Property<string>("Verb")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("Verb");
 
                     b.HasKey("Id");

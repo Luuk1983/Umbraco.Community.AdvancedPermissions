@@ -220,12 +220,13 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Verifies that GetByNodeAsync with a null key returns root-level entries and not node-specific ones.
+    /// Verifies that GetByNodeAsync with the VirtualRootNodeKey returns virtual-root entries only,
+    /// not node-specific ones.
     /// </summary>
     [Fact]
-    public async Task GetByNodeAsync_WithNullNodeKey_ReturnsRootLevelEntries()
+    public async Task GetByNodeAsync_WithVirtualRootKey_ReturnsVirtualRootEntries()
     {
-        await _repository.SaveAsync(null, AdvancedPermissionsConstants.EveryoneRoleAlias,
+        await _repository.SaveAsync(AdvancedPermissionsConstants.VirtualRootNodeKey, AdvancedPermissionsConstants.EveryoneRoleAlias,
         [
             (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
         ]);
@@ -235,7 +236,7 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
             (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
         ]);
 
-        var results = await _repository.GetByNodeAsync(null);
+        var results = await _repository.GetByNodeAsync(AdvancedPermissionsConstants.VirtualRootNodeKey);
 
         Assert.Single(results);
         Assert.Equal(AdvancedPermissionsConstants.EveryoneRoleAlias, results[0].RoleAlias);
@@ -337,14 +338,14 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Verifies that GetByRolesAndNodesAsync includes root-level entries when null is in the node key list.
+    /// Verifies that GetByRolesAndNodesAsync includes virtual-root entries when VirtualRootNodeKey is in the node key list.
     /// </summary>
     [Fact]
-    public async Task GetByRolesAndNodesAsync_WithNullNodeKey_IncludesRootEntries()
+    public async Task GetByRolesAndNodesAsync_WithVirtualRootKey_IncludesVirtualRootEntries()
     {
         var node1 = Guid.NewGuid();
 
-        await _repository.SaveAsync(null, "editors",
+        await _repository.SaveAsync(AdvancedPermissionsConstants.VirtualRootNodeKey, "editors",
         [
             (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
         ]);
@@ -354,7 +355,7 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
             (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
         ]);
 
-        var results = await _repository.GetByRolesAndNodesAsync(["editors"], [null, node1]);
+        var results = await _repository.GetByRolesAndNodesAsync(["editors"], [AdvancedPermissionsConstants.VirtualRootNodeKey, node1]);
 
         Assert.Equal(2, results.Count);
     }
@@ -502,7 +503,7 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         Assert.Single(results);
         var entry = results[0];
-        Assert.True(entry.Id > 0);
+        Assert.NotEqual(Guid.Empty, entry.Id);
         Assert.Equal(nodeKey, entry.NodeKey);
         Assert.Equal(role, entry.RoleAlias);
         Assert.Equal(AdvancedPermissionsConstants.VerbPublish, entry.Verb);

@@ -11,6 +11,7 @@ import type {
   PermissionState,
   PermissionScope,
 } from '../models/permission.models.js';
+import { VIRTUAL_ROOT_NODE_KEY } from '../models/permission.models.js';
 import { getRoles, getVerbs, getTreeRoot, getTreeChildren, getPermissions, savePermissions } from '../api/advanced-permissions.api.js';
 import { clearEffectivePermissionCache } from '../conditions/document-user-permission.condition.js';
 
@@ -179,7 +180,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     this._treeNodes = [];
     try {
       const [virtualEntries, nodes] = await Promise.all([
-        getPermissions(null, this._selectedRole, controller.signal),
+        getPermissions(VIRTUAL_ROOT_NODE_KEY, this._selectedRole, controller.signal),
         getTreeRoot(this._selectedRole, controller.signal),
       ]);
       if (controller.signal.aborted) return;
@@ -219,7 +220,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
 
     try {
       // Reload virtual root entries
-      const virtualEntries = await getPermissions(null, this._selectedRole, controller.signal);
+      const virtualEntries = await getPermissions(VIRTUAL_ROOT_NODE_KEY, this._selectedRole, controller.signal);
       if (controller.signal.aborted) return;
 
       // Clear entries on all existing nodes and reload their entries
@@ -432,11 +433,11 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
         }
 
         const allEntries = [...byVerb.values()].flat();
-        const apiKey = nodeKey === 'virtual-root' ? null : nodeKey;
+        const apiKey = nodeKey === 'virtual-root' ? VIRTUAL_ROOT_NODE_KEY : nodeKey;
         await savePermissions(apiKey, this._selectedRole, allEntries);
 
         const saved: PermissionEntry[] = allEntries.map((e, idx) => ({
-          id: idx,
+          id: String(idx),
           nodeKey: apiKey,
           roleAlias: this._selectedRole,
           verb: e.verb,

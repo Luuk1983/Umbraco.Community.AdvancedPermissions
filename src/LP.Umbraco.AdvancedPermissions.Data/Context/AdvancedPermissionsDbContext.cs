@@ -61,12 +61,12 @@ public class AdvancedPermissionsDbContext : DbContext
 
             entity.Property(e => e.Id)
                 .HasColumnName("Id")
-                .ValueGeneratedOnAdd()
+                .ValueGeneratedNever()
                 .IsRequired();
 
             entity.Property(e => e.NodeKey)
                 .HasColumnName("NodeKey")
-                .IsRequired(false);
+                .IsRequired();
 
             entity.Property(e => e.RoleAlias)
                 .HasColumnName("RoleAlias")

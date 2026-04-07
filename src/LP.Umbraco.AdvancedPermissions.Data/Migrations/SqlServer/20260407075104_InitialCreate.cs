@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.Sqlite
+namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.SqlServer
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -15,13 +15,12 @@ namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.Sqlite
                 name: "AdvancedPermission",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    NodeKey = table.Column<Guid>(type: "TEXT", nullable: true),
-                    RoleAlias = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
-                    Verb = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
-                    State = table.Column<int>(type: "INTEGER", nullable: false),
-                    Scope = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    NodeKey = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RoleAlias = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    Verb = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    State = table.Column<int>(type: "int", nullable: false),
+                    Scope = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {

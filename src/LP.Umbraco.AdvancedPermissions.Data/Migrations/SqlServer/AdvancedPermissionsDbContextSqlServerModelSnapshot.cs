@@ -24,14 +24,11 @@ namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.SqlServer
 
             modelBuilder.Entity("LP.Umbraco.AdvancedPermissions.Data.Entities.AdvancedPermissionEntity", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
                         .HasColumnName("Id");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<Guid?>("NodeKey")
+                    b.Property<Guid>("NodeKey")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("NodeKey");
 
@@ -68,8 +65,7 @@ namespace LP.Umbraco.AdvancedPermissions.Data.Migrations.SqlServer
 
                     b.HasIndex("NodeKey", "RoleAlias", "Verb", "Scope")
                         .IsUnique()
-                        .HasDatabaseName("IX_AdvancedPermission_Unique")
-                        .HasFilter("[NodeKey] IS NOT NULL");
+                        .HasDatabaseName("IX_AdvancedPermission_Unique");
 
                     b.ToTable("AdvancedPermission", (string)null);
                 });

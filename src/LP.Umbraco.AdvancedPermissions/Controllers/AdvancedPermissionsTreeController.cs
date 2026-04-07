@@ -80,8 +80,7 @@ public sealed class AdvancedPermissionsTreeController(
 
         // Group entries by node key for fast lookup
         var entriesByNode = allEntries
-            .Where(e => e.NodeKey.HasValue)
-            .GroupBy(e => e.NodeKey!.Value)
+            .GroupBy(e => e.NodeKey)
             .ToDictionary(g => g.Key, g => g.Select(MapEntry).ToList());
 
         var result = new List<TreeNodeResponseModel>(nodeList.Count);

@@ -6,6 +6,13 @@ namespace LP.Umbraco.AdvancedPermissions.Core.Constants;
 public static class AdvancedPermissionsConstants
 {
     /// <summary>
+    /// A sentinel <see cref="Guid"/> used as the <c>NodeKey</c> for virtual-root (default) permission entries.
+    /// Replaces <see langword="null"/> to make the column non-nullable and eliminate the risk of accidental null matches.
+    /// All-ones is visually distinct and will never collide with a real Umbraco content node key (UUIDv4).
+    /// </summary>
+    public static readonly Guid VirtualRootNodeKey = Guid.Parse("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF");
+
+    /// <summary>
     /// The alias used to represent the virtual "Everyone" role.
     /// This role is implicitly assigned to every user regardless of their group membership.
     /// </summary>

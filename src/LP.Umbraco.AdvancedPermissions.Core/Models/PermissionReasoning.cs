@@ -11,7 +11,8 @@ namespace LP.Umbraco.AdvancedPermissions.Core.Models;
 /// <see langword="false"/> if inherited from an ancestor or group defaults.
 /// </param>
 /// <param name="SourceNodeKey">
-/// The node key where the permission was set, or <see langword="null"/> for group defaults (virtual root).
+/// The node key where the permission was set.
+/// <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> indicates a virtual-root (group default) entry.
 /// </param>
 /// <param name="SourceScope">
 /// The scope of the permission entry, or <see langword="null"/> for group defaults.
@@ -24,6 +25,6 @@ public sealed record PermissionReasoning(
     string ContributingRole,
     PermissionState State,
     bool IsExplicit,
-    Guid? SourceNodeKey,
+    Guid SourceNodeKey,
     PermissionScope? SourceScope,
     bool IsFromGroupDefault);

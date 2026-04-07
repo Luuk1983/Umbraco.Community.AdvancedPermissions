@@ -32,14 +32,21 @@ export default {
     collapse: 'Zuklappen',
 
     // ── Berechtigungsdialog ───────────────────────────────────────────────
-    dialogHeadline: (verb: string) => `Berechtigung festlegen: ${verb}`,
-    dialogNodeLabel: 'Knoten',
-    thisNodeSection: 'Dieser Knoten',
+    dialogHeadline: (verb: string, nodeName: string) => `${verb}-Berechtigung f\u00fcr \u201e${nodeName}\u201c festlegen`,
     descendantsSection: 'Untergeordnete Knoten',
-    sameAsNode: 'Wie Knoten',
+    dialogNodeHelp: 'Legen Sie die Berechtigung f\u00fcr diesen spezifischen Inhaltsknoten fest.',
+    dialogDescHelp: 'Optional f\u00fcr untergeordnete Knoten \u00fcberschreiben. Leer lassen, um denselben Status wie dieser Knoten anzuwenden.',
     virtualRootInherit: 'Nicht festgelegt (Eintrag entfernen)',
     virtualRootAllow: 'Erlauben (gesamter Inhalt)',
     virtualRootDeny: 'Verweigern (gesamter Inhalt)',
+    dialogPreview: 'Vorschau',
+    previewBothInherit: 'Keine Berechtigung festgelegt. Erbt vom \u00fcbergeordneten Knoten.',
+    previewUniform: (action: string) => `${action} f\u00fcr diesen Knoten und alle untergeordneten Knoten.`,
+    previewNodeOnly: (action: string) => `${action} nur f\u00fcr diesen Knoten. Untergeordnete Knoten erben von ihrem \u00fcbergeordneten Knoten.`,
+    previewDescOnly: (action: string) => `Keine explizite Berechtigung f\u00fcr diesen Knoten. ${action} f\u00fcr alle untergeordneten Knoten.`,
+    previewSplit: (nodeAction: string, descAction: string) => `${nodeAction} f\u00fcr diesen Knoten. ${descAction} f\u00fcr alle untergeordneten Knoten.`,
+    previewVirtualInherit: 'Keine Standardberechtigung festgelegt.',
+    previewVirtualSet: (action: string) => `${action} standardm\u00e4\u00dfig f\u00fcr gesamten Inhalt.`,
 
     // ── Zugriffsanzeige ───────────────────────────────────────────────────
     viewerHeadline: 'Zugriffsanzeige',

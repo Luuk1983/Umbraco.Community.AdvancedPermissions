@@ -549,6 +549,9 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
 
   #renderDialog(): TemplateResult {
     const verbName = this._pickerVerb?.split('.').pop() ?? '';
+    const nodeName = this._pickerIsVirtualRoot
+      ? this.#localize.term('uap_contentRoot')
+      : (this._pickerNode?.name ?? '');
 
     return html`
       <dialog
@@ -558,10 +561,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
           this._pickerVerb = null;
         }}>
         <uui-dialog-layout
-          headline=${this.#localize.term('uap_dialogHeadline', verbName)}>
-          <p class="dialog-node">
-            ${this.#localize.term('uap_dialogNodeLabel')}: <strong>${this._pickerNode?.name ?? ''}</strong>
-          </p>
+          headline=${this.#localize.term('uap_dialogHeadline', verbName, nodeName)}>
 
           ${this._pickerIsVirtualRoot ? this.#renderVirtualRootOptions() : this.#renderNodeOptions()}
 
@@ -578,60 +578,166 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     `;
   }
 
+  // ── Option tile helpers ────────────────────────────────────────────────
+
+  #renderOptionTile(
+    type: 'inherit' | 'allow' | 'deny',
+    selected: boolean,
+    onClick: () => void,
+    label?: string,
+  ): TemplateResult {
+    const icons: Record<string, string> = {
+      inherit: '\u2014',
+      allow: '\u2713',
+      deny: '\u2717',
+    };
+    const defaultLabels: Record<string, string> = {
+      inherit: this.#localize.term('uap_inherit'),
+      allow: this.#localize.term('uap_allow'),
+      deny: this.#localize.term('uap_deny'),
+    };
+
+    return html`
+      <button
+        class="perm-option ${type}${selected ? ' selected' : ''}"
+        type="button"
+        @click=${onClick}>
+        <span class="perm-option-icon">${icons[type]}</span>
+        <span class="perm-option-label">${label ?? defaultLabels[type]}</span>
+      </button>
+    `;
+  }
+
+  #getPreviewInfo(): { split: boolean; nodeClass: string; descClass: string } {
+    if (this._pickerIsVirtualRoot) {
+      return { split: false, nodeClass: this._pickerNodeState, descClass: this._pickerNodeState };
+    }
+    const effectiveDesc = this._pickerSameAsNode ? this._pickerNodeState : this._pickerDescState;
+    if (this._pickerNodeState === effectiveDesc) {
+      return { split: false, nodeClass: this._pickerNodeState, descClass: this._pickerNodeState };
+    }
+    return { split: true, nodeClass: this._pickerNodeState, descClass: effectiveDesc };
+  }
+
+  #getPreviewDescription(): string {
+    if (this._pickerIsVirtualRoot) {
+      if (this._pickerNodeState === 'inherit') return this.#localize.term('uap_previewVirtualInherit');
+      const action = this._pickerNodeState === 'allow'
+        ? this.#localize.term('uap_allow')
+        : this.#localize.term('uap_deny');
+      return this.#localize.term('uap_previewVirtualSet', action);
+    }
+
+    const effectiveDesc = this._pickerSameAsNode ? this._pickerNodeState : this._pickerDescState;
+
+    if (this._pickerNodeState === 'inherit' && effectiveDesc === 'inherit') {
+      return this.#localize.term('uap_previewBothInherit');
+    }
+
+    const stateLabel = (s: string) => s === 'allow'
+      ? this.#localize.term('uap_allow')
+      : this.#localize.term('uap_deny');
+
+    if (this._pickerNodeState === effectiveDesc) {
+      return this.#localize.term('uap_previewUniform', stateLabel(this._pickerNodeState));
+    }
+
+    if (this._pickerNodeState !== 'inherit' && effectiveDesc === 'inherit') {
+      return this.#localize.term('uap_previewNodeOnly', stateLabel(this._pickerNodeState));
+    }
+
+    if (this._pickerNodeState === 'inherit' && effectiveDesc !== 'inherit') {
+      return this.#localize.term('uap_previewDescOnly', stateLabel(effectiveDesc));
+    }
+
+    return this.#localize.term('uap_previewSplit', stateLabel(this._pickerNodeState), stateLabel(effectiveDesc));
+  }
+
+  #renderPreview(): TemplateResult {
+    const info = this.#getPreviewInfo();
+    const desc = this.#getPreviewDescription();
+    const block = !info.split
+      ? html`
+          <div class="preview-block-wrapper">
+            <div class="perm-block uniform ${info.nodeClass}">${this.#stateIcon(info.nodeClass)}</div>
+          </div>
+        `
+      : html`
+          <div class="preview-block-wrapper">
+            <div class="perm-block split">
+              <span class="half ${info.nodeClass}">${this.#stateIcon(info.nodeClass)}</span>
+              <span class="half ${info.descClass}">${this.#stateIcon(info.descClass)}</span>
+            </div>
+          </div>
+        `;
+
+    return html`
+      <div class="preview-content">
+        ${block}
+        <p class="preview-desc">${desc}</p>
+      </div>
+    `;
+  }
+
+  // ── Dialog option renderers ─────────────────────────────────────────────
+
   #renderVirtualRootOptions(): TemplateResult {
     return html`
       <div class="dialog-options">
-        <uui-radio-group
-          .value=${this._pickerNodeState}
-          @change=${(e: Event) => { this._pickerNodeState = (e.target as HTMLInputElement).value as 'inherit' | 'allow' | 'deny'; }}>
-          <uui-radio value="inherit" label=${this.#localize.term('uap_virtualRootInherit')} class="opt-inherit"></uui-radio>
-          <uui-radio value="allow" label=${this.#localize.term('uap_virtualRootAllow')} class="opt-allow"></uui-radio>
-          <uui-radio value="deny" label=${this.#localize.term('uap_virtualRootDeny')} class="opt-deny"></uui-radio>
-        </uui-radio-group>
+        <div class="perm-options">
+          ${this.#renderOptionTile('inherit', this._pickerNodeState === 'inherit', () => { this._pickerNodeState = 'inherit'; }, this.#localize.term('uap_virtualRootInherit'))}
+          ${this.#renderOptionTile('allow', this._pickerNodeState === 'allow', () => { this._pickerNodeState = 'allow'; }, this.#localize.term('uap_virtualRootAllow'))}
+          ${this.#renderOptionTile('deny', this._pickerNodeState === 'deny', () => { this._pickerNodeState = 'deny'; }, this.#localize.term('uap_virtualRootDeny'))}
+        </div>
+      </div>
+
+      <div class="dialog-preview">
+        <h4>${this.#localize.term('uap_dialogPreview')}</h4>
+        ${this.#renderPreview()}
       </div>
     `;
   }
 
   #renderNodeOptions(): TemplateResult {
+    const nodeName = this._pickerNode?.name ?? '';
+    const descSelected: 'inherit' | 'allow' | 'deny' | null =
+      this._pickerSameAsNode ? null : this._pickerDescState;
+
     return html`
       <div class="dialog-sections">
-        <!-- This node -->
         <div class="dialog-section">
-          <h4>${this.#localize.term('uap_thisNodeSection')}</h4>
-          <uui-radio-group
-            .value=${this._pickerNodeState}
-            @change=${(e: Event) => { this._pickerNodeState = (e.target as HTMLInputElement).value as 'inherit' | 'allow' | 'deny'; }}>
-            <uui-radio value="inherit" label=${this.#localize.term('uap_inherit')} class="opt-inherit"></uui-radio>
-            <uui-radio value="allow" label=${this.#localize.term('uap_allow')} class="opt-allow"></uui-radio>
-            <uui-radio value="deny" label=${this.#localize.term('uap_deny')} class="opt-deny"></uui-radio>
-          </uui-radio-group>
+          <h4 class="dialog-section-title" title=${nodeName}>${nodeName}</h4>
+          <p class="dialog-help">${this.#localize.term('uap_dialogNodeHelp')}</p>
+          <div class="perm-options">
+            ${this.#renderOptionTile('inherit', this._pickerNodeState === 'inherit', () => { this._pickerNodeState = 'inherit'; })}
+            ${this.#renderOptionTile('allow', this._pickerNodeState === 'allow', () => { this._pickerNodeState = 'allow'; })}
+            ${this.#renderOptionTile('deny', this._pickerNodeState === 'deny', () => { this._pickerNodeState = 'deny'; })}
+          </div>
         </div>
 
-        <!-- Descendants -->
         <div class="dialog-section">
           <h4>${this.#localize.term('uap_descendantsSection')}</h4>
-          <uui-toggle
-            label=${this.#localize.term('uap_sameAsNode')}
-            ?checked=${this._pickerSameAsNode}
-            @change=${(e: Event) => {
-              this._pickerSameAsNode = (e.target as HTMLInputElement).checked;
-              if (this._pickerSameAsNode) {
-                this._pickerDescState = this._pickerNodeState;
-              }
-            }}>${this.#localize.term('uap_sameAsNode')}</uui-toggle>
-          <uui-radio-group
-            class=${this._pickerSameAsNode ? 'radio-disabled' : ''}
-            .value=${this._pickerSameAsNode ? this._pickerNodeState : this._pickerDescState}
-            @change=${(e: Event) => {
-              if (!this._pickerSameAsNode) {
-                this._pickerDescState = (e.target as HTMLInputElement).value as 'inherit' | 'allow' | 'deny';
-              }
-            }}>
-            <uui-radio value="inherit" label=${this.#localize.term('uap_inherit')} class="opt-inherit" ?disabled=${this._pickerSameAsNode}></uui-radio>
-            <uui-radio value="allow" label=${this.#localize.term('uap_allow')} class="opt-allow" ?disabled=${this._pickerSameAsNode}></uui-radio>
-            <uui-radio value="deny" label=${this.#localize.term('uap_deny')} class="opt-deny" ?disabled=${this._pickerSameAsNode}></uui-radio>
-          </uui-radio-group>
+          <p class="dialog-help">${this.#localize.term('uap_dialogDescHelp')}</p>
+          <div class="perm-options">
+            ${this.#renderOptionTile('inherit', descSelected === 'inherit', () => {
+              if (descSelected === 'inherit') { this._pickerSameAsNode = true; }
+              else { this._pickerSameAsNode = false; this._pickerDescState = 'inherit'; }
+            })}
+            ${this.#renderOptionTile('allow', descSelected === 'allow', () => {
+              if (descSelected === 'allow') { this._pickerSameAsNode = true; }
+              else { this._pickerSameAsNode = false; this._pickerDescState = 'allow'; }
+            })}
+            ${this.#renderOptionTile('deny', descSelected === 'deny', () => {
+              if (descSelected === 'deny') { this._pickerSameAsNode = true; }
+              else { this._pickerSameAsNode = false; this._pickerDescState = 'deny'; }
+            })}
+          </div>
         </div>
+      </div>
+
+      <div class="dialog-preview">
+        <h4>${this.#localize.term('uap_dialogPreview')}</h4>
+        ${this.#renderPreview()}
       </div>
     `;
   }
@@ -898,12 +1004,6 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       background: rgba(0, 0, 0, 0.4);
     }
 
-    .dialog-node {
-      margin: 0 0 16px;
-      font-size: 12px;
-      color: var(--uui-color-text-alt, #666);
-    }
-
     .dialog-options {
       margin-bottom: 8px;
     }
@@ -916,27 +1016,135 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     }
 
     .dialog-section h4 {
+      margin: 0 0 4px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--uui-color-text, #333);
+    }
+
+    .dialog-section-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .dialog-help {
+      margin: 0 0 8px;
+      font-size: 12px;
+      color: var(--uui-color-text-alt, #888);
+      line-height: 1.4;
+    }
+
+    /* ── Option tiles ─────────────────────────────────────────── */
+    .perm-options {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .perm-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      border: 2px solid var(--uui-color-border, #ddd);
+      border-radius: 6px;
+      cursor: pointer;
+      background: none;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .perm-option:hover {
+      border-color: var(--uui-color-border-emphasis, #bbb);
+    }
+
+    .perm-option-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 24px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 700;
+      border: 1px solid var(--uui-color-border, #ddd);
+      flex-shrink: 0;
+    }
+
+    .perm-option.inherit .perm-option-icon {
+      color: var(--uui-color-text-alt, #ccc);
+      border-color: var(--uui-color-border, #e8e8e8);
+    }
+
+    .perm-option.allow .perm-option-icon {
+      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
+      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
+      border-color: color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
+    }
+
+    .perm-option.deny .perm-option-icon {
+      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
+      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
+      border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
+    }
+
+    .perm-option-label {
+      font-size: 13px;
+      color: var(--uui-color-text, #333);
+    }
+
+    .perm-option.selected {
+      border-color: var(--uui-color-default-standalone, #1b264f);
+      background: var(--uui-color-surface-emphasis, #fafafa);
+    }
+
+    .perm-option.selected.allow {
+      border-color: var(--uui-color-positive, #34a853);
+      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 6%, transparent);
+    }
+
+    .perm-option.selected.deny {
+      border-color: var(--uui-color-danger, #ea4335);
+      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 4%, transparent);
+    }
+
+    /* ── Preview ──────────────────────────────────────────────── */
+    .dialog-preview {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--uui-color-border, #eee);
+    }
+
+    .dialog-preview h4 {
       margin: 0 0 8px;
       font-size: 13px;
       font-weight: 600;
       color: var(--uui-color-text, #333);
     }
 
-    .dialog-section uui-toggle {
-      margin-bottom: 8px;
+    .preview-block-wrapper {
+      width: 64px;
     }
 
-    .radio-disabled {
-      opacity: 0.4;
-      pointer-events: none;
+    .preview-block-wrapper .perm-block {
+      height: 32px;
     }
 
-    uui-radio.opt-allow {
-      --uui-radio-border-color: color-mix(in srgb, var(--uui-color-positive, #34a853) 50%, transparent);
+    .preview-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    uui-radio.opt-deny {
-      --uui-radio-border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 50%, transparent);
+    .preview-desc {
+      margin: 0;
+      font-size: 13px;
+      color: var(--uui-color-text, #333);
+      line-height: 1.4;
     }
   `;
 }

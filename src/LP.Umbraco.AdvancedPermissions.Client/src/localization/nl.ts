@@ -32,14 +32,21 @@ export default {
     collapse: 'Invouwen',
 
     // ── Machtigingsdialoog ────────────────────────────────────────────────
-    dialogHeadline: (verb: string) => `Machtiging instellen: ${verb}`,
-    dialogNodeLabel: 'Pagina',
-    thisNodeSection: 'Deze pagina',
+    dialogHeadline: (verb: string, nodeName: string) => `${verb}-machtiging instellen voor \u2018${nodeName}\u2019`,
     descendantsSection: 'Onderliggende pagina\u2019s',
-    sameAsNode: 'Zelfde als pagina',
+    dialogNodeHelp: 'Stel de machtigingsstatus in voor deze specifieke contentpagina.',
+    dialogDescHelp: 'Optioneel overschrijven voor onderliggende pagina\u2019s. Laat leeg om dezelfde status als deze pagina toe te passen.',
     virtualRootInherit: 'Niet ingesteld (verwijder vermelding)',
     virtualRootAllow: 'Toestaan (alle content)',
     virtualRootDeny: 'Weigeren (alle content)',
+    dialogPreview: 'Voorbeeld',
+    previewBothInherit: 'Geen machtiging ingesteld. Neemt over van bovenliggende pagina.',
+    previewUniform: (action: string) => `${action} voor deze pagina en alle onderliggende pagina\u2019s.`,
+    previewNodeOnly: (action: string) => `${action} alleen voor deze pagina. Onderliggende pagina\u2019s nemen over van hun bovenliggende pagina.`,
+    previewDescOnly: (action: string) => `Geen expliciete machtiging voor deze pagina. ${action} voor alle onderliggende pagina\u2019s.`,
+    previewSplit: (nodeAction: string, descAction: string) => `${nodeAction} voor deze pagina. ${descAction} voor alle onderliggende pagina\u2019s.`,
+    previewVirtualInherit: 'Geen standaardmachtiging ingesteld.',
+    previewVirtualSet: (action: string) => `${action} standaard voor alle content.`,
 
     // ── Toegangsweergave ──────────────────────────────────────────────────
     viewerHeadline: 'Toegangsweergave',

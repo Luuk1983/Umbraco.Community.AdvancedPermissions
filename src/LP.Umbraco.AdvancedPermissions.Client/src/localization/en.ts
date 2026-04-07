@@ -32,14 +32,21 @@ export default {
     collapse: 'Collapse',
 
     // ── Permission dialog ─────────────────────────────────────────────────
-    dialogHeadline: (verb: string) => `Set Permission: ${verb}`,
-    dialogNodeLabel: 'Node',
-    thisNodeSection: 'This node',
+    dialogHeadline: (verb: string, nodeName: string) => `Set ${verb} permission for \u2018${nodeName}\u2019`,
     descendantsSection: 'Descendants',
-    sameAsNode: 'Same as node',
+    dialogNodeHelp: 'Set the permission for this specific content node.',
+    dialogDescHelp: 'Optionally override for descendants. Leave empty to apply the same as this node.',
     virtualRootInherit: 'Not set (remove entry)',
     virtualRootAllow: 'Allow (all content)',
     virtualRootDeny: 'Deny (all content)',
+    dialogPreview: 'Preview',
+    previewBothInherit: 'No permission set. Inherits from parent.',
+    previewUniform: (action: string) => `${action} on this node and all descendants.`,
+    previewNodeOnly: (action: string) => `${action} on this node only. Descendants inherit from their parent.`,
+    previewDescOnly: (action: string) => `No explicit permission on this node. ${action} on all descendants.`,
+    previewSplit: (nodeAction: string, descAction: string) => `${nodeAction} on this node. ${descAction} on all descendants.`,
+    previewVirtualInherit: 'No default permission set.',
+    previewVirtualSet: (action: string) => `${action} by default for all content.`,
 
     // ── Access Viewer ─────────────────────────────────────────────────────
     viewerHeadline: 'Access Viewer',

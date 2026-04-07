@@ -164,6 +164,18 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
             .ExecuteDeleteAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
+    public async Task DeleteAllForRoleAsync(
+        string roleAlias,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        await db.Permissions
+            .Where(p => p.RoleAlias == roleAlias)
+            .ExecuteDeleteAsync(cancellationToken);
+    }
+
     /// <summary>
     /// Maps a <see cref="AdvancedPermissionEntity"/> to the domain model <see cref="AdvancedPermissionEntry"/>.
     /// </summary>

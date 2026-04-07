@@ -11,6 +11,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/LP.Umbraco.AdvancedPermissions.Core.Tests/LP.Umbraco.AdvancedPermissions.Core.Tests.csproj" />
     <Project Path="tests/LP.Umbraco.AdvancedPermissions.Data.Tests/LP.Umbraco.AdvancedPermissions.Data.Tests.csproj" />
+    <Project Path="tests/LP.Umbraco.AdvancedPermissions.Tests/LP.Umbraco.AdvancedPermissions.Tests.csproj" />
     <Project Path="tests/LP.Umbraco.AdvancedPermissions.TestSite/LP.Umbraco.AdvancedPermissions.TestSite.csproj" />
   </Folder>
 </Solution>

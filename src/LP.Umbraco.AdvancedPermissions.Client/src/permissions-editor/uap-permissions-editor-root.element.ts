@@ -3,6 +3,7 @@ import type { TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
+import { UMB_MODAL_MANAGER_CONTEXT } from '@umbraco-cms/backoffice/modal';
 import type {
   VerbInfo,
   RoleInfo,
@@ -12,8 +13,10 @@ import type {
   PermissionScope,
 } from '../models/permission.models.js';
 import { VIRTUAL_ROOT_NODE_KEY } from '../models/permission.models.js';
-import { getRoles, getVerbs, getTreeRoot, getTreeChildren, getPermissions, savePermissions } from '../api/advanced-permissions.api.js';
+import { getVerbs, getTreeRoot, getTreeChildren, getPermissions, savePermissions } from '../api/advanced-permissions.api.js';
 import { clearEffectivePermissionCache } from '../conditions/document-user-permission.condition.js';
+import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
+import '../components/uap-picker-button.element.js';
 
 /** Pending entries for a verb: empty array means "inherit" (clear all entries for this verb). */
 type PendingVerbEntries = Array<{ state: PermissionState; scope: PermissionScope }>;
@@ -96,11 +99,10 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
   #localize = new UmbLocalizationController(this);
 
   // ── Metadata ────────────────────────────────────────────────────────────
-  @state() private _roles: RoleInfo[] = [];
   @state() private _verbs: VerbInfo[] = [];
 
   // ── Selection & tree ────────────────────────────────────────────────────
-  @state() private _selectedRole = '';
+  @state() private _selectedRole: RoleInfo | null = null;
   @state() private _treeNodes: TreeNodeState[] = [];
   @state() private _loading = false;
   @state() private _saving = false;
@@ -123,12 +125,16 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
   @query('.scope-dialog') private _scopeDialog!: HTMLDialogElement;
 
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
+  #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #loadAbortController: AbortController | null = null;
 
   constructor() {
     super();
     this.consumeContext(UMB_NOTIFICATION_CONTEXT, (ctx) => {
       this.#notificationContext = ctx ?? undefined;
+    });
+    this.consumeContext(UMB_MODAL_MANAGER_CONTEXT, (ctx) => {
+      this.#modalManager = ctx ?? undefined;
     });
   }
 
@@ -142,28 +148,35 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     this.#loadAbortController?.abort();
   }
 
-  // ── Computed ─────────────────────────────────────────────────────────────
-
-  get #roleOptions() {
-    return [
-      { name: this.#localize.term('uap_rolePlaceholder'), value: '' },
-      ...this._roles.map((r) => ({
-        name: `${r.name}${r.isEveryone ? ` ${this.#localize.term('uap_everyoneSuffix')}` : ''}`,
-        value: r.alias,
-        selected: r.alias === this._selectedRole,
-      })),
-    ];
-  }
-
   // ── Data loading ────────────────────────────────────────────────────────
 
   async #loadMeta(): Promise<void> {
     try {
-      const [roles, verbs] = await Promise.all([getRoles(), getVerbs()]);
-      this._roles = roles;
-      this._verbs = verbs;
+      this._verbs = await getVerbs();
     } catch (err) {
       this._error = String(err);
+    }
+  }
+
+  async #openRolePicker(): Promise<void> {
+    if (!this.#modalManager) return;
+
+    const modal = this.#modalManager.open(this, UAP_ROLE_PICKER_MODAL, {
+      data: {
+        ...(this._selectedRole ? { currentRole: this._selectedRole.alias } : {}),
+      },
+    });
+
+    const result = await modal.onSubmit().catch(() => undefined);
+    if (!result) return;
+
+    const hadTree = this._treeNodes.length > 0 && this._selectedRole !== null;
+    this._selectedRole = result.role;
+    this._pendingChanges = new Map();
+    if (hadTree) {
+      void this.#reloadPermissions();
+    } else {
+      void this.#loadTree();
     }
   }
 
@@ -180,8 +193,8 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     this._treeNodes = [];
     try {
       const [virtualEntries, nodes] = await Promise.all([
-        getPermissions(VIRTUAL_ROOT_NODE_KEY, this._selectedRole, controller.signal),
-        getTreeRoot(this._selectedRole, controller.signal),
+        getPermissions(VIRTUAL_ROOT_NODE_KEY, this._selectedRole!.alias, controller.signal),
+        getTreeRoot(this._selectedRole!.alias, controller.signal),
       ]);
       if (controller.signal.aborted) return;
 
@@ -220,7 +233,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
 
     try {
       // Reload virtual root entries
-      const virtualEntries = await getPermissions(VIRTUAL_ROOT_NODE_KEY, this._selectedRole, controller.signal);
+      const virtualEntries = await getPermissions(VIRTUAL_ROOT_NODE_KEY, this._selectedRole!.alias, controller.signal);
       if (controller.signal.aborted) return;
 
       // Clear entries on all existing nodes and reload their entries
@@ -263,7 +276,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
 
     // Use the tree endpoint which batch-loads entries per role
     const [rootNodes] = await Promise.all([
-      getTreeRoot(this._selectedRole, signal),
+      getTreeRoot(this._selectedRole!.alias, signal),
     ]);
     if (signal.aborted) return;
 
@@ -283,7 +296,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     // For expanded children, reload their entries
     for (const node of nodes) {
       if (node.children && node.expanded) {
-        const childEntries = await getTreeChildren(node.key, this._selectedRole, signal);
+        const childEntries = await getTreeChildren(node.key, this._selectedRole!.alias, signal);
         if (signal.aborted) return;
         const childMap = new Map(childEntries.map((c) => [c.key, c.entries]));
         for (const child of node.children) {
@@ -300,7 +313,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
   async #reloadChildEntries(nodes: TreeNodeState[], signal: AbortSignal): Promise<void> {
     for (const node of nodes) {
       if (node.children && node.expanded) {
-        const childEntries = await getTreeChildren(node.key, this._selectedRole, signal);
+        const childEntries = await getTreeChildren(node.key, this._selectedRole!.alias, signal);
         if (signal.aborted) return;
         const childMap = new Map(childEntries.map((c) => [c.key, c.entries]));
         for (const child of node.children) {
@@ -331,7 +344,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     }
     this.#updateNode(node.key, { loading: true });
     try {
-      const children = await getTreeChildren(node.key, this._selectedRole);
+      const children = await getTreeChildren(node.key, this._selectedRole!.alias);
       this.#updateNode(node.key, {
         expanded: true,
         loading: false,
@@ -434,12 +447,12 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
 
         const allEntries = [...byVerb.values()].flat();
         const apiKey = nodeKey === 'virtual-root' ? VIRTUAL_ROOT_NODE_KEY : nodeKey;
-        await savePermissions(apiKey, this._selectedRole, allEntries);
+        await savePermissions(apiKey, this._selectedRole!.alias, allEntries);
 
         const saved: PermissionEntry[] = allEntries.map((e, idx) => ({
           id: String(idx),
           nodeKey: apiKey,
-          roleAlias: this._selectedRole,
+          roleAlias: this._selectedRole!.alias,
           verb: e.verb,
           state: e.state,
           scope: e.scope,
@@ -663,25 +676,12 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     return html`
       <umb-body-layout headline=${this.#localize.term('uap_editorHeadline')}>
         <div class="toolbar">
-          <div class="role-picker">
-            <label>${this.#localize.term('uap_roleLabel')}:</label>
-            <uui-select
-              label=${this.#localize.term('uap_roleLabel')}
-              placeholder=${this.#localize.term('uap_rolePlaceholder')}
-              .options=${this.#roleOptions}
-              @change=${(e: Event) => {
-                const newRole = (e.target as HTMLInputElement).value;
-                const hadTree = this._treeNodes.length > 0 && this._selectedRole !== '';
-                this._selectedRole = newRole;
-                this._pendingChanges = new Map();
-                if (hadTree && newRole) {
-                  void this.#reloadPermissions();
-                } else {
-                  void this.#loadTree();
-                }
-              }}>
-            </uui-select>
-          </div>
+          <uap-picker-button
+            label=${this.#localize.term('uap_chooseRole')}
+            .selectedName=${this._selectedRole?.name ?? ''}
+            icon="icon-users"
+            @click=${() => void this.#openRolePicker()}>
+          </uap-picker-button>
           ${hasPending
             ? html`
                 <uui-button look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#saveChanges()}>
@@ -739,22 +739,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       flex-wrap: wrap;
     }
 
-    .role-picker {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .role-picker label {
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .role-picker uui-select {
-      min-width: 240px;
-    }
-
-    .loading {
+.loading {
       display: flex;
       justify-content: center;
       padding: 32px;
@@ -779,7 +764,6 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 12px;
     }
 
     thead {
@@ -793,8 +777,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       text-align: center;
       border-bottom: 1px solid var(--uui-color-border, #ddd);
       font-weight: 600;
-      font-size: 11px;
-      line-height: 1.2;
+      line-height: 1.3;
       background: var(--uui-color-surface, #fff);
       white-space: nowrap;
       overflow: hidden;
@@ -809,7 +792,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       position: sticky;
       left: 0;
       z-index: 3;
-      font-size: 12px;
+      white-space: nowrap;
       color: var(--uui-color-text, #333);
     }
 
@@ -850,7 +833,6 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     }
 
     .node-name {
-      font-size: 12px;
       overflow: hidden;
       text-overflow: ellipsis;
     }

@@ -14,6 +14,7 @@ import type {
 import { getVerbs, getTreeRoot, getTreeChildren, getEffectiveForUser, getEffectiveForRole } from '../api/advanced-permissions.api.js';
 import { UAP_ROLE_PICKER_MODAL } from './role-picker-modal.token.js';
 import { UAP_USER_PICKER_MODAL } from './user-picker-modal.token.js';
+import '../components/uap-picker-button.element.js';
 
 /** Client-side tree node with effective permissions for all verbs. */
 interface ViewerTreeNode {
@@ -280,6 +281,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
 
     const hadTree = this._treeNodes.length > 0 && this._activeSubject === 'role';
     this._selectedRole = result.role;
+    this._selectedUser = null;
     this._activeSubject = 'role';
 
     if (hadTree) {
@@ -303,6 +305,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
 
     const hadTree = this._treeNodes.length > 0 && this._activeSubject === 'user';
     this._selectedUser = result.user;
+    this._selectedRole = null;
     this._activeSubject = 'user';
 
     if (hadTree) {
@@ -393,37 +396,18 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     return html`
       <umb-body-layout headline=${this.#localize.term('uap_viewerHeadline')}>
         <div class="toolbar">
-          <!-- Role picker -->
-          <div class="picker-section">
-            <uui-button
-              look="placeholder"
-              label=${this.#localize.term('uap_chooseRole')}
-              @click=${() => void this.#openRolePicker()}>
-              ${this.#localize.term('uap_chooseRole')}
-            </uui-button>
-            ${this._selectedRole
-              ? html`<span class="selection-label">
-                  <uui-icon name="icon-user-group"></uui-icon>
-                  ${this._selectedRole.name}
-                </span>`
-              : nothing}
-          </div>
-
-          <!-- User picker -->
-          <div class="picker-section">
-            <uui-button
-              look="placeholder"
-              label=${this.#localize.term('uap_chooseUser')}
-              @click=${() => void this.#openUserPicker()}>
-              ${this.#localize.term('uap_chooseUser')}
-            </uui-button>
-            ${this._selectedUser
-              ? html`<span class="selection-label">
-                  <uui-icon name="icon-user"></uui-icon>
-                  ${this._selectedUser.name}
-                </span>`
-              : nothing}
-          </div>
+          <uap-picker-button
+            label=${this.#localize.term('uap_chooseRole')}
+            .selectedName=${this._selectedRole?.name ?? ''}
+            icon="icon-users"
+            @click=${() => void this.#openRolePicker()}>
+          </uap-picker-button>
+          <uap-picker-button
+            label=${this.#localize.term('uap_chooseUser')}
+            .selectedName=${this._selectedUser?.name ?? ''}
+            icon="icon-user"
+            @click=${() => void this.#openUserPicker()}>
+          </uap-picker-button>
         </div>
 
 ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
@@ -497,37 +481,12 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
     /* ── Toolbar ──────────────────────────────────────────────── */
     .toolbar {
       display: flex;
-      align-items: flex-start;
-      gap: var(--uui-size-6, 18px);
-      padding: var(--uui-size-4, 12px) var(--uui-size-6, 18px);
+      align-items: center;
+      gap: var(--uui-size-4, 12px);
+      padding: var(--uui-size-3, 9px) var(--uui-size-6, 18px);
       background: var(--uui-color-surface, #fff);
       border-bottom: 1px solid var(--uui-color-border, #e0e0e0);
       flex-wrap: wrap;
-    }
-
-    .picker-section {
-      display: flex;
-      flex-direction: column;
-      gap: var(--uui-size-2, 6px);
-      min-width: 200px;
-    }
-
-    .picker-section uui-button {
-      width: 100%;
-    }
-
-    .selection-label {
-      display: flex;
-      align-items: center;
-      gap: var(--uui-size-2, 6px);
-      font-size: var(--uui-type-small-size, 12px);
-      color: var(--uui-color-text-alt, #666);
-      padding: 0 var(--uui-size-2, 6px);
-    }
-
-    .selection-label uui-icon {
-      flex-shrink: 0;
-      font-size: 14px;
     }
 
 
@@ -556,7 +515,6 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 12px;
     }
 
     thead {
@@ -570,8 +528,7 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
       text-align: center;
       border-bottom: 1px solid var(--uui-color-border, #ddd);
       font-weight: 600;
-      font-size: 11px;
-      line-height: 1.2;
+      line-height: 1.3;
       background: var(--uui-color-surface, #fff);
       white-space: nowrap;
       overflow: hidden;
@@ -586,7 +543,7 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
       position: sticky;
       left: 0;
       z-index: 3;
-      font-size: 12px;
+      white-space: nowrap;
       color: var(--uui-color-text, #333);
     }
 
@@ -623,7 +580,6 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
     }
 
     .node-name {
-      font-size: 12px;
       overflow: hidden;
       text-overflow: ellipsis;
     }

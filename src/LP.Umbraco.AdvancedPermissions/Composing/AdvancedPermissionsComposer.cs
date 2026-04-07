@@ -127,6 +127,9 @@ public sealed class AdvancedPermissionsComposer : IComposer
         // separate ContentEmptiedRecycleBinNotification handler is not needed.
         builder.AddNotificationAsyncHandler<ContentDeletedNotification, AdvancedPermissionCleanup>();
 
+        // Clean up orphaned permission entries when a user group is deleted.
+        builder.AddNotificationAsyncHandler<UserGroupDeletedNotification, AdvancedPermissionCleanup>();
+
         // Seed root permission entries for newly created user groups
         builder.AddNotificationAsyncHandler<UserGroupSavedNotification, UserGroupPermissionSeeder>();
     }

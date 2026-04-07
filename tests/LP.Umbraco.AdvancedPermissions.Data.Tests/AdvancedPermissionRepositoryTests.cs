@@ -482,6 +482,77 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
     }
 
     // -------------------------------------------------------------------------
+    // DeleteAllForRoleAsync
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that DeleteAllForRoleAsync removes all entries for the role across all nodes.
+    /// </summary>
+    [Fact]
+    public async Task DeleteAllForRoleAsync_RemovesAllEntriesForRole_AcrossAllNodes()
+    {
+        var nodeKey1 = Guid.NewGuid();
+        var nodeKey2 = Guid.NewGuid();
+
+        await _repository.SaveAsync(nodeKey1, "editors",
+        [
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+        ]);
+
+        await _repository.SaveAsync(nodeKey2, "editors",
+        [
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+        ]);
+
+        await _repository.SaveAsync(nodeKey1, "writers",
+        [
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+        ]);
+
+        await _repository.DeleteAllForRoleAsync("editors");
+
+        var editorsResults = await _repository.GetByRoleAsync("editors");
+        Assert.Empty(editorsResults);
+
+        var writersResults = await _repository.GetByRoleAsync("writers");
+        Assert.Single(writersResults);
+    }
+
+    /// <summary>
+    /// Verifies that DeleteAllForRoleAsync leaves entries for other roles untouched.
+    /// </summary>
+    [Fact]
+    public async Task DeleteAllForRoleAsync_PreservesEntriesForOtherRoles()
+    {
+        var nodeKey = Guid.NewGuid();
+
+        await _repository.SaveAsync(nodeKey, "editors",
+        [
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+        ]);
+
+        await _repository.SaveAsync(nodeKey, "writers",
+        [
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+        ]);
+
+        await _repository.DeleteAllForRoleAsync("editors");
+
+        var remainingResults = await _repository.GetByNodeAndRoleAsync(nodeKey, "writers");
+        Assert.Single(remainingResults);
+    }
+
+    /// <summary>
+    /// Verifies that DeleteAllForRoleAsync does not throw when the role has no entries.
+    /// </summary>
+    [Fact]
+    public async Task DeleteAllForRoleAsync_IsIdempotent_WhenRoleHasNoEntries()
+    {
+        // Should not throw when role has no entries
+        await _repository.DeleteAllForRoleAsync("nonexistent-role");
+    }
+
+    // -------------------------------------------------------------------------
     // Domain model mapping
     // -------------------------------------------------------------------------
 

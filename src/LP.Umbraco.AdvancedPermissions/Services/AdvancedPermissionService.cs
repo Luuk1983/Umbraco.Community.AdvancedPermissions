@@ -95,8 +95,11 @@ public sealed class AdvancedPermissionService(
         IEnumerable<string>? verbs = null,
         CancellationToken cancellationToken = default)
     {
-        // Resolve as if user has exactly this role plus $everyone — uses L1 cache for entries
-        var roles = new List<string> { roleAlias, AdvancedPermissionsConstants.EveryoneRoleAlias };
+        // Resolve as if user has exactly this role plus $everyone — uses L1 cache for entries.
+        // Avoid adding $everyone twice when it is itself the selected role.
+        var roles = roleAlias == AdvancedPermissionsConstants.EveryoneRoleAlias
+            ? new List<string> { roleAlias }
+            : new List<string> { roleAlias, AdvancedPermissionsConstants.EveryoneRoleAlias };
 
         var storedEntries = await GetEntriesForRolesAndPathAsync(roles, pathFromRoot, cancellationToken);
 

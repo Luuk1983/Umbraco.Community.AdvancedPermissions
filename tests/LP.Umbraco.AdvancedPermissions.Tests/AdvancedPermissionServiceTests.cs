@@ -1,0 +1,752 @@
+using LP.Umbraco.AdvancedPermissions.Caching;
+using LP.Umbraco.AdvancedPermissions.Core.Interfaces;
+using LP.Umbraco.AdvancedPermissions.Core.Models;
+using LP.Umbraco.AdvancedPermissions.Core.Services;
+using LP.Umbraco.AdvancedPermissions.Services;
+using NSubstitute;
+using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Models.Membership;
+using Umbraco.Cms.Core.Services;
+using static LP.Umbraco.AdvancedPermissions.Core.Constants.AdvancedPermissionsConstants;
+
+namespace LP.Umbraco.AdvancedPermissions.Tests;
+
+/// <summary>
+/// Unit tests for <see cref="AdvancedPermissionService"/>.
+/// Tests are written test-first to define the expected behaviour of the service orchestration layer.
+/// </summary>
+public sealed class AdvancedPermissionServiceTests
+{
+    private readonly IAdvancedPermissionRepository _repository = Substitute.For<IAdvancedPermissionRepository>();
+    private readonly IPermissionResolver _resolver = Substitute.For<IPermissionResolver>();
+    private readonly IUserService _userService = Substitute.For<IUserService>();
+    private readonly AdvancedPermissionService _sut;
+
+    /// <summary>Initialises the system under test with no-op caches and substituted dependencies.</summary>
+    public AdvancedPermissionServiceTests()
+    {
+        _sut = BuildService(AppCaches.NoCache);
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private AdvancedPermissionService BuildService(AppCaches appCaches) =>
+        new(_repository, _resolver, _userService, new AdvancedPermissionCache(appCaches));
+
+    private static AppCaches RealAppCaches() => new(
+        new ObjectCacheAppCache(),
+        NoAppCache.Instance,
+        new IsolatedCaches(_ => NoAppCache.Instance));
+
+    /// <summary>
+    /// Creates an <see cref="IUser"/> mock with the specified key and group aliases,
+    /// and configures <c>_userService.GetAsync(userKey)</c> to return it.
+    /// </summary>
+    private IUser SetupUser(Guid userKey, params string[] groupAliases)
+    {
+        var user = Substitute.For<IUser>();
+        user.Key.Returns(userKey);
+        var groups = groupAliases.Select(alias =>
+        {
+            var g = Substitute.For<IReadOnlyUserGroup>();
+            g.Alias.Returns(alias);
+            return g;
+        }).ToArray<IReadOnlyUserGroup>();
+        user.Groups.Returns(groups);
+
+        _userService.GetAsync(userKey).Returns(Task.FromResult<IUser?>(user));
+        return user;
+    }
+
+    /// <summary>
+    /// Configures the <c>_userService</c> to return <see langword="null"/> for any
+    /// <see cref="IUserService.GetAsync(Guid)"/> call, simulating a user not found.
+    /// </summary>
+    private void SetupNullUser()
+    {
+        _userService.GetAsync(Arg.Any<Guid>()).Returns(Task.FromResult<IUser?>(null));
+    }
+
+    private static AdvancedPermissionEntry MakeEntry(
+        Guid nodeKey,
+        string role,
+        string verb,
+        PermissionState state = PermissionState.Allow,
+        PermissionScope scope = PermissionScope.ThisNodeAndDescendants) =>
+        new(Guid.NewGuid(), nodeKey, role, verb, state, scope);
+
+    /// <summary>Returns a dictionary where every standard verb is implicitly denied.</summary>
+    private static Dictionary<string, EffectivePermission> AllDeny() =>
+        AllVerbs.ToDictionary(v => v, v => new EffectivePermission(v, IsAllowed: false, IsExplicit: false, Reasoning: []));
+
+    // ─── ResolveAsync ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// ResolveAsync should return the effective permission for the requested verb
+    /// from the resolved dictionary.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAsync_ReturnsPermissionForRequestedVerb()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+        SetupUser(userKey, "editors");
+
+        var resolved = AllDeny();
+        resolved[VerbRead] = new EffectivePermission(VerbRead, IsAllowed: true, IsExplicit: true, Reasoning: []);
+        _resolver.ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>())
+            .Returns(resolved);
+        _repository.GetByRoleAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var result = await _sut.ResolveAsync(userKey, nodeKey, path, VerbRead);
+
+        Assert.Equal(VerbRead, result.Verb);
+        Assert.True(result.IsAllowed);
+        Assert.True(result.IsExplicit);
+    }
+
+    /// <summary>
+    /// ResolveAsync should return an implicit deny when the resolver produces no entry
+    /// for the requested verb (defensive fallback).
+    /// </summary>
+    [Fact]
+    public async Task ResolveAsync_ReturnsImplicitDeny_WhenVerbAbsentFromResolvedDictionary()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+        SetupUser(userKey);
+
+        // Resolver returns an empty dictionary — no opinion on any verb
+        _resolver.ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>())
+            .Returns(new Dictionary<string, EffectivePermission>());
+        _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var result = await _sut.ResolveAsync(userKey, nodeKey, path, VerbRead);
+
+        Assert.Equal(VerbRead, result.Verb);
+        Assert.False(result.IsAllowed);
+        Assert.False(result.IsExplicit);
+        Assert.Empty(result.Reasoning);
+    }
+
+    // ─── ResolveAllAsync — context building ──────────────────────────────────
+
+    /// <summary>
+    /// ResolveAllAsync should build a resolution context that includes the user's group aliases
+    /// plus the implicit $everyone role.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_BuildsContextWithUserGroupsAndEveryone()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+        SetupUser(userKey, "editors", "writers");
+
+        _repository.GetByRoleAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        PermissionResolutionContext? capturedContext = null;
+        _resolver.ResolveAll(
+                Arg.Do<PermissionResolutionContext>(ctx => capturedContext = ctx),
+                Arg.Any<IEnumerable<string>>())
+            .Returns(AllDeny());
+
+        await _sut.ResolveAllAsync(userKey, nodeKey, path);
+
+        Assert.NotNull(capturedContext);
+        Assert.Contains("editors", capturedContext.RoleAliases);
+        Assert.Contains("writers", capturedContext.RoleAliases);
+        Assert.Contains(EveryoneRoleAlias, capturedContext.RoleAliases);
+        Assert.Equal(3, capturedContext.RoleAliases.Count);
+    }
+
+    /// <summary>
+    /// ResolveAllAsync with a user who has no group memberships should produce a context
+    /// containing only the $everyone role.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_UserWithNoGroups_ContextContainsOnlyEveryone()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+        SetupUser(userKey); // no group aliases
+
+        _repository.GetByRoleAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        PermissionResolutionContext? capturedContext = null;
+        _resolver.ResolveAll(
+                Arg.Do<PermissionResolutionContext>(ctx => capturedContext = ctx),
+                Arg.Any<IEnumerable<string>>())
+            .Returns(AllDeny());
+
+        await _sut.ResolveAllAsync(userKey, nodeKey, path);
+
+        Assert.NotNull(capturedContext);
+        Assert.Single(capturedContext.RoleAliases);
+        Assert.Equal(EveryoneRoleAlias, capturedContext.RoleAliases[0]);
+    }
+
+    /// <summary>
+    /// ResolveAllAsync when the user cannot be found should treat the user as having no groups,
+    /// so the context contains only $everyone.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_NullUser_ContextContainsOnlyEveryone()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+        SetupNullUser();
+
+        _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        PermissionResolutionContext? capturedContext = null;
+        _resolver.ResolveAll(
+                Arg.Do<PermissionResolutionContext>(ctx => capturedContext = ctx),
+                Arg.Any<IEnumerable<string>>())
+            .Returns(AllDeny());
+
+        await _sut.ResolveAllAsync(userKey, nodeKey, path);
+
+        Assert.NotNull(capturedContext);
+        Assert.Single(capturedContext.RoleAliases);
+        Assert.Equal(EveryoneRoleAlias, capturedContext.RoleAliases[0]);
+    }
+
+    /// <summary>
+    /// ResolveAllAsync when called with a specific verb filter should return only the requested
+    /// verbs, even though the resolver always resolves all verbs internally before filtering.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_VerbFilter_ReturnsOnlyRequestedVerbs()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+        SetupUser(userKey);
+        _repository.GetByRoleAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+        // Resolver returns ALL verbs; the service should filter down to the requested two
+        _resolver.ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>())
+            .Returns(AllDeny());
+
+        var result = await _sut.ResolveAllAsync(userKey, nodeKey, path, verbs: [VerbRead, VerbDelete]);
+
+        Assert.Equal(2, result.Count);
+        Assert.True(result.ContainsKey(VerbRead));
+        Assert.True(result.ContainsKey(VerbDelete));
+    }
+
+    /// <summary>
+    /// ResolveAllAsync with no verb filter should return results for every standard verb.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_NoVerbFilter_ReturnsAllStandardVerbs()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+        SetupUser(userKey);
+        _repository.GetByRoleAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+        _resolver.ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>())
+            .Returns(AllDeny());
+
+        var result = await _sut.ResolveAllAsync(userKey, nodeKey, path, verbs: null);
+
+        Assert.Equal(AllVerbs.Count, result.Count);
+        Assert.True(AllVerbs.All(v => result.ContainsKey(v)));
+    }
+
+    /// <summary>
+    /// ResolveAllAsync should pass the target node key and full path to the resolution context.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_ContextHasCorrectNodeKeyAndPath()
+    {
+        var userKey = Guid.NewGuid();
+        var root = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { root, parent, nodeKey };
+        SetupUser(userKey);
+        _repository.GetByRoleAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        PermissionResolutionContext? capturedContext = null;
+        _resolver.ResolveAll(
+                Arg.Do<PermissionResolutionContext>(ctx => capturedContext = ctx),
+                Arg.Any<IEnumerable<string>>())
+            .Returns(AllDeny());
+
+        await _sut.ResolveAllAsync(userKey, nodeKey, path);
+
+        Assert.NotNull(capturedContext);
+        Assert.Equal(nodeKey, capturedContext.TargetNodeKey);
+        Assert.Equal(path, capturedContext.PathFromRoot);
+    }
+
+    /// <summary>
+    /// ResolveAllAsync should always call the resolver with ALL standard verbs,
+    /// regardless of any verb filter requested by the caller.
+    /// The filtering is applied after resolution, not before.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_AlwaysResolvesAllVerbs_FilterAppliedAfterwards()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+        SetupUser(userKey);
+        _repository.GetByRoleAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        IEnumerable<string>? resolverVerbs = null;
+        _resolver.ResolveAll(
+                Arg.Any<PermissionResolutionContext>(),
+                Arg.Do<IEnumerable<string>>(v => resolverVerbs = v))
+            .Returns(AllDeny());
+
+        // Request only VerbRead — but resolver should still be called with AllVerbs
+        await _sut.ResolveAllAsync(userKey, nodeKey, path, verbs: [VerbRead]);
+
+        Assert.NotNull(resolverVerbs);
+        Assert.Equal(AllVerbs.Count, resolverVerbs!.Count());
+    }
+
+    // ─── ResolveForRoleAsync — role context building ─────────────────────────
+
+    /// <summary>
+    /// ResolveForRoleAsync with a non-$everyone role should produce a context that includes
+    /// both the specified role and the implicit $everyone role.
+    /// </summary>
+    [Fact]
+    public async Task ResolveForRoleAsync_NonEveryoneRole_ContextContainsBothRoleAndEveryone()
+    {
+        const string role = "editors";
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+
+        _repository.GetByRoleAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        PermissionResolutionContext? capturedContext = null;
+        _resolver.ResolveAll(
+                Arg.Do<PermissionResolutionContext>(ctx => capturedContext = ctx),
+                Arg.Any<IEnumerable<string>>())
+            .Returns(AllDeny());
+
+        await _sut.ResolveForRoleAsync(role, nodeKey, path);
+
+        Assert.NotNull(capturedContext);
+        Assert.Equal(2, capturedContext.RoleAliases.Count);
+        Assert.Contains(role, capturedContext.RoleAliases);
+        Assert.Contains(EveryoneRoleAlias, capturedContext.RoleAliases);
+    }
+
+    /// <summary>
+    /// ResolveForRoleAsync when called with the $everyone role must NOT add $everyone twice.
+    /// The context should contain exactly one $everyone entry.
+    /// This is the regression test for the duplicate-reasoning bug.
+    /// </summary>
+    [Fact]
+    public async Task ResolveForRoleAsync_EveryoneRole_ContextContainsExactlyOneEveryoneEntry()
+    {
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+
+        _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        PermissionResolutionContext? capturedContext = null;
+        _resolver.ResolveAll(
+                Arg.Do<PermissionResolutionContext>(ctx => capturedContext = ctx),
+                Arg.Any<IEnumerable<string>>())
+            .Returns(AllDeny());
+
+        await _sut.ResolveForRoleAsync(EveryoneRoleAlias, nodeKey, path);
+
+        Assert.NotNull(capturedContext);
+        Assert.Single(capturedContext.RoleAliases);
+        Assert.Equal(EveryoneRoleAlias, capturedContext.RoleAliases[0]);
+    }
+
+    /// <summary>
+    /// ResolveForRoleAsync when called with the $everyone role and a virtual-root entry exists
+    /// should produce a reasoning list with exactly one entry, not two identical entries.
+    /// This is the end-to-end regression test for the duplicate-reasoning bug visible in the Access Viewer.
+    /// </summary>
+    [Fact]
+    public async Task ResolveForRoleAsync_EveryoneRole_WithVirtualRootEntry_ReasoningHasNoDuplicates()
+    {
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+
+        // Virtual-root entry for $everyone — the scenario that produced duplicate reasoning rows
+        var virtualEntry = MakeEntry(VirtualRootNodeKey, EveryoneRoleAlias, VerbRead);
+        _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>())
+            .Returns([virtualEntry]);
+
+        // Use the real resolver so reasoning is built from the actual resolution context
+        var sut = new AdvancedPermissionService(
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+
+        var results = await sut.ResolveForRoleAsync(EveryoneRoleAlias, nodeKey, path);
+
+        var readResult = results[VerbRead];
+        Assert.True(readResult.IsAllowed);
+        Assert.Single(readResult.Reasoning);
+        Assert.Equal(EveryoneRoleAlias, readResult.Reasoning[0].ContributingRole);
+        Assert.True(readResult.Reasoning[0].IsFromGroupDefault);
+    }
+
+    /// <summary>
+    /// ResolveForRoleAsync should forward the verb filter to the resolver, not apply it itself.
+    /// The caller-supplied verbs should be exactly what the resolver receives.
+    /// </summary>
+    [Fact]
+    public async Task ResolveForRoleAsync_VerbFilter_ForwardsVerbsToResolver()
+    {
+        const string role = "editors";
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+
+        _repository.GetByRoleAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        IEnumerable<string>? resolverVerbs = null;
+        _resolver.ResolveAll(
+                Arg.Any<PermissionResolutionContext>(),
+                Arg.Do<IEnumerable<string>>(v => resolverVerbs = v))
+            .Returns(new Dictionary<string, EffectivePermission>
+            {
+                [VerbRead] = new EffectivePermission(VerbRead, IsAllowed: false, IsExplicit: false, Reasoning: []),
+                [VerbCreate] = new EffectivePermission(VerbCreate, IsAllowed: false, IsExplicit: false, Reasoning: []),
+            });
+
+        await _sut.ResolveForRoleAsync(role, nodeKey, path, verbs: [VerbRead, VerbCreate]);
+
+        Assert.NotNull(resolverVerbs);
+        var verbList = resolverVerbs!.ToList();
+        Assert.Equal(2, verbList.Count);
+        Assert.Contains(VerbRead, verbList);
+        Assert.Contains(VerbCreate, verbList);
+    }
+
+    /// <summary>
+    /// ResolveForRoleAsync should load entries for both the specified role and $everyone from the
+    /// repository, so that both contribute to the resolution context.
+    /// </summary>
+    [Fact]
+    public async Task ResolveForRoleAsync_LoadsEntriesForBothRoleAndEveryone()
+    {
+        const string role = "editors";
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+
+        _repository.GetByRoleAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+        _resolver.ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>())
+            .Returns(AllDeny());
+
+        await _sut.ResolveForRoleAsync(role, nodeKey, path);
+
+        await _repository.Received(1).GetByRoleAsync(role, Arg.Any<CancellationToken>());
+        await _repository.Received(1).GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>());
+    }
+
+    // ─── Repository delegation ────────────────────────────────────────────────
+
+    /// <summary>
+    /// GetEntriesAsync should delegate directly to repository.GetByNodeAndRoleAsync.
+    /// </summary>
+    [Fact]
+    public async Task GetEntriesAsync_DelegatesTo_RepositoryGetByNodeAndRoleAsync()
+    {
+        var nodeKey = Guid.NewGuid();
+        const string role = "editors";
+        var expected = new List<AdvancedPermissionEntry> { MakeEntry(nodeKey, role, VerbRead) };
+        _repository.GetByNodeAndRoleAsync(nodeKey, role, Arg.Any<CancellationToken>())
+            .Returns(expected);
+
+        var result = await _sut.GetEntriesAsync(nodeKey, role);
+
+        Assert.Equal(expected, result);
+        await _repository.Received(1).GetByNodeAndRoleAsync(nodeKey, role, Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// GetEntriesByNodesAndRoleAsync should delegate directly to repository.GetByNodesAndRoleAsync.
+    /// </summary>
+    [Fact]
+    public async Task GetEntriesByNodesAndRoleAsync_DelegatesTo_RepositoryGetByNodesAndRoleAsync()
+    {
+        var nodeKeys = new[] { Guid.NewGuid(), Guid.NewGuid() };
+        const string role = "editors";
+        var expected = new List<AdvancedPermissionEntry> { MakeEntry(nodeKeys[0], role, VerbRead) };
+        _repository.GetByNodesAndRoleAsync(nodeKeys, role, Arg.Any<CancellationToken>())
+            .Returns(expected);
+
+        var result = await _sut.GetEntriesByNodesAndRoleAsync(nodeKeys, role);
+
+        Assert.Equal(expected, result);
+        await _repository.Received(1).GetByNodesAndRoleAsync(nodeKeys, role, Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// GetEntriesByNodeAsync should delegate directly to repository.GetByNodeAsync.
+    /// </summary>
+    [Fact]
+    public async Task GetEntriesByNodeAsync_DelegatesTo_RepositoryGetByNodeAsync()
+    {
+        var nodeKey = Guid.NewGuid();
+        var expected = new List<AdvancedPermissionEntry> { MakeEntry(nodeKey, "editors", VerbRead) };
+        _repository.GetByNodeAsync(nodeKey, Arg.Any<CancellationToken>())
+            .Returns(expected);
+
+        var result = await _sut.GetEntriesByNodeAsync(nodeKey);
+
+        Assert.Equal(expected, result);
+        await _repository.Received(1).GetByNodeAsync(nodeKey, Arg.Any<CancellationToken>());
+    }
+
+    // ─── SaveEntriesAsync ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// SaveEntriesAsync should forward the exact node, role, and entries to the repository.
+    /// </summary>
+    [Fact]
+    public async Task SaveEntriesAsync_DelegatesEntriesTo_RepositorySaveAsync()
+    {
+        var nodeKey = Guid.NewGuid();
+        const string role = "editors";
+        var entries = new[]
+        {
+            (VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+        };
+
+        await _sut.SaveEntriesAsync(nodeKey, role, entries);
+
+        await _repository.Received(1).SaveAsync(nodeKey, role, entries, Arg.Any<CancellationToken>());
+    }
+
+    // ─── DeleteEntryAsync ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// DeleteEntryAsync should forward the exact node, role, and verb to the repository.
+    /// </summary>
+    [Fact]
+    public async Task DeleteEntryAsync_DelegatesTo_RepositoryDeleteAsync()
+    {
+        var nodeKey = Guid.NewGuid();
+        const string role = "editors";
+
+        await _sut.DeleteEntryAsync(nodeKey, role, VerbRead);
+
+        await _repository.Received(1).DeleteAsync(nodeKey, role, VerbRead, Arg.Any<CancellationToken>());
+    }
+
+    // ─── Cache behaviour ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Tests that verify the L1 (role entry) and L2 (resolved permission) cache layers behave
+    /// correctly. These tests use a real in-memory cache so cache hits and invalidations are
+    /// exercised end-to-end.
+    /// </summary>
+    public sealed class CacheTests
+    {
+        private readonly IAdvancedPermissionRepository _repository = Substitute.For<IAdvancedPermissionRepository>();
+        private readonly IPermissionResolver _resolver = Substitute.For<IPermissionResolver>();
+        private readonly IUserService _userService = Substitute.For<IUserService>();
+        private readonly AdvancedPermissionService _sut;
+
+        /// <summary>Initialises substituted dependencies and a real in-memory cache.</summary>
+        public CacheTests()
+        {
+            var cache = new AdvancedPermissionCache(new AppCaches(
+                new ObjectCacheAppCache(),
+                NoAppCache.Instance,
+                new IsolatedCaches(_ => NoAppCache.Instance)));
+            _sut = new AdvancedPermissionService(_repository, _resolver, _userService, cache);
+        }
+
+        private void SetupUserWithKey(Guid userKey)
+        {
+            var user = Substitute.For<IUser>();
+            user.Key.Returns(userKey);
+            user.Groups.Returns(Array.Empty<IReadOnlyUserGroup>());
+            long total;
+            _userService.GetAll(Arg.Any<long>(), Arg.Any<int>(), out total)
+                .Returns(new[] { user });
+        }
+
+        private static Dictionary<string, EffectivePermission> AllDeny() =>
+            AllVerbs.ToDictionary(v => v, v => new EffectivePermission(v, IsAllowed: false, IsExplicit: false, Reasoning: []));
+
+        /// <summary>
+        /// The L1 cache should store role entries after the first resolution so that the
+        /// repository is not queried again for the same role on a subsequent call.
+        /// </summary>
+        [Fact]
+        public async Task L1Cache_RoleEntries_CachedAfterFirstResolve_RepositoryNotCalledAgain()
+        {
+            const string role = "editors";
+            var nodeKey = Guid.NewGuid();
+            var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+
+            _repository.GetByRoleAsync(role, Arg.Any<CancellationToken>()).Returns([]);
+            _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
+            _resolver.ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>())
+                .Returns(AllDeny());
+
+            // First call — L1 cache cold
+            await _sut.ResolveForRoleAsync(role, nodeKey, path);
+            // Second call — L1 should be warm, repository should NOT be called again
+            await _sut.ResolveForRoleAsync(role, nodeKey, path);
+
+            await _repository.Received(1).GetByRoleAsync(role, Arg.Any<CancellationToken>());
+        }
+
+        /// <summary>
+        /// The L2 cache should store resolved permissions after the first resolution so that
+        /// the resolver is not invoked again for the same user and node on a subsequent call.
+        /// </summary>
+        [Fact]
+        public async Task L2Cache_ResolvedPermissions_CachedAfterFirstResolve_ResolverNotCalledAgain()
+        {
+            var userKey = Guid.NewGuid();
+            var nodeKey = Guid.NewGuid();
+            var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+            SetupUserWithKey(userKey);
+            _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
+            _resolver.ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>())
+                .Returns(AllDeny());
+
+            // First call — L2 cache cold
+            await _sut.ResolveAllAsync(userKey, nodeKey, path);
+            // Second call — L2 should be warm, resolver should NOT be called again
+            await _sut.ResolveAllAsync(userKey, nodeKey, path);
+
+            _resolver.Received(1).ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>());
+        }
+
+        /// <summary>
+        /// SaveEntriesAsync should invalidate the L1 cache for the saved role so that the
+        /// repository is consulted again on the next resolution for that role.
+        /// </summary>
+        [Fact]
+        public async Task L1Cache_InvalidatedBySaveEntriesAsync_RepositoryCalledAgainAfterSave()
+        {
+            const string role = "editors";
+            var nodeKey = Guid.NewGuid();
+            var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+
+            _repository.GetByRoleAsync(role, Arg.Any<CancellationToken>()).Returns([]);
+            _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
+            _resolver.ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>())
+                .Returns(AllDeny());
+
+            // Warm the L1 cache
+            await _sut.ResolveForRoleAsync(role, nodeKey, path);
+            await _repository.Received(1).GetByRoleAsync(role, Arg.Any<CancellationToken>());
+
+            // Invalidate via save
+            await _sut.SaveEntriesAsync(nodeKey, role, []);
+
+            // Resolve again — L1 cache invalidated, repository must be called again
+            await _sut.ResolveForRoleAsync(role, nodeKey, path);
+            await _repository.Received(2).GetByRoleAsync(role, Arg.Any<CancellationToken>());
+        }
+
+        /// <summary>
+        /// DeleteEntryAsync should invalidate the L1 cache for the affected role so that
+        /// the repository is consulted again on the next resolution for that role.
+        /// </summary>
+        [Fact]
+        public async Task L1Cache_InvalidatedByDeleteEntryAsync_RepositoryCalledAgainAfterDelete()
+        {
+            const string role = "editors";
+            var nodeKey = Guid.NewGuid();
+            var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+
+            _repository.GetByRoleAsync(role, Arg.Any<CancellationToken>()).Returns([]);
+            _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
+            _resolver.ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>())
+                .Returns(AllDeny());
+
+            // Warm the L1 cache
+            await _sut.ResolveForRoleAsync(role, nodeKey, path);
+            await _repository.Received(1).GetByRoleAsync(role, Arg.Any<CancellationToken>());
+
+            // Invalidate via delete
+            await _sut.DeleteEntryAsync(nodeKey, role, VerbRead);
+
+            // Resolve again — L1 cache invalidated, repository must be called again
+            await _sut.ResolveForRoleAsync(role, nodeKey, path);
+            await _repository.Received(2).GetByRoleAsync(role, Arg.Any<CancellationToken>());
+        }
+
+        /// <summary>
+        /// SaveEntriesAsync should invalidate the entire L2 cache so that resolved permissions
+        /// for any user are recalculated after a save.
+        /// </summary>
+        [Fact]
+        public async Task L2Cache_InvalidatedBySaveEntriesAsync_ResolverCalledAgainAfterSave()
+        {
+            var userKey = Guid.NewGuid();
+            var nodeKey = Guid.NewGuid();
+            var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+            SetupUserWithKey(userKey);
+            _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
+            _resolver.ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>())
+                .Returns(AllDeny());
+
+            // Warm the L2 cache
+            await _sut.ResolveAllAsync(userKey, nodeKey, path);
+            _resolver.Received(1).ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>());
+
+            // Invalidate via save
+            await _sut.SaveEntriesAsync(nodeKey, EveryoneRoleAlias, []);
+
+            // Resolve again — L2 cache invalidated, resolver must be called again
+            await _sut.ResolveAllAsync(userKey, nodeKey, path);
+            _resolver.Received(2).ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>());
+        }
+
+        /// <summary>
+        /// DeleteEntryAsync should invalidate the entire L2 cache so that resolved permissions
+        /// for any user are recalculated after a delete.
+        /// </summary>
+        [Fact]
+        public async Task L2Cache_InvalidatedByDeleteEntryAsync_ResolverCalledAgainAfterDelete()
+        {
+            var userKey = Guid.NewGuid();
+            var nodeKey = Guid.NewGuid();
+            var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+            SetupUserWithKey(userKey);
+            _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
+            _resolver.ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>())
+                .Returns(AllDeny());
+
+            // Warm the L2 cache
+            await _sut.ResolveAllAsync(userKey, nodeKey, path);
+            _resolver.Received(1).ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>());
+
+            // Invalidate via delete
+            await _sut.DeleteEntryAsync(nodeKey, EveryoneRoleAlias, VerbRead);
+
+            // Resolve again — L2 cache invalidated, resolver must be called again
+            await _sut.ResolveAllAsync(userKey, nodeKey, path);
+            _resolver.Received(2).ResolveAll(Arg.Any<PermissionResolutionContext>(), Arg.Any<IEnumerable<string>>());
+        }
+    }
+}

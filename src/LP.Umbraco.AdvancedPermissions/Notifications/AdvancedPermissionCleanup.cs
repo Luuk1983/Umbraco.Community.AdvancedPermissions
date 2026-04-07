@@ -2,19 +2,27 @@ using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Models.Membership;
 using LP.Umbraco.AdvancedPermissions.Caching;
 using LP.Umbraco.AdvancedPermissions.Core.Interfaces;
 
 namespace LP.Umbraco.AdvancedPermissions.Notifications;
 
 /// <summary>
-/// Deletes orphaned permission entries when content is permanently removed from the system.
+/// Deletes orphaned permission entries when content nodes or user groups are permanently removed
+/// from the system.
 /// </summary>
 /// <remarks>
-/// Only <see cref="ContentDeletedNotification"/> is handled because Umbraco fires it for
+/// <para>
+/// Only <see cref="ContentDeletedNotification"/> is handled for content because Umbraco fires it for
 /// every individual item — including each item deleted during an "empty recycle bin" operation
 /// (via <c>ContentService.DeleteLocked</c>). A separate
 /// <see cref="ContentEmptiedRecycleBinNotification"/> handler is therefore not required.
+/// </para>
+/// <para>
+/// <see cref="UserGroupDeletedNotification"/> is handled to remove all permission entries that
+/// reference the deleted group's alias, preventing orphaned rows in the database.
+/// </para>
 /// </remarks>
 /// <param name="repository">The permission repository used to delete entries.</param>
 /// <param name="cache">The permission cache to invalidate after cleanup.</param>
@@ -23,7 +31,8 @@ public sealed class AdvancedPermissionCleanup(
     IAdvancedPermissionRepository repository,
     AdvancedPermissionCache cache,
     ILogger<AdvancedPermissionCleanup> logger)
-    : INotificationAsyncHandler<ContentDeletedNotification>
+    : INotificationAsyncHandler<ContentDeletedNotification>,
+      INotificationAsyncHandler<UserGroupDeletedNotification>
 {
     /// <summary>
     /// Handles the <see cref="ContentDeletedNotification"/> by removing all permission entries
@@ -31,16 +40,9 @@ public sealed class AdvancedPermissionCleanup(
     /// </summary>
     public async Task HandleAsync(ContentDeletedNotification notification, CancellationToken cancellationToken)
     {
-        await CleanupDeletedEntitiesAsync(notification.DeletedEntities, cancellationToken);
-    }
-
-    private async Task CleanupDeletedEntitiesAsync(
-        IEnumerable<IContent> deletedEntities,
-        CancellationToken cancellationToken)
-    {
         var count = 0;
 
-        foreach (var entity in deletedEntities)
+        foreach (var entity in notification.DeletedEntities)
         {
             try
             {
@@ -58,12 +60,46 @@ public sealed class AdvancedPermissionCleanup(
 
         if (count > 0)
         {
-            // Invalidate all caches — any role may have had entries for the deleted nodes
             cache.InvalidateAllRoleEntries();
             cache.InvalidateAllResolved();
 
             logger.LogDebug(
                 "Advanced Permissions: Cleaned up permissions for {Count} deleted content node(s)",
+                count);
+        }
+    }
+
+    /// <summary>
+    /// Handles the <see cref="UserGroupDeletedNotification"/> by removing all permission entries
+    /// for each deleted user group's alias.
+    /// </summary>
+    public async Task HandleAsync(UserGroupDeletedNotification notification, CancellationToken cancellationToken)
+    {
+        var count = 0;
+
+        foreach (var group in notification.DeletedEntities)
+        {
+            try
+            {
+                await repository.DeleteAllForRoleAsync(group.Alias, cancellationToken);
+                count++;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(
+                    ex,
+                    "Advanced Permissions: Failed to clean up permissions for deleted user group {RoleAlias}",
+                    group.Alias);
+            }
+        }
+
+        if (count > 0)
+        {
+            cache.InvalidateAllRoleEntries();
+            cache.InvalidateAllResolved();
+
+            logger.LogDebug(
+                "Advanced Permissions: Cleaned up permissions for {Count} deleted user group(s)",
                 count);
         }
     }

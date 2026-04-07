@@ -113,4 +113,14 @@ public interface IAdvancedPermissionRepository
     Task DeleteAllForNodeAsync(
         Guid nodeKey,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Removes all permission entries for a specific role across all nodes.
+    /// Used when a user group is permanently deleted.
+    /// </summary>
+    /// <param name="roleAlias">The role alias to remove all entries for.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    Task DeleteAllForRoleAsync(
+        string roleAlias,
+        CancellationToken cancellationToken = default);
 }

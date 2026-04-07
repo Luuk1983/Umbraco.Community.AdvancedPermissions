@@ -563,6 +563,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
         <uui-dialog-layout
           headline=${this.#localize.term('uap_dialogHeadline', verbName, nodeName)}>
 
+          ${!this._pickerIsVirtualRoot ? html`<p class="dialog-instructions">${this.#localize.term('uap_dialogInstructions')}</p>` : nothing}
           ${this._pickerIsVirtualRoot ? this.#renderVirtualRootOptions() : this.#renderNodeOptions()}
 
           <div slot="actions">
@@ -691,8 +692,8 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
         </div>
       </div>
 
-      <div class="dialog-preview">
-        <h4>${this.#localize.term('uap_dialogPreview')}</h4>
+      <div class="dialog-result">
+        <h4>${this.#localize.term('uap_dialogResult')}</h4>
         ${this.#renderPreview()}
       </div>
     `;
@@ -707,7 +708,6 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       <div class="dialog-sections">
         <div class="dialog-section">
           <h4 class="dialog-section-title" title=${nodeName}>${nodeName}</h4>
-          <p class="dialog-help">${this.#localize.term('uap_dialogNodeHelp')}</p>
           <div class="perm-options">
             ${this.#renderOptionTile('inherit', this._pickerNodeState === 'inherit', () => { this._pickerNodeState = 'inherit'; })}
             ${this.#renderOptionTile('allow', this._pickerNodeState === 'allow', () => { this._pickerNodeState = 'allow'; })}
@@ -717,7 +717,6 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
 
         <div class="dialog-section">
           <h4>${this.#localize.term('uap_descendantsSection')}</h4>
-          <p class="dialog-help">${this.#localize.term('uap_dialogDescHelp')}</p>
           <div class="perm-options">
             ${this.#renderOptionTile('inherit', descSelected === 'inherit', () => {
               if (descSelected === 'inherit') { this._pickerSameAsNode = true; }
@@ -735,8 +734,8 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
         </div>
       </div>
 
-      <div class="dialog-preview">
-        <h4>${this.#localize.term('uap_dialogPreview')}</h4>
+      <div class="dialog-result">
+        <h4>${this.#localize.term('uap_dialogResult')}</h4>
         ${this.#renderPreview()}
       </div>
     `;
@@ -1029,11 +1028,11 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       max-width: 100%;
     }
 
-    .dialog-help {
-      margin: 0 0 8px;
-      font-size: 12px;
-      color: var(--uui-color-text-alt, #888);
-      line-height: 1.4;
+    .dialog-instructions {
+      margin: 0 0 16px;
+      font-size: 13px;
+      color: var(--uui-color-text-alt, #666);
+      line-height: 1.5;
     }
 
     /* ── Option tiles ─────────────────────────────────────────── */
@@ -1113,13 +1112,13 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     }
 
     /* ── Preview ──────────────────────────────────────────────── */
-    .dialog-preview {
+    .dialog-result {
       margin-top: 16px;
       padding-top: 16px;
       border-top: 1px solid var(--uui-color-border, #eee);
     }
 
-    .dialog-preview h4 {
+    .dialog-result h4 {
       margin: 0 0 8px;
       font-size: 13px;
       font-weight: 600;

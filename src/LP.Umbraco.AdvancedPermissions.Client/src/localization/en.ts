@@ -8,8 +8,8 @@ export default {
     accessViewer: 'Access Viewer',
 
     // ── Common ────────────────────────────────────────────────────────────
-    roleLabel: 'Role',
-    rolePlaceholder: '\u2014 Select a role \u2014',
+    roleLabel: 'User Group',
+    rolePlaceholder: '\u2014 Select a user group \u2014',
     userLabel: 'User',
     saveChanges: 'Save Changes',
     discard: 'Discard',
@@ -19,11 +19,11 @@ export default {
     inherit: 'Inherit',
     allow: 'Allow',
     deny: 'Deny',
-    umbracoUsers: 'Umbraco Users',
+    umbracoUsers: 'All Users',
 
     // ── Permissions Editor ───────────────────────────────────────────────
     editorHeadline: 'Permissions Editor',
-    selectRolePrompt: 'Select a role above to manage its permissions.',
+    selectRolePrompt: 'Select a user group above to manage its permissions.',
     permissionsSaved: 'Permissions saved.',
     saveFailed: (error: string) => `Save failed: ${error}`,
     contentNodeHeader: 'Content Node',
@@ -33,16 +33,15 @@ export default {
 
     // ── Permission dialog ─────────────────────────────────────────────────
     dialogHeadline: (verb: string, nodeName: string) => `Set ${verb} permission for \u2018${nodeName}\u2019`,
-    descendantsSection: 'Descendants',
-    dialogNodeHelp: 'Set the permission for this specific content node.',
-    dialogDescHelp: 'Optionally override for descendants. Leave empty to apply the same as this node.',
+    descendantsSection: 'Descendant override',
+    dialogInstructions: 'Set the permission for this node. By default, this also applies to all descendants. Use the descendant override to set a different permission for descendant nodes.',
     virtualRootInherit: 'Not set (remove entry)',
     virtualRootAllow: 'Allow (all content)',
     virtualRootDeny: 'Deny (all content)',
-    dialogPreview: 'Preview',
+    dialogResult: 'Result',
     previewBothInherit: 'No permission set. Inherits from parent.',
     previewUniform: (action: string) => `${action} on this node and all descendants.`,
-    previewNodeOnly: (action: string) => `${action} on this node only. Descendants inherit from their parent.`,
+    previewNodeOnly: (action: string) => `${action} on this node only. Descendants are not affected by this rule.`,
     previewDescOnly: (action: string) => `No explicit permission on this node. ${action} on all descendants.`,
     previewSplit: (nodeAction: string, descAction: string) => `${nodeAction} on this node. ${descAction} on all descendants.`,
     previewVirtualInherit: 'No default permission set.',
@@ -50,20 +49,20 @@ export default {
 
     // ── Access Viewer ─────────────────────────────────────────────────────
     viewerHeadline: 'Access Viewer',
-    byRole: 'By Role',
+    byRole: 'By User Group',
     byUser: 'By User',
-    chooseRole: 'Choose role',
+    chooseRole: 'Choose user group',
     chooseUser: 'Choose user',
-    selectSubjectPrompt: 'Select a role or user to view effective permissions.',
+    selectSubjectPrompt: 'Select a user group or user to view effective permissions.',
     legendAllow: 'Allow',
     legendDeny: 'Deny',
     clickForReasoning: (label: string) => `${label} \u2014 click for reasoning`,
 
     // ── Role picker modal ─────────────────────────────────────────────────
-    rolePickerHeadline: 'Select a role',
+    rolePickerHeadline: 'Select a user group',
     rolePickerFilter: 'Type to filter\u2026',
-    rolePickerNoResults: 'No roles match the filter.',
-    rolePickerNameHeader: 'Role',
+    rolePickerNoResults: 'No user groups match the filter.',
+    rolePickerNameHeader: 'User Group',
 
     // ── User picker modal ─────────────────────────────────────────────────
     userPickerHeadline: 'Select a user',

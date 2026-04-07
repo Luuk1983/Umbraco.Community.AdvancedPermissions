@@ -8,8 +8,8 @@ export default {
     accessViewer: 'Zugriffsanzeige',
 
     // ── Allgemein ─────────────────────────────────────────────────────────
-    roleLabel: 'Rolle',
-    rolePlaceholder: '\u2014 Rolle ausw\u00e4hlen \u2014',
+    roleLabel: 'Benutzergruppe',
+    rolePlaceholder: '\u2014 Benutzergruppe ausw\u00e4hlen \u2014',
     userLabel: 'Benutzer',
     saveChanges: '\u00c4nderungen speichern',
     discard: 'Verwerfen',
@@ -19,11 +19,11 @@ export default {
     inherit: 'Vererben',
     allow: 'Erlauben',
     deny: 'Verweigern',
-    umbracoUsers: 'Umbraco-Benutzer',
+    umbracoUsers: 'Alle Benutzer',
 
     // ── Berechtigungseditor ──────────────────────────────────────────────
     editorHeadline: 'Berechtigungseditor',
-    selectRolePrompt: 'W\u00e4hlen Sie oben eine Rolle aus, um deren Berechtigungen zu verwalten.',
+    selectRolePrompt: 'W\u00e4hlen Sie oben eine Benutzergruppe aus, um deren Berechtigungen zu verwalten.',
     permissionsSaved: 'Berechtigungen gespeichert.',
     saveFailed: (error: string) => `Speichern fehlgeschlagen: ${error}`,
     contentNodeHeader: 'Inhaltsknoten',
@@ -33,16 +33,15 @@ export default {
 
     // ── Berechtigungsdialog ───────────────────────────────────────────────
     dialogHeadline: (verb: string, nodeName: string) => `${verb}-Berechtigung f\u00fcr \u201e${nodeName}\u201c festlegen`,
-    descendantsSection: 'Untergeordnete Knoten',
-    dialogNodeHelp: 'Legen Sie die Berechtigung f\u00fcr diesen spezifischen Inhaltsknoten fest.',
-    dialogDescHelp: 'Optional f\u00fcr untergeordnete Knoten \u00fcberschreiben. Leer lassen, um denselben Status wie dieser Knoten anzuwenden.',
+    descendantsSection: '\u00dcberschreibung untergeordneter Knoten',
+    dialogInstructions: 'Legen Sie die Berechtigung f\u00fcr diesen Knoten fest. Standardm\u00e4\u00dfig gilt dies auch f\u00fcr alle untergeordneten Knoten. Verwenden Sie die \u00dcberschreibung, um eine andere Berechtigung f\u00fcr untergeordnete Knoten festzulegen.',
     virtualRootInherit: 'Nicht festgelegt (Eintrag entfernen)',
     virtualRootAllow: 'Erlauben (gesamter Inhalt)',
     virtualRootDeny: 'Verweigern (gesamter Inhalt)',
-    dialogPreview: 'Vorschau',
+    dialogResult: 'Ergebnis',
     previewBothInherit: 'Keine Berechtigung festgelegt. Erbt vom \u00fcbergeordneten Knoten.',
     previewUniform: (action: string) => `${action} f\u00fcr diesen Knoten und alle untergeordneten Knoten.`,
-    previewNodeOnly: (action: string) => `${action} nur f\u00fcr diesen Knoten. Untergeordnete Knoten erben von ihrem \u00fcbergeordneten Knoten.`,
+    previewNodeOnly: (action: string) => `${action} nur f\u00fcr diesen Knoten. Untergeordnete Knoten werden von dieser Regel nicht beeinflusst.`,
     previewDescOnly: (action: string) => `Keine explizite Berechtigung f\u00fcr diesen Knoten. ${action} f\u00fcr alle untergeordneten Knoten.`,
     previewSplit: (nodeAction: string, descAction: string) => `${nodeAction} f\u00fcr diesen Knoten. ${descAction} f\u00fcr alle untergeordneten Knoten.`,
     previewVirtualInherit: 'Keine Standardberechtigung festgelegt.',
@@ -50,20 +49,20 @@ export default {
 
     // ── Zugriffsanzeige ───────────────────────────────────────────────────
     viewerHeadline: 'Zugriffsanzeige',
-    byRole: 'Nach Rolle',
+    byRole: 'Nach Benutzergruppe',
     byUser: 'Nach Benutzer',
-    chooseRole: 'Rolle ausw\u00e4hlen',
+    chooseRole: 'Benutzergruppe ausw\u00e4hlen',
     chooseUser: 'Benutzer ausw\u00e4hlen',
-    selectSubjectPrompt: 'W\u00e4hlen Sie eine Rolle oder einen Benutzer aus, um die effektiven Berechtigungen anzuzeigen.',
+    selectSubjectPrompt: 'W\u00e4hlen Sie eine Benutzergruppe oder einen Benutzer aus, um die effektiven Berechtigungen anzuzeigen.',
     legendAllow: 'Erlauben',
     legendDeny: 'Verweigern',
     clickForReasoning: (label: string) => `${label} \u2014 Klicken f\u00fcr Begr\u00fcndung`,
 
     // ── Rollenauswahlmodal ─────────────────────────────────────────────────
-    rolePickerHeadline: 'Rolle ausw\u00e4hlen',
-    rolePickerFilter: 'Rollen filtern\u2026',
-    rolePickerNoResults: 'Keine Rollen gefunden.',
-    rolePickerNameHeader: 'Rolle',
+    rolePickerHeadline: 'Benutzergruppe ausw\u00e4hlen',
+    rolePickerFilter: 'Benutzergruppen filtern\u2026',
+    rolePickerNoResults: 'Keine Benutzergruppen gefunden.',
+    rolePickerNameHeader: 'Benutzergruppe',
 
     // ── Benutzerauswahlmodal ───────────────────────────────────────────────
     userPickerHeadline: 'Benutzer ausw\u00e4hlen',

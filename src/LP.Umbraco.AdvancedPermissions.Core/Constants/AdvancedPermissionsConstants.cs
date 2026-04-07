@@ -21,7 +21,7 @@ public static class AdvancedPermissionsConstants
     /// <summary>
     /// The display name shown in the UI for the Everyone role.
     /// </summary>
-    public const string EveryoneRoleDisplayName = "Umbraco Users";
+    public const string EveryoneRoleDisplayName = "All Users";
 
     /// <summary>
     /// Standard Umbraco permission verb for reading/browsing a document.

@@ -8,8 +8,8 @@ export default {
     accessViewer: 'Toegangsweergave',
 
     // ── Algemeen ──────────────────────────────────────────────────────────
-    roleLabel: 'Rol',
-    rolePlaceholder: '\u2014 Selecteer een rol \u2014',
+    roleLabel: 'Gebruikersgroep',
+    rolePlaceholder: '\u2014 Selecteer een gebruikersgroep \u2014',
     userLabel: 'Gebruiker',
     saveChanges: 'Wijzigingen opslaan',
     discard: 'Verwerpen',
@@ -19,11 +19,11 @@ export default {
     inherit: 'Overnemen',
     allow: 'Toestaan',
     deny: 'Weigeren',
-    umbracoUsers: 'Umbraco-gebruikers',
+    umbracoUsers: 'Alle gebruikers',
 
     // ── Machtigingeneditor ───────────────────────────────────────────────
     editorHeadline: 'Machtigingeneditor',
-    selectRolePrompt: 'Selecteer hierboven een rol om de machtigingen te beheren.',
+    selectRolePrompt: 'Selecteer hierboven een gebruikersgroep om de machtigingen te beheren.',
     permissionsSaved: 'Machtigingen opgeslagen.',
     saveFailed: (error: string) => `Opslaan mislukt: ${error}`,
     contentNodeHeader: 'Contentpagina',
@@ -33,16 +33,15 @@ export default {
 
     // ── Machtigingsdialoog ────────────────────────────────────────────────
     dialogHeadline: (verb: string, nodeName: string) => `${verb}-machtiging instellen voor \u2018${nodeName}\u2019`,
-    descendantsSection: 'Onderliggende pagina\u2019s',
-    dialogNodeHelp: 'Stel de machtigingsstatus in voor deze specifieke contentpagina.',
-    dialogDescHelp: 'Optioneel overschrijven voor onderliggende pagina\u2019s. Laat leeg om dezelfde status als deze pagina toe te passen.',
+    descendantsSection: 'Overschrijving onderliggende pagina\u2019s',
+    dialogInstructions: 'Stel de machtiging in voor deze pagina. Standaard geldt dit ook voor alle onderliggende pagina\u2019s. Gebruik de overschrijving om een andere machtiging in te stellen voor onderliggende pagina\u2019s.',
     virtualRootInherit: 'Niet ingesteld (verwijder vermelding)',
     virtualRootAllow: 'Toestaan (alle content)',
     virtualRootDeny: 'Weigeren (alle content)',
-    dialogPreview: 'Voorbeeld',
+    dialogResult: 'Resultaat',
     previewBothInherit: 'Geen machtiging ingesteld. Neemt over van bovenliggende pagina.',
     previewUniform: (action: string) => `${action} voor deze pagina en alle onderliggende pagina\u2019s.`,
-    previewNodeOnly: (action: string) => `${action} alleen voor deze pagina. Onderliggende pagina\u2019s nemen over van hun bovenliggende pagina.`,
+    previewNodeOnly: (action: string) => `${action} alleen voor deze pagina. Onderliggende pagina\u2019s worden niet be\u00efnvloed door deze regel.`,
     previewDescOnly: (action: string) => `Geen expliciete machtiging voor deze pagina. ${action} voor alle onderliggende pagina\u2019s.`,
     previewSplit: (nodeAction: string, descAction: string) => `${nodeAction} voor deze pagina. ${descAction} voor alle onderliggende pagina\u2019s.`,
     previewVirtualInherit: 'Geen standaardmachtiging ingesteld.',
@@ -50,20 +49,20 @@ export default {
 
     // ── Toegangsweergave ──────────────────────────────────────────────────
     viewerHeadline: 'Toegangsweergave',
-    byRole: 'Op rol',
+    byRole: 'Op gebruikersgroep',
     byUser: 'Op gebruiker',
-    chooseRole: 'Kies rol',
+    chooseRole: 'Kies gebruikersgroep',
     chooseUser: 'Kies gebruiker',
-    selectSubjectPrompt: 'Selecteer een rol of gebruiker om de effectieve machtigingen te bekijken.',
+    selectSubjectPrompt: 'Selecteer een gebruikersgroep of gebruiker om de effectieve machtigingen te bekijken.',
     legendAllow: 'Toestaan',
     legendDeny: 'Weigeren',
     clickForReasoning: (label: string) => `${label} \u2014 klik voor onderbouwing`,
 
     // ── Rolkiezerdialoog ──────────────────────────────────────────────────
-    rolePickerHeadline: 'Selecteer een rol',
-    rolePickerFilter: 'Rollen filteren\u2026',
-    rolePickerNoResults: 'Geen rollen gevonden.',
-    rolePickerNameHeader: 'Rol',
+    rolePickerHeadline: 'Selecteer een gebruikersgroep',
+    rolePickerFilter: 'Gebruikersgroepen filteren\u2026',
+    rolePickerNoResults: 'Geen gebruikersgroepen gevonden.',
+    rolePickerNameHeader: 'Gebruikersgroep',
 
     // ── Gebruikerskiezerdialoog ───────────────────────────────────────────
     userPickerHeadline: 'Selecteer een gebruiker',

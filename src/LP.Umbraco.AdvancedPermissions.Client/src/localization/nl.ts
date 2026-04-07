@@ -19,7 +19,7 @@ export default {
     inherit: 'Overnemen',
     allow: 'Toestaan',
     deny: 'Weigeren',
-    everyoneSuffix: '(Iedereen)',
+    umbracoUsers: 'Umbraco-gebruikers',
 
     // ── Machtigingeneditor ───────────────────────────────────────────────
     editorHeadline: 'Machtigingeneditor',
@@ -65,18 +65,15 @@ export default {
     userPickerNameHeader: 'Gebruiker',
 
     // ── Onderbouwingsdialoog ──────────────────────────────────────────────
-    reasoningHeadline: (verb: string) => `Machtigingsonderbouwing: ${verb}`,
-    reasoningNodeLabel: 'Pagina',
-    resultAllowed: 'Toegestaan',
-    resultDenied: 'Geweigerd',
-    resultExplicit: 'expliciet (direct ingesteld op deze pagina)',
-    resultImplicit: 'impliciet (overgenomen of vanuit groepsstandaarden)',
-    contributingFactors: 'Bijdragende factoren:',
-    groupDefault: 'groepsstandaard',
-    fromNode: 'van pagina',
-    inherited: '(overgenomen)',
-    noReasoningData: 'Geen effectieve machtigingsgegevens beschikbaar voor dit recht.',
-    noReasoningEntries: 'Geen expliciete vermeldingen gevonden \u2014 effectieve machtiging komt van systeemstandaarden.',
+    reasoningHeadline: (verb: string, nodeName: string) => `${verb}-machtiging voor \u201c${nodeName}\u201d`,
+    effectiveAllowed: (subject: string, verb: string, nodeName: string) =>
+      `${subject} heeft ${verb}-machtiging gekregen voor \u201c${nodeName}\u201d.`,
+    effectiveDenied: (subject: string, verb: string, nodeName: string) =>
+      `${subject} is ${verb}-machtiging geweigerd voor \u201c${nodeName}\u201d.`,
+    dialogSecurityHeader: 'Beveiliging',
+    defaultPermissions: 'Standaardmachtigingen',
+    determiningEntry: 'Deze vermelding heeft voorrang',
+    noReasoningData: 'Geen machtigingsgegevens beschikbaar voor dit recht.',
 
     // ── Omleidingsbericht granulaire machtigingen ─────────────────────────
     redirectMessage:

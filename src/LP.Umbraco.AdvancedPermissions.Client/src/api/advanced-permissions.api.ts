@@ -5,6 +5,7 @@ import type {
   PermissionScope,
   TreeNode,
   EffectivePermissions,
+  PathEntriesResponse,
   VerbInfo,
   RoleInfo,
   UserItem,
@@ -98,6 +99,13 @@ export async function savePermissions(
 /** Returns stored permission entries for a node+role combination. Use VIRTUAL_ROOT_NODE_KEY for virtual-root entries. */
 export async function getPermissions(nodeKey: string, roleAlias: string, signal?: AbortSignal): Promise<PermissionEntry[]> {
   return (await apiFetch(`/permissions?nodeKey=${nodeKey}&roleAlias=${encodeURIComponent(roleAlias)}`, withSignal(signal))).json() as Promise<PermissionEntry[]>;
+}
+
+/** Returns the inheritance path and raw entries for a verb along that path. */
+export async function getPermissionsForPath(nodeKey: string, verb: string, signal?: AbortSignal): Promise<PathEntriesResponse> {
+  return (
+    await apiFetch(`/permissions/for-path?nodeKey=${nodeKey}&verb=${encodeURIComponent(verb)}`, withSignal(signal))
+  ).json() as Promise<PathEntriesResponse>;
 }
 
 /** Resolves effective permissions for a user at a content node. */

@@ -19,7 +19,7 @@ export default {
     inherit: 'Inherit',
     allow: 'Allow',
     deny: 'Deny',
-    everyoneSuffix: '(Everyone)',
+    umbracoUsers: 'Umbraco Users',
 
     // ── Permissions Editor ───────────────────────────────────────────────
     editorHeadline: 'Permissions Editor',
@@ -65,18 +65,15 @@ export default {
     userPickerNameHeader: 'User',
 
     // ── Reasoning dialog ──────────────────────────────────────────────────
-    reasoningHeadline: (verb: string) => `Permission Reasoning: ${verb}`,
-    reasoningNodeLabel: 'Node',
-    resultAllowed: 'Allowed',
-    resultDenied: 'Denied',
-    resultExplicit: 'explicit (set directly on this node)',
-    resultImplicit: 'implicit (inherited or from group defaults)',
-    contributingFactors: 'Contributing factors:',
-    groupDefault: 'group default',
-    fromNode: 'from node',
-    inherited: '(inherited)',
-    noReasoningData: 'No effective permission data available for this verb.',
-    noReasoningEntries: 'No explicit entries found \u2014 effective permission comes from system defaults.',
+    reasoningHeadline: (verb: string, nodeName: string) => `${verb} permission for \u201c${nodeName}\u201d`,
+    effectiveAllowed: (subject: string, verb: string, nodeName: string) =>
+      `${subject} has been allowed ${verb} permission for \u201c${nodeName}\u201d.`,
+    effectiveDenied: (subject: string, verb: string, nodeName: string) =>
+      `${subject} has been denied ${verb} permission for \u201c${nodeName}\u201d.`,
+    dialogSecurityHeader: 'Security',
+    defaultPermissions: 'Default permissions',
+    determiningEntry: 'This entry takes precedence',
+    noReasoningData: 'No permission data available for this verb.',
 
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:

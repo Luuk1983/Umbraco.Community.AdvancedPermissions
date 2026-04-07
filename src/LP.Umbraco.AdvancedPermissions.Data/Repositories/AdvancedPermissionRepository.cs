@@ -64,6 +64,23 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<AdvancedPermissionEntry>> GetByNodesAsync(
+        IEnumerable<Guid> nodeKeys,
+        CancellationToken cancellationToken = default)
+    {
+        var keyList = nodeKeys.ToList();
+
+        await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var entities = await db.Permissions
+            .Where(p => keyList.Contains(p.NodeKey))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return entities.ConvertAll(MapToDomain);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<AdvancedPermissionEntry>> GetByNodesAndRoleAsync(
         IEnumerable<Guid> nodeKeys,
         string roleAlias,

@@ -45,6 +45,19 @@ public interface IAdvancedPermissionRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets all permission entries for a set of node keys across all roles.
+    /// Used by the path-entries endpoint to show raw entries along an inheritance path.
+    /// </summary>
+    /// <param name="nodeKeys">
+    /// The node keys to include. Include <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> to include virtual-root entries.
+    /// </param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <returns>All entries for the given nodes across all roles.</returns>
+    Task<IReadOnlyList<AdvancedPermissionEntry>> GetByNodesAsync(
+        IEnumerable<Guid> nodeKeys,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets all permission entries for a set of role aliases across a set of node keys.
     /// Used for batch resolution (e.g., checking permissions for many nodes in one query).
     /// </summary>

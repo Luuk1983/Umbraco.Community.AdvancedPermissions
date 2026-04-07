@@ -16,6 +16,7 @@ import { VIRTUAL_ROOT_NODE_KEY } from '../models/permission.models.js';
 import { getVerbs, getTreeRoot, getTreeChildren, getPermissions, savePermissions } from '../api/advanced-permissions.api.js';
 import { clearEffectivePermissionCache } from '../conditions/document-user-permission.condition.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
+import { decomposeEntries } from '../utils/decompose-entries.js';
 import '../components/uap-picker-button.element.js';
 
 /** Pending entries for a verb: empty array means "inherit" (clear all entries for this verb). */
@@ -23,41 +24,6 @@ type PendingVerbEntries = Array<{ state: PermissionState; scope: PermissionScope
 
 /** Map of verb → pending entries for a single node. */
 type PendingNodeChanges = Map<string, PendingVerbEntries>;
-
-/** Decomposed dialog state from stored entries. */
-interface DecomposedPermission {
-  nodeState: 'inherit' | 'allow' | 'deny';
-  descState: 'inherit' | 'allow' | 'deny';
-  sameAsNode: boolean;
-}
-
-/**
- * Decompose stored entries (using backend scope model) into the dialog's UI state.
- * This handles all combinations of scopes and supports both single and dual entries per verb.
- */
-function decomposeEntries(entries: ReadonlyArray<{ state: PermissionState; scope: PermissionScope }>): DecomposedPermission {
-  let nodeState: 'inherit' | 'allow' | 'deny' = 'inherit';
-  let descState: 'inherit' | 'allow' | 'deny' = 'inherit';
-
-  for (const e of entries) {
-    const s = e.state === 'Allow' ? 'allow' as const : 'deny' as const;
-    switch (e.scope) {
-      case 'ThisNodeAndDescendants':
-        nodeState = s;
-        descState = s;
-        break;
-      case 'ThisNodeOnly':
-        nodeState = s;
-        break;
-      case 'DescendantsOnly':
-        descState = s;
-        break;
-    }
-  }
-
-  const sameAsNode = nodeState === descState;
-  return { nodeState, descState, sameAsNode };
-}
 
 /**
  * Compose dialog state back into stored entries (using backend scope model).

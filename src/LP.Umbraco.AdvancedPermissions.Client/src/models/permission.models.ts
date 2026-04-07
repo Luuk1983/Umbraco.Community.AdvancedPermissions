@@ -80,6 +80,19 @@ export interface UserItem {
   avatarUrls: string[];
 }
 
+/** A node in the inheritance path from root to target. */
+export interface PathNode {
+  key: string;
+  name: string;
+  icon: string | null;
+}
+
+/** Response from the permissions-for-path endpoint. */
+export interface PathEntriesResponse {
+  path: PathNode[];
+  entries: PermissionEntry[];
+}
+
 /** A pending verb-level change for a node in the Security Editor. */
 export interface PendingVerbChange {
   /** Entries to set for this verb. Empty array means "clear/inherit". */

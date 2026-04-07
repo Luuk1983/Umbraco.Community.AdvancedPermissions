@@ -19,7 +19,7 @@ export default {
     inherit: 'Vererben',
     allow: 'Erlauben',
     deny: 'Verweigern',
-    everyoneSuffix: '(Alle)',
+    umbracoUsers: 'Umbraco-Benutzer',
 
     // ── Berechtigungseditor ──────────────────────────────────────────────
     editorHeadline: 'Berechtigungseditor',
@@ -65,18 +65,15 @@ export default {
     userPickerNameHeader: 'Benutzer',
 
     // ── Begr\u00fcndungsdialog ──────────────────────────────────────────────
-    reasoningHeadline: (verb: string) => `Berechtigungsbegr\u00fcndung: ${verb}`,
-    reasoningNodeLabel: 'Knoten',
-    resultAllowed: 'Erlaubt',
-    resultDenied: 'Verweigert',
-    resultExplicit: 'explizit (direkt an diesem Knoten festgelegt)',
-    resultImplicit: 'implizit (vererbt oder aus Gruppenvorgaben)',
-    contributingFactors: 'Beitragende Faktoren:',
-    groupDefault: 'Gruppenvorgabe',
-    fromNode: 'von Knoten',
-    inherited: '(vererbt)',
-    noReasoningData: 'Keine effektiven Berechtigungsdaten f\u00fcr dieses Recht verf\u00fcgbar.',
-    noReasoningEntries: 'Keine expliziten Eintr\u00e4ge gefunden \u2014 effektive Berechtigung stammt aus Systemvorgaben.',
+    reasoningHeadline: (verb: string, nodeName: string) => `${verb}-Berechtigung f\u00fcr \u201e${nodeName}\u201c`,
+    effectiveAllowed: (subject: string, verb: string, nodeName: string) =>
+      `${subject} wurde die ${verb}-Berechtigung f\u00fcr \u201e${nodeName}\u201c gew\u00e4hrt.`,
+    effectiveDenied: (subject: string, verb: string, nodeName: string) =>
+      `${subject} wurde die ${verb}-Berechtigung f\u00fcr \u201e${nodeName}\u201c verweigert.`,
+    dialogSecurityHeader: 'Sicherheit',
+    defaultPermissions: 'Standardberechtigungen',
+    determiningEntry: 'Dieser Eintrag hat Vorrang',
+    noReasoningData: 'Keine Berechtigungsdaten f\u00fcr dieses Recht verf\u00fcgbar.',
 
     // ── Weiterleitungsnachricht granulare Berechtigungen ──────────────────
     redirectMessage:

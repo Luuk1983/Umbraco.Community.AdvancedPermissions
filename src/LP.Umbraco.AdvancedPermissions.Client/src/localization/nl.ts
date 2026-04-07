@@ -45,10 +45,24 @@ export default {
     viewerHeadline: 'Toegangsweergave',
     byRole: 'Op rol',
     byUser: 'Op gebruiker',
+    chooseRole: 'Kies rol',
+    chooseUser: 'Kies gebruiker',
     selectSubjectPrompt: 'Selecteer een rol of gebruiker om de effectieve machtigingen te bekijken.',
     legendAllow: 'Toestaan',
     legendDeny: 'Weigeren',
     clickForReasoning: (label: string) => `${label} \u2014 klik voor onderbouwing`,
+
+    // ── Rolkiezerdialoog ──────────────────────────────────────────────────
+    rolePickerHeadline: 'Selecteer een rol',
+    rolePickerFilter: 'Rollen filteren\u2026',
+    rolePickerNoResults: 'Geen rollen gevonden.',
+    rolePickerNameHeader: 'Rol',
+
+    // ── Gebruikerskiezerdialoog ───────────────────────────────────────────
+    userPickerHeadline: 'Selecteer een gebruiker',
+    userPickerFilter: 'Gebruikers filteren\u2026',
+    userPickerNoResults: 'Geen gebruikers gevonden.',
+    userPickerNameHeader: 'Gebruiker',
 
     // ── Onderbouwingsdialoog ──────────────────────────────────────────────
     reasoningHeadline: (verb: string) => `Machtigingsonderbouwing: ${verb}`,

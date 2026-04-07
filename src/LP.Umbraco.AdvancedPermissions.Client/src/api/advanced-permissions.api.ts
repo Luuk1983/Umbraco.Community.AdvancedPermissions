@@ -7,9 +7,11 @@ import type {
   EffectivePermissions,
   VerbInfo,
   RoleInfo,
+  UserItem,
 } from '../models/permission.models.js';
 
 const BASE = '/umbraco/management/api/v1/advanced-permissions';
+const UMBRACO_BASE = '/umbraco/management/api/v1';
 
 let _authContext: UmbAuthContext | undefined;
 
@@ -108,4 +110,24 @@ export async function getEffectiveForRole(roleAlias: string, nodeKey: string, si
   return (
     await apiFetch(`/effective/by-role?roleAlias=${encodeURIComponent(roleAlias)}&nodeKey=${nodeKey}`, withSignal(signal))
   ).json() as Promise<EffectivePermissions>;
+}
+
+/** Fetches all users from Umbraco's management API, sorted by name. */
+export async function getUsers(): Promise<UserItem[]> {
+  const openApiConfig = _authContext?.getOpenApiConfiguration();
+  const token = openApiConfig?.token ? await openApiConfig.token() : undefined;
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${UMBRACO_BASE}/filter/user?take=500`, {
+    credentials: openApiConfig?.credentials ?? 'include',
+    headers,
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  const data = (await res.json()) as { items: Array<{ id: string; name: string; avatarUrls: string[] }> };
+  return data.items.map((u) => ({ unique: u.id, name: u.name, avatarUrls: u.avatarUrls }));
 }

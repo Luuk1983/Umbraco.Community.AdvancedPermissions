@@ -25,7 +25,13 @@ public sealed class AdvancedPermissionsMetaController(IUserGroupService userGrou
     [ProducesResponseType<IReadOnlyList<VerbResponseModel>>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets all available permission verbs.")]
     public IActionResult GetVerbs() =>
-        Ok(AdvancedPermissionsConstants.AllVerbs.Select(v => new VerbResponseModel(v, GetVerbDisplayName(v))).ToList());
+        Ok(AdvancedPermissionsConstants.AllVerbs
+            // Umb.Document.Permissions is temporarily disabled in Umbraco v17 (PR #20584).
+            // The "Set Permissions" entity action no longer exists, so this verb has no effect.
+            // Re-enable here when Umbraco restores the action.
+            .Where(v => v != AdvancedPermissionsConstants.VerbManagePermissions)
+            .Select(v => new VerbResponseModel(v, GetVerbDisplayName(v)))
+            .ToList());
 
     /// <summary>
     /// Gets all assignable roles: every Umbraco user group plus the virtual <c>$everyone</c> role.

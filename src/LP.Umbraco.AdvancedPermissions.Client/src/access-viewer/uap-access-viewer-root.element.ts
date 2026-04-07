@@ -3,13 +3,17 @@ import type { TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
+import { UMB_MODAL_MANAGER_CONTEXT } from '@umbraco-cms/backoffice/modal';
 import type {
   VerbInfo,
   RoleInfo,
+  UserItem,
   EffectivePermission,
   ReasoningStep,
 } from '../models/permission.models.js';
-import { getRoles, getVerbs, getTreeRoot, getTreeChildren, getEffectiveForUser, getEffectiveForRole } from '../api/advanced-permissions.api.js';
+import { getVerbs, getTreeRoot, getTreeChildren, getEffectiveForUser, getEffectiveForRole } from '../api/advanced-permissions.api.js';
+import { UAP_ROLE_PICKER_MODAL } from './role-picker-modal.token.js';
+import { UAP_USER_PICKER_MODAL } from './user-picker-modal.token.js';
 
 /** Client-side tree node with effective permissions for all verbs. */
 interface ViewerTreeNode {
@@ -24,8 +28,6 @@ interface ViewerTreeNode {
   children?: ViewerTreeNode[];
 }
 
-type ViewerMode = 'role' | 'user';
-
 /**
  * Access Viewer workspace element.
  * Shows fully resolved (effective) permissions for a user or role at each content node,
@@ -36,13 +38,13 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   #localize = new UmbLocalizationController(this);
 
   // ── Metadata ────────────────────────────────────────────────────────────
-  @state() private _roles: RoleInfo[] = [];
   @state() private _verbs: VerbInfo[] = [];
 
-  // ── Mode & subject ───────────────────────────────────────────────────────
-  @state() private _mode: ViewerMode = 'role';
-  @state() private _selectedRole = '';
-  @state() private _resolvedUserKey = '';
+  // ── Subject selection ────────────────────────────────────────────────────
+  @state() private _selectedRole: RoleInfo | null = null;
+  @state() private _selectedUser: UserItem | null = null;
+  /** Which subject was most recently picked; determines the tree view mode. */
+  @state() private _activeSubject: 'role' | 'user' | null = null;
 
   // ── Tree ─────────────────────────────────────────────────────────────────
   @state() private _treeNodes: ViewerTreeNode[] = [];
@@ -57,12 +59,16 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   @query('.reasoning-dialog') private _reasoningDialog!: HTMLDialogElement;
 
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
+  #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #loadAbortController: AbortController | null = null;
 
   constructor() {
     super();
     this.consumeContext(UMB_NOTIFICATION_CONTEXT, (ctx) => {
       this.#notificationContext = ctx ?? undefined;
+    });
+    this.consumeContext(UMB_MODAL_MANAGER_CONTEXT, (ctx) => {
+      this.#modalManager = ctx ?? undefined;
     });
   }
 
@@ -80,27 +86,16 @@ export class UapAccessViewerRootElement extends UmbLitElement {
 
   async #loadMeta(): Promise<void> {
     try {
-      const [roles, verbs] = await Promise.all([getRoles(), getVerbs()]);
-      this._roles = roles;
-      this._verbs = verbs;
+      this._verbs = await getVerbs();
     } catch (err) {
       this._error = String(err);
     }
   }
 
   get #subject(): string {
-    return this._mode === 'role' ? this._selectedRole : this._resolvedUserKey;
-  }
-
-  get #roleOptions() {
-    return [
-      { name: this.#localize.term('uap_rolePlaceholder'), value: '' },
-      ...this._roles.map((r) => ({
-        name: `${r.name}${r.isEveryone ? ` ${this.#localize.term('uap_everyoneSuffix')}` : ''}`,
-        value: r.alias,
-        selected: r.alias === this._selectedRole,
-      })),
-    ];
+    if (this._activeSubject === 'role') return this._selectedRole?.alias ?? '';
+    if (this._activeSubject === 'user') return this._selectedUser?.unique ?? '';
+    return '';
   }
 
   async #loadTree(): Promise<void> {
@@ -208,9 +203,9 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     if (!this.#subject) return;
     try {
       const result =
-        this._mode === 'role'
-          ? await getEffectiveForRole(this._selectedRole, node.key, signal)
-          : await getEffectiveForUser(this._resolvedUserKey, node.key, signal);
+        this._activeSubject === 'role'
+          ? await getEffectiveForRole(this._selectedRole!.alias, node.key, signal)
+          : await getEffectiveForUser(this._selectedUser!.unique, node.key, signal);
 
       if (signal?.aborted) return;
 
@@ -267,6 +262,54 @@ export class UapAccessViewerRootElement extends UmbLitElement {
       }
     }
     return false;
+  }
+
+  // ── Picker methods ────────────────────────────────────────────────────────
+
+  async #openRolePicker(): Promise<void> {
+    if (!this.#modalManager) return;
+
+    const modal = this.#modalManager.open(this, UAP_ROLE_PICKER_MODAL, {
+      data: {
+        ...(this._selectedRole ? { currentRole: this._selectedRole.alias } : {}),
+      },
+    });
+
+    const result = await modal.onSubmit().catch(() => undefined);
+    if (!result) return;
+
+    const hadTree = this._treeNodes.length > 0 && this._activeSubject === 'role';
+    this._selectedRole = result.role;
+    this._activeSubject = 'role';
+
+    if (hadTree) {
+      void this.#reloadEffective();
+    } else {
+      void this.#loadTree();
+    }
+  }
+
+  async #openUserPicker(): Promise<void> {
+    if (!this.#modalManager) return;
+
+    const modal = this.#modalManager.open(this, UAP_USER_PICKER_MODAL, {
+      data: {
+        ...(this._selectedUser ? { currentUser: this._selectedUser.unique } : {}),
+      },
+    });
+
+    const result = await modal.onSubmit().catch(() => undefined);
+    if (!result) return;
+
+    const hadTree = this._treeNodes.length > 0 && this._activeSubject === 'user';
+    this._selectedUser = result.user;
+    this._activeSubject = 'user';
+
+    if (hadTree) {
+      void this.#reloadEffective();
+    } else {
+      void this.#loadTree();
+    }
   }
 
   // ── Reasoning dialog ──────────────────────────────────────────────────────
@@ -350,92 +393,40 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     return html`
       <umb-body-layout headline=${this.#localize.term('uap_viewerHeadline')}>
         <div class="toolbar">
-          <!-- Mode toggle -->
-          <uui-button-group>
+          <!-- Role picker -->
+          <div class="picker-section">
             <uui-button
-              look=${this._mode === 'role' ? 'primary' : 'secondary'}
-              label=${this.#localize.term('uap_byRole')}
-              @click=${() => {
-                this._mode = 'role';
-                this.#loadAbortController?.abort();
-                if (this._selectedRole && this._treeNodes.length > 0) {
-                  void this.#reloadEffective();
-                } else {
-                  this.#clearEffectiveRecursive(this._treeNodes);
-                  this._treeNodes = [...this._treeNodes];
-                }
-              }}>
-              ${this.#localize.term('uap_byRole')}
+              look="placeholder"
+              label=${this.#localize.term('uap_chooseRole')}
+              @click=${() => void this.#openRolePicker()}>
+              ${this.#localize.term('uap_chooseRole')}
             </uui-button>
-            <uui-button
-              look=${this._mode === 'user' ? 'primary' : 'secondary'}
-              label=${this.#localize.term('uap_byUser')}
-              @click=${() => {
-                this._mode = 'user';
-                this.#loadAbortController?.abort();
-                if (this._resolvedUserKey && this._treeNodes.length > 0) {
-                  void this.#reloadEffective();
-                } else {
-                  this.#clearEffectiveRecursive(this._treeNodes);
-                  this._treeNodes = [...this._treeNodes];
-                }
-              }}>
-              ${this.#localize.term('uap_byUser')}
-            </uui-button>
-          </uui-button-group>
+            ${this._selectedRole
+              ? html`<span class="selection-label">
+                  <uui-icon name="icon-user-group"></uui-icon>
+                  ${this._selectedRole.name}
+                </span>`
+              : nothing}
+          </div>
 
-          ${this._mode === 'role'
-            ? html`
-                <div class="subject-picker">
-                  <label>${this.#localize.term('uap_roleLabel')}:</label>
-                  <uui-select
-                    label=${this.#localize.term('uap_roleLabel')}
-                    placeholder=${this.#localize.term('uap_rolePlaceholder')}
-                    .options=${this.#roleOptions}
-                    @change=${(e: Event) => {
-                      const newRole = (e.target as HTMLInputElement).value;
-                      const hadTree = this._treeNodes.length > 0 && this._selectedRole !== '';
-                      this._selectedRole = newRole;
-                      if (hadTree && newRole) {
-                        void this.#reloadEffective();
-                      } else {
-                        void this.#loadTree();
-                      }
-                    }}>
-                  </uui-select>
-                </div>
-              `
-            : html`
-                <div class="subject-picker">
-                  <label>${this.#localize.term('uap_userLabel')}:</label>
-                  <umb-user-input
-                    max="1"
-                    @change=${(e: Event) => {
-                      const value = (e.target as HTMLInputElement).value ?? '';
-                      const hadTree = this._treeNodes.length > 0 && this._resolvedUserKey !== '';
-                      this._resolvedUserKey = value;
-                      if (value) {
-                        if (hadTree) {
-                          void this.#reloadEffective();
-                        } else {
-                          void this.#loadTree();
-                        }
-                      } else {
-                        this.#loadAbortController?.abort();
-                        this._treeNodes = [];
-                      }
-                    }}>
-                  </umb-user-input>
-                </div>
-              `}
+          <!-- User picker -->
+          <div class="picker-section">
+            <uui-button
+              look="placeholder"
+              label=${this.#localize.term('uap_chooseUser')}
+              @click=${() => void this.#openUserPicker()}>
+              ${this.#localize.term('uap_chooseUser')}
+            </uui-button>
+            ${this._selectedUser
+              ? html`<span class="selection-label">
+                  <uui-icon name="icon-user"></uui-icon>
+                  ${this._selectedUser.name}
+                </span>`
+              : nothing}
+          </div>
         </div>
 
-        <div class="legend">
-          <span class="legend-item allow">${this.#localize.term('uap_legendAllow')}</span>
-          <span class="legend-item deny">${this.#localize.term('uap_legendDeny')}</span>
-        </div>
-
-        ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
+${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
         ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
         ${!this.#subject ? html`<p class="empty-msg">${this.#localize.term('uap_selectSubjectPrompt')}</p>` : nothing}
 
@@ -506,45 +497,39 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     /* ── Toolbar ──────────────────────────────────────────────── */
     .toolbar {
       display: flex;
-      align-items: center;
-      gap: var(--uui-size-4, 12px);
-      padding: var(--uui-size-3, 9px) var(--uui-size-6, 18px);
+      align-items: flex-start;
+      gap: var(--uui-size-6, 18px);
+      padding: var(--uui-size-4, 12px) var(--uui-size-6, 18px);
       background: var(--uui-color-surface, #fff);
       border-bottom: 1px solid var(--uui-color-border, #e0e0e0);
       flex-wrap: wrap;
     }
 
-    .subject-picker {
+    .picker-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--uui-size-2, 6px);
+      min-width: 200px;
+    }
+
+    .picker-section uui-button {
+      width: 100%;
+    }
+
+    .selection-label {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: var(--uui-size-2, 6px);
+      font-size: var(--uui-type-small-size, 12px);
+      color: var(--uui-color-text-alt, #666);
+      padding: 0 var(--uui-size-2, 6px);
     }
 
-    .subject-picker label {
-      font-weight: 600;
-      white-space: nowrap;
+    .selection-label uui-icon {
+      flex-shrink: 0;
+      font-size: 14px;
     }
 
-    .subject-picker uui-select {
-      min-width: 240px;
-    }
-
-    /* ── Legend ───────────────────────────────────────────────── */
-    .legend {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      padding: 8px 18px;
-      font-size: 11px;
-      background: var(--uui-color-surface-alt, #f8f8f8);
-      border-bottom: 1px solid var(--uui-color-border, #eee);
-    }
-
-    .legend-item {
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-weight: 600;
-    }
 
     .loading {
       display: flex;
@@ -686,21 +671,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
       border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
     }
 
-    /* ── Legend ───────────────────────────────────────────────── */
-    .legend-item.allow {
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
-      border: 1px solid color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
-      border-radius: 4px;
-    }
-    .legend-item.deny {
-      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
-      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
-      border: 1px solid color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
-      border-radius: 4px;
-    }
-
-    /* ── Reasoning dialog ─────────────────────────────────────── */
+/* ── Reasoning dialog ─────────────────────────────────────── */
     .reasoning-dialog {
       border: none;
       border-radius: 8px;

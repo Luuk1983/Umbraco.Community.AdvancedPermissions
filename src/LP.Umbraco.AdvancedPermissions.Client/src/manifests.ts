@@ -107,6 +107,22 @@ const manifests: Array<UmbExtensionManifest> = [
     element: () => import('./access-viewer/uap-access-viewer-root.element.js'),
   },
 
+  // ─── Role Picker Modal ────────────────────────────────────────────────────
+  {
+    type: 'modal',
+    alias: 'UAP.Modal.RolePicker',
+    name: 'Advanced Permissions Role Picker Modal',
+    element: () => import('./access-viewer/role-picker-modal.element.js'),
+  },
+
+  // ─── User Picker Modal ────────────────────────────────────────────────────
+  {
+    type: 'modal',
+    alias: 'UAP.Modal.UserPicker',
+    name: 'Advanced Permissions User Picker Modal',
+    element: () => import('./access-viewer/user-picker-modal.element.js'),
+  },
+
   // ─── Localization ─────────────────────────────────────────────────────────
   {
     type: 'localization',

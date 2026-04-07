@@ -45,10 +45,24 @@ export default {
     viewerHeadline: 'Access Viewer',
     byRole: 'By Role',
     byUser: 'By User',
+    chooseRole: 'Choose role',
+    chooseUser: 'Choose user',
     selectSubjectPrompt: 'Select a role or user to view effective permissions.',
     legendAllow: 'Allow',
     legendDeny: 'Deny',
     clickForReasoning: (label: string) => `${label} \u2014 click for reasoning`,
+
+    // ── Role picker modal ─────────────────────────────────────────────────
+    rolePickerHeadline: 'Select a role',
+    rolePickerFilter: 'Type to filter\u2026',
+    rolePickerNoResults: 'No roles match the filter.',
+    rolePickerNameHeader: 'Role',
+
+    // ── User picker modal ─────────────────────────────────────────────────
+    userPickerHeadline: 'Select a user',
+    userPickerFilter: 'Type to filter\u2026',
+    userPickerNoResults: 'No users match the filter.',
+    userPickerNameHeader: 'User',
 
     // ── Reasoning dialog ──────────────────────────────────────────────────
     reasoningHeadline: (verb: string) => `Permission Reasoning: ${verb}`,

@@ -73,6 +73,13 @@ export interface RoleInfo {
   isEveryone: boolean;
 }
 
+/** A user item for display in the user picker. */
+export interface UserItem {
+  unique: string;
+  name: string;
+  avatarUrls: string[];
+}
+
 /** A pending verb-level change for a node in the Security Editor. */
 export interface PendingVerbChange {
   /** Entries to set for this verb. Empty array means "clear/inherit". */

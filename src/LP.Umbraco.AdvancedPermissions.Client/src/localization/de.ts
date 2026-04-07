@@ -45,10 +45,24 @@ export default {
     viewerHeadline: 'Zugriffsanzeige',
     byRole: 'Nach Rolle',
     byUser: 'Nach Benutzer',
+    chooseRole: 'Rolle ausw\u00e4hlen',
+    chooseUser: 'Benutzer ausw\u00e4hlen',
     selectSubjectPrompt: 'W\u00e4hlen Sie eine Rolle oder einen Benutzer aus, um die effektiven Berechtigungen anzuzeigen.',
     legendAllow: 'Erlauben',
     legendDeny: 'Verweigern',
     clickForReasoning: (label: string) => `${label} \u2014 Klicken f\u00fcr Begr\u00fcndung`,
+
+    // ── Rollenauswahlmodal ─────────────────────────────────────────────────
+    rolePickerHeadline: 'Rolle ausw\u00e4hlen',
+    rolePickerFilter: 'Rollen filtern\u2026',
+    rolePickerNoResults: 'Keine Rollen gefunden.',
+    rolePickerNameHeader: 'Rolle',
+
+    // ── Benutzerauswahlmodal ───────────────────────────────────────────────
+    userPickerHeadline: 'Benutzer ausw\u00e4hlen',
+    userPickerFilter: 'Benutzer filtern\u2026',
+    userPickerNoResults: 'Keine Benutzer gefunden.',
+    userPickerNameHeader: 'Benutzer',
 
     // ── Begr\u00fcndungsdialog ──────────────────────────────────────────────
     reasoningHeadline: (verb: string) => `Berechtigungsbegr\u00fcndung: ${verb}`,

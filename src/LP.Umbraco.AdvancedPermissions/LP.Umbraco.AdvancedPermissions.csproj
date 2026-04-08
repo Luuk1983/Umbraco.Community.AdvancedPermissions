@@ -20,8 +20,8 @@
     <PackageTags>umbraco;permissions;cms</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/LuukPeters/LP.Umbraco.AdvancedPermissions</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/LuukPeters/LP.Umbraco.AdvancedPermissions</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Luuk1983/LP.Umbraco.AdvancedPermissions</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Luuk1983/LP.Umbraco.AdvancedPermissions</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>package_logo_128x128.png</PackageIcon>
 

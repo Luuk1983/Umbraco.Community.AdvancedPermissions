@@ -1,0 +1,59 @@
+name: Publish to NuGet
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  id-token: write # Required for NuGet trusted publishing
+  contents: write # Required for creating GitHub releases
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history needed for MinVer
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build frontend
+        working-directory: src/LP.Umbraco.AdvancedPermissions.Client
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+      - name: Pack
+        run: dotnet pack src/LP.Umbraco.AdvancedPermissions/ --configuration Release --output ./artifacts
+
+      - name: Login to NuGet (trusted publishing)
+        uses: NuGet/login@v1
+
+      - name: Push to NuGet
+        run: dotnet nuget push ./artifacts/*.nupkg --source https://api.nuget.org/v3/index.json
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./artifacts/*.nupkg
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}

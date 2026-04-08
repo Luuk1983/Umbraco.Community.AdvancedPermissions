@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@umbraco-cms/backoffice/umbraco-package-schema.json",
   "name": "Umbraco Advanced Permissions",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "allowPublicAccess": false,
   "extensions": [
     {

@@ -352,12 +352,33 @@ export class UapAccessViewerRootElement extends UmbLitElement {
       this._dialogPath = result.path;
       const targetKey = node.key;
 
+      // Determine which roles are relevant for the current subject.
+      // Only entries for these roles should appear in the reasoning dialog.
+      let relevantRoles: Set<string>;
+      if (this._activeSubject === 'role') {
+        // Role mode: a role is self-contained — show only its own entries, never $everyone.
+        relevantRoles = new Set([this._selectedRole!.alias]);
+      } else {
+        // User mode: show only roles that actually contributed to the effective permission.
+        // These come from the reasoning steps already loaded for this node+verb.
+        relevantRoles = new Set(['$everyone']);
+        const ep = node.effectivePerms?.get(verb);
+        if (ep) {
+          for (const step of ep.reasoning) {
+            relevantRoles.add(step.contributingRole);
+          }
+        }
+      }
+
       // Group entries by nodeKey → roleAlias, filtering by applicable scope.
       // For ancestor nodes: only ThisNodeAndDescendants and DescendantsOnly apply to the target.
       // For the target node itself: only ThisNodeOnly and ThisNodeAndDescendants apply.
       // For the virtual root: entries always use ThisNodeAndDescendants, so they always apply.
       const byNode = new Map<string, Map<string, PermissionEntry[]>>();
       for (const entry of result.entries) {
+        // Filter to only roles relevant for this subject.
+        if (!relevantRoles.has(entry.roleAlias)) continue;
+
         const isTarget = entry.nodeKey === targetKey;
         const scope = entry.scope;
 

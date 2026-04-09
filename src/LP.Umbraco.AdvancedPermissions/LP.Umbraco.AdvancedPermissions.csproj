@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Only audit direct dependencies; transitive vulnerability warnings from Umbraco's
+         dependencies (System.Net.Http, System.Text.Encodings.Web) are not actionable here. -->
+    <NuGetAuditMode>direct</NuGetAuditMode>
     <RootNamespace>LP.Umbraco.AdvancedPermissions</RootNamespace>
     <AssemblyName>LP.Umbraco.AdvancedPermissions</AssemblyName>
     <!-- Serve wwwroot content at the web root (/) rather than the default /_content/{assembly}/ path.
@@ -14,6 +17,7 @@
 
     <!-- NuGet package metadata -->
     <PackageId>LP.Umbraco.AdvancedPermissions</PackageId>
+    <Title>Advanced Permissions for Umbraco</Title>
     <Authors>Luuk Peters</Authors>
     <Copyright>Copyright (c) Luuk Peters</Copyright>
     <Description>Advanced permission management for Umbraco v17: explicit Allow/Deny permissions per role per content node, inheritance through the content tree, an Everyone role for global constraints, and dedicated Permissions Editor + Access Viewer UIs.</Description>
@@ -79,7 +83,8 @@ Log.LogMessage(MessageImportance.High, $"Set version in {FilePath} to {VersionVa
     </Task>
   </UsingTask>
 
-  <Target Name="SyncUmbracoPackageVersion" AfterTargets="MinVer">
+  <Target Name="SyncUmbracoPackageVersion" AfterTargets="MinVer"
+          Condition="'$(MinVerVersion)' != ''">
     <SetJsonVersion
       FilePath="$(ProjectDir)wwwroot\App_Plugins\UmbracoAdvancedPermissions\umbraco-package.json"
       VersionValue="$(MinVerVersion)" />

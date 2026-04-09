@@ -55,7 +55,7 @@ public sealed class AdvancedPermissionsEffectiveController(
 
     /// <summary>
     /// Resolves all effective permissions for a specific role at a content node.
-    /// Resolves as if the user has exactly this role plus the implicit <c>$everyone</c> role.
+    /// Only the role's own entries are considered — <c>$everyone</c> is excluded.
     /// </summary>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <param name="roleAlias">The role alias to resolve for.</param>

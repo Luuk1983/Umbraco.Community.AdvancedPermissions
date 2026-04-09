@@ -20,11 +20,18 @@ Umbraco's built-in permission system only allows granting permissions (allow-onl
 - **`$everyone`**: applies to all authenticated backoffice users regardless of group membership. Evaluated before explicit role entries, so a role can override $everyone.
 
 ### Resolution algorithm
-1. Collect all entries from current node + all ancestors (nearest first).
-2. For each verb, find the first applicable entry considering scope and distance.
+
+**User resolution** (`ResolveAllAsync`): combines all user's roles + `$everyone`.
+1. Collect all entries for each of the user's roles and for `$everyone`.
+2. For each verb, find the first applicable entry per role considering scope and distance.
 3. `$everyone` entries provide a baseline; explicit role entries override them.
-4. If no entry found anywhere: default to Deny.
-5. Return an `EffectivePermission` with a reasoning chain (list of `ReasoningStep`) explaining each decision.
+4. Priority: explicit deny > explicit allow > implicit deny > implicit allow > default deny.
+5. Return an `EffectivePermission` with a reasoning chain explaining each decision.
+
+**Role resolution** (`ResolveForRoleAsync`): uses **only** the specified role's own entries.
+- `$everyone` is intentionally excluded — a role is a self-contained entity whose effective permissions must not be influenced by any other role, including `$everyone`.
+- This ensures the Access Viewer shows what a role's own rules grant, not the intersection with system-wide defaults.
+- Exception: when the selected role IS `$everyone`, only that role is used (no duplication).
 
 ### Domain model
 - `AdvancedPermissionEntry`: nodeKey (null = root), roleAlias, verb, state, scope, id
@@ -36,4 +43,5 @@ Umbraco's built-in permission system only allows granting permissions (allow-onl
 - Simple storage: one flat table, no complex hierarchical queries.
 - Resolution is done in application code, not SQL — easy to unit test.
 - Reasoning chain enables the Access Viewer UI to explain exactly why a user has or doesn't have a permission.
-- `$everyone` must be handled specially: must always be included in role lookups even though it's not a real user group.
+- `$everyone` is included in user resolution but explicitly excluded from role resolution — roles are self-contained.
+- The split-entry pattern (e.g. ThisNodeOnly:Deny + DescendantsOnly:Allow on the same node) is intentional: it lets admins deny a verb at a node while allowing it for that node's descendants.

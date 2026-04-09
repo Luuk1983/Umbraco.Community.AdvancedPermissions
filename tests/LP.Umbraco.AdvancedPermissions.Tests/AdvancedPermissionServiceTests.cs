@@ -325,11 +325,11 @@ public sealed class AdvancedPermissionServiceTests
     // ─── ResolveForRoleAsync — role context building ─────────────────────────
 
     /// <summary>
-    /// ResolveForRoleAsync with a non-$everyone role should produce a context that includes
-    /// both the specified role and the implicit $everyone role.
+    /// ResolveForRoleAsync with a non-$everyone role should produce a context containing ONLY
+    /// that role — a role is self-contained and must not be influenced by $everyone.
     /// </summary>
     [Fact]
-    public async Task ResolveForRoleAsync_NonEveryoneRole_ContextContainsBothRoleAndEveryone()
+    public async Task ResolveForRoleAsync_NonEveryoneRole_ContextContainsOnlyThatRole()
     {
         const string role = "editors";
         var nodeKey = Guid.NewGuid();
@@ -347,9 +347,8 @@ public sealed class AdvancedPermissionServiceTests
         await _sut.ResolveForRoleAsync(role, nodeKey, path);
 
         Assert.NotNull(capturedContext);
-        Assert.Equal(2, capturedContext.RoleAliases.Count);
-        Assert.Contains(role, capturedContext.RoleAliases);
-        Assert.Contains(EveryoneRoleAlias, capturedContext.RoleAliases);
+        Assert.Single(capturedContext.RoleAliases);
+        Assert.Equal(role, capturedContext.RoleAliases[0]);
     }
 
     /// <summary>
@@ -409,6 +408,76 @@ public sealed class AdvancedPermissionServiceTests
     }
 
     /// <summary>
+    /// Regression: when a role sets Deny (ThisNodeOnly) + Allow (DescendantsOnly) on an ancestor node,
+    /// a descendant must resolve to Allow — not Deny.
+    /// This verifies the split-entry scope logic in the resolver and that $everyone cannot
+    /// override a role's own DescendantsOnly Allow (because $everyone is excluded from role resolution).
+    /// </summary>
+    [Fact]
+    public async Task ResolveForRoleAsync_SplitEntryAtAncestor_DescendantResolvesToAllow()
+    {
+        // Arrange: path is [ancestorKey, descendantKey]
+        var ancestorKey = Guid.NewGuid();
+        var descendantKey = Guid.NewGuid();
+        var path = new List<Guid> { ancestorKey, descendantKey };
+        const string role = "administrators";
+
+        // Role has a split entry at the ancestor:
+        //   - Deny (ThisNodeOnly)  → applies only to the ancestor itself
+        //   - Allow (DescendantsOnly) → applies to all descendants (should reach descendantKey)
+        var denyAtAncestor = MakeEntry(ancestorKey, role, VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+        var allowDescendants = MakeEntry(ancestorKey, role, VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly);
+
+        _repository.GetByRoleAsync(role, Arg.Any<CancellationToken>())
+            .Returns([denyAtAncestor, allowDescendants]);
+
+        // $everyone has a Deny on the ancestor (ThisNodeAndDescendants).
+        // This must NOT influence the role-mode resolution — roles are self-contained.
+        _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>())
+            .Returns([MakeEntry(ancestorKey, EveryoneRoleAlias, VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants)]);
+
+        // Use the real resolver to exercise the actual scope + priority logic
+        var sut = new AdvancedPermissionService(
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+
+        // Act: resolve for the descendant
+        var results = await sut.ResolveForRoleAsync(role, descendantKey, path, verbs: [VerbDelete]);
+
+        // Assert: descendant must be allowed (DescendantsOnly Allow wins for depth > 0)
+        var result = results[VerbDelete];
+        Assert.True(result.IsAllowed, "DescendantsOnly Allow at ancestor should propagate to the descendant.");
+        Assert.False(result.IsExplicit, "Inherited from ancestor — not explicit at the descendant itself.");
+    }
+
+    /// <summary>
+    /// Regression: ResolveForRoleAsync should show Deny for the ancestor node itself
+    /// when it has ThisNodeOnly:Deny (even if DescendantsOnly:Allow also exists there).
+    /// Companion to the split-entry descendant test above.
+    /// </summary>
+    [Fact]
+    public async Task ResolveForRoleAsync_SplitEntryAtNode_NodeItselfResolvesToDeny()
+    {
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { nodeKey };
+        const string role = "administrators";
+
+        var denyAtNode = MakeEntry(nodeKey, role, VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+        var allowDescendants = MakeEntry(nodeKey, role, VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly);
+
+        _repository.GetByRoleAsync(role, Arg.Any<CancellationToken>())
+            .Returns([denyAtNode, allowDescendants]);
+
+        var sut = new AdvancedPermissionService(
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+
+        var results = await sut.ResolveForRoleAsync(role, nodeKey, path, verbs: [VerbDelete]);
+
+        var result = results[VerbDelete];
+        Assert.False(result.IsAllowed, "ThisNodeOnly Deny must apply to the node itself.");
+        Assert.True(result.IsExplicit, "Entry is on the target node — must be explicit.");
+    }
+
+    /// <summary>
     /// ResolveForRoleAsync should forward the verb filter to the resolver, not apply it itself.
     /// The caller-supplied verbs should be exactly what the resolver receives.
     /// </summary>
@@ -442,11 +511,11 @@ public sealed class AdvancedPermissionServiceTests
     }
 
     /// <summary>
-    /// ResolveForRoleAsync should load entries for both the specified role and $everyone from the
-    /// repository, so that both contribute to the resolution context.
+    /// ResolveForRoleAsync should load entries only for the specified role — not for $everyone.
+    /// A role is self-contained and must not be influenced by other roles.
     /// </summary>
     [Fact]
-    public async Task ResolveForRoleAsync_LoadsEntriesForBothRoleAndEveryone()
+    public async Task ResolveForRoleAsync_LoadsEntriesOnlyForRole()
     {
         const string role = "editors";
         var nodeKey = Guid.NewGuid();
@@ -460,7 +529,7 @@ public sealed class AdvancedPermissionServiceTests
         await _sut.ResolveForRoleAsync(role, nodeKey, path);
 
         await _repository.Received(1).GetByRoleAsync(role, Arg.Any<CancellationToken>());
-        await _repository.Received(1).GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive().GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>());
     }
 
     // ─── Repository delegation ────────────────────────────────────────────────

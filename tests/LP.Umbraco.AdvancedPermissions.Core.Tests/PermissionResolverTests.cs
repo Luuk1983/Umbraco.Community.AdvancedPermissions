@@ -584,4 +584,504 @@ public class PermissionResolverTests
         Assert.False(result.IsAllowed);
         Assert.True(result.IsExplicit);
     }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Nearest-ancestor wins
+    // ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// When the same role has DescendantsOnly entries at two different ancestors,
+    /// the closer ancestor (lower depth) takes precedence — the walk stops at the first match.
+    /// Grandparent Allow + Parent Deny → child resolves to Deny.
+    /// </summary>
+    [Fact]
+    public void Resolve_NearestAncestorWins_CloserDescendantsOnlyBeatsGrandparent()
+    {
+        var root = Guid.NewGuid();
+        var grandparent = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var child = Guid.NewGuid();
+
+        // Grandparent says Allow for all descendants
+        var grandparentAllow = Entry(grandparent, "editors", AdvancedPermissionsConstants.VerbRead,
+            PermissionState.Allow, PermissionScope.DescendantsOnly);
+        // Parent overrides: Deny for all its descendants
+        var parentDeny = Entry(parent, "editors", AdvancedPermissionsConstants.VerbRead,
+            PermissionState.Deny, PermissionScope.DescendantsOnly);
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: child,
+            PathFromRoot: [root, grandparent, parent, child],
+            RoleAliases: ["editors"],
+            StoredEntries: [grandparentAllow, parentDeny]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbRead);
+
+        // Walk finds parent (depth 1 from child) before grandparent (depth 2) → Deny
+        Assert.False(result.IsAllowed);
+        Assert.False(result.IsExplicit); // inherited from parent, not on child itself
+    }
+
+    /// <summary>
+    /// A ThisNodeAndDescendants entry at a closer ancestor beats a conflicting entry at a farther ancestor.
+    /// </summary>
+    [Fact]
+    public void Resolve_NearestAncestorWins_CloserThisNodeAndDescendantsBeatsGrandparent()
+    {
+        var root = Guid.NewGuid();
+        var grandparent = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var child = Guid.NewGuid();
+
+        // Grandparent denies
+        var grandparentDeny = Entry(grandparent, "editors", AdvancedPermissionsConstants.VerbUpdate,
+            PermissionState.Deny, PermissionScope.ThisNodeAndDescendants);
+        // Parent allows (closer) — should win
+        var parentAllow = Entry(parent, "editors", AdvancedPermissionsConstants.VerbUpdate,
+            PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: child,
+            PathFromRoot: [root, grandparent, parent, child],
+            RoleAliases: ["editors"],
+            StoredEntries: [grandparentDeny, parentAllow]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbUpdate);
+
+        // Parent (depth 1) found before grandparent (depth 2) → Allow wins
+        Assert.True(result.IsAllowed);
+        Assert.False(result.IsExplicit);
+    }
+
+    /// <summary>
+    /// Path entries always beat virtual-root (group-default) entries.
+    /// Even an implicit Deny from a path ancestor beats an implicit Allow from the virtual-root.
+    /// </summary>
+    [Fact]
+    public void Resolve_PathEntryBeatsVirtualRoot()
+    {
+        var root = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var child = Guid.NewGuid();
+
+        // Virtual-root says Allow for the role (group default)
+        var virtualRootAllow = Entry(AdvancedPermissionsConstants.VirtualRootNodeKey, "editors",
+            AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
+        // Parent in the real path says Deny (overrides the virtual-root default)
+        var parentDeny = Entry(parent, "editors",
+            AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants);
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: child,
+            PathFromRoot: [root, parent, child],
+            RoleAliases: ["editors"],
+            StoredEntries: [virtualRootAllow, parentDeny]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        // Path entry (parent, Deny) found during walk → virtual-root never checked → Deny
+        Assert.False(result.IsAllowed);
+        Assert.False(result.IsExplicit);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Three-role priority — all four priority levels
+    // ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Full four-tier priority test with three roles:
+    /// roleA=ExplicitDeny, roleB=ExplicitAllow, roleC=ImplicitAllow → ExplicitDeny wins.
+    /// </summary>
+    [Fact]
+    public void Resolve_ThreeRoles_ExplicitDenyWinsOverExplicitAllowAndImplicitAllow()
+    {
+        var root = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var target = Guid.NewGuid();
+
+        var explicitDeny  = Entry(target, "roleA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+        var explicitAllow = Entry(target, "roleB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly);
+        var implicitAllow = Entry(parent, "roleC", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: [root, parent, target],
+            RoleAliases: ["roleA", "roleB", "roleC"],
+            StoredEntries: [explicitDeny, explicitAllow, implicitAllow]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        Assert.False(result.IsAllowed);
+        Assert.True(result.IsExplicit);
+    }
+
+    /// <summary>
+    /// Three roles where no role has explicit entries:
+    /// roleA=ImplicitDeny, roleB=ImplicitAllow, roleC=ImplicitAllow → ImplicitDeny wins.
+    /// </summary>
+    [Fact]
+    public void Resolve_ThreeRoles_ImplicitDenyBeatsMultipleImplicitAllows()
+    {
+        var root = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var child = Guid.NewGuid();
+
+        var implicitDeny   = Entry(parent, "roleA", AdvancedPermissionsConstants.VerbPublish, PermissionState.Deny,  PermissionScope.ThisNodeAndDescendants);
+        var implicitAllow1 = Entry(AdvancedPermissionsConstants.VirtualRootNodeKey, "roleB", AdvancedPermissionsConstants.VerbPublish, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
+        var implicitAllow2 = Entry(AdvancedPermissionsConstants.VirtualRootNodeKey, "roleC", AdvancedPermissionsConstants.VerbPublish, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: child,
+            PathFromRoot: [root, parent, child],
+            RoleAliases: ["roleA", "roleB", "roleC"],
+            StoredEntries: [implicitDeny, implicitAllow1, implicitAllow2]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbPublish);
+
+        Assert.False(result.IsAllowed);
+        Assert.False(result.IsExplicit);
+    }
+
+    /// <summary>
+    /// Three roles where only two have any opinion; the third has no entries.
+    /// The third role having no opinion must not affect the outcome.
+    /// </summary>
+    [Fact]
+    public void Resolve_ThreeRoles_RoleWithNoOpinionIsIgnored()
+    {
+        var root = Guid.NewGuid();
+        var target = Guid.NewGuid();
+
+        var allowFromA = Entry(target, "roleA", AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeOnly);
+        // roleB and roleC have no entries for this verb
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: [root, target],
+            RoleAliases: ["roleA", "roleB", "roleC"],
+            StoredEntries: [allowFromA]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbCreate);
+
+        Assert.True(result.IsAllowed);
+        Assert.True(result.IsExplicit);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Reasoning completeness — all contributing roles appear
+    // ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// When multiple roles all contribute to the same outcome, all appear in the reasoning list.
+    /// Two roles both explicitly allow → both appear in reasoning (priority 2 wins over 3+4).
+    /// </summary>
+    [Fact]
+    public void Resolve_Reasoning_AllContributingRolesListed()
+    {
+        var root = Guid.NewGuid();
+        var target = Guid.NewGuid();
+
+        var allowA = Entry(target, "roleA", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly);
+        var allowB = Entry(target, "roleB", AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly);
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: [root, target],
+            RoleAliases: ["roleA", "roleB"],
+            StoredEntries: [allowA, allowB]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbRead);
+
+        Assert.True(result.IsAllowed);
+        Assert.Equal(2, result.Reasoning.Count);
+        Assert.Contains(result.Reasoning, r => r.ContributingRole == "roleA");
+        Assert.Contains(result.Reasoning, r => r.ContributingRole == "roleB");
+    }
+
+    /// <summary>
+    /// When an explicit deny wins, it appears first in reasoning, followed by the overridden explicit allow.
+    /// Reasoning order: explicit denies → explicit allows → implicit denies → implicit allows.
+    /// </summary>
+    [Fact]
+    public void Resolve_Reasoning_OrderedByPriority_DenyBeforeAllow()
+    {
+        var root = Guid.NewGuid();
+        var target = Guid.NewGuid();
+
+        var explicitDeny  = Entry(target, "roleA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny,  PermissionScope.ThisNodeOnly);
+        var explicitAllow = Entry(target, "roleB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly);
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: [root, target],
+            RoleAliases: ["roleA", "roleB"],
+            StoredEntries: [explicitDeny, explicitAllow]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        Assert.Equal(2, result.Reasoning.Count);
+        // Deny entry must appear first
+        Assert.Equal(PermissionState.Deny,  result.Reasoning[0].State);
+        Assert.Equal(PermissionState.Allow, result.Reasoning[1].State);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Data-driven: effective permission resolution matrix
+    // ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Shared test data for the resolution matrix. Each row is:
+    /// (scenarioName, entries, pathLength, targetIndex, roles, expectedIsAllowed, expectedIsExplicit)
+    ///
+    /// Path is always [node0, node1, ..., node(pathLength-1)]; target = node[targetIndex].
+    /// Entries use node index (-1 = virtual root).
+    /// </summary>
+    public static IEnumerable<object[]> ResolutionMatrixData()
+    {
+        // ── No-entry baseline ────────────────────────────────────────────────
+        yield return Row("No entries → safe deny",
+            entries: [],
+            pathLen: 2, targetIdx: 1, roles: ["$everyone"],
+            allow: false, isExplicit: false);
+
+        // ── Single-entry, all three scopes, at target (depth 0) ─────────────
+        yield return Row("ThisNodeOnly Allow at target → allow (explicit)",
+            entries: [(1, "editors", PermissionState.Allow, PermissionScope.ThisNodeOnly)],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: true, isExplicit: true);
+
+        yield return Row("ThisNodeOnly Deny at target → deny (explicit)",
+            entries: [(1, "editors", PermissionState.Deny, PermissionScope.ThisNodeOnly)],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: false, isExplicit: true);
+
+        yield return Row("DescendantsOnly Allow at target itself → deny (scope mismatch)",
+            entries: [(1, "editors", PermissionState.Allow, PermissionScope.DescendantsOnly)],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: false, isExplicit: false);
+
+        yield return Row("ThisNodeAndDescendants Allow at target → allow (explicit)",
+            entries: [(1, "editors", PermissionState.Allow, PermissionScope.ThisNodeAndDescendants)],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: true, isExplicit: true);
+
+        // ── Ancestor entries propagating to child (depth 1) ─────────────────
+        yield return Row("ThisNodeAndDescendants Allow at parent → child allow (implicit)",
+            entries: [(0, "editors", PermissionState.Allow, PermissionScope.ThisNodeAndDescendants)],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: true, isExplicit: false);
+
+        yield return Row("ThisNodeOnly Allow at parent → child deny (scope invisible)",
+            entries: [(0, "editors", PermissionState.Allow, PermissionScope.ThisNodeOnly)],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: false, isExplicit: false);
+
+        yield return Row("DescendantsOnly Allow at parent → child allow (implicit)",
+            entries: [(0, "editors", PermissionState.Allow, PermissionScope.DescendantsOnly)],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: true, isExplicit: false);
+
+        yield return Row("DescendantsOnly Deny at parent → child deny (implicit)",
+            entries: [(0, "editors", PermissionState.Deny, PermissionScope.DescendantsOnly)],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: false, isExplicit: false);
+
+        // ── Split entry: Deny(ThisNodeOnly) + Allow(DescendantsOnly) at parent ─
+        yield return Row("Split entry at parent: child (depth 1) resolves Allow",
+            entries:
+            [
+                (0, "editors", PermissionState.Deny,  PermissionScope.ThisNodeOnly),
+                (0, "editors", PermissionState.Allow, PermissionScope.DescendantsOnly),
+            ],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: true, isExplicit: false);
+
+        // ── Virtual-root (group default) fallback ────────────────────────────
+        yield return Row("Virtual-root Allow → implicit allow when no path entries",
+            entries: [(-1, "editors", PermissionState.Allow, PermissionScope.ThisNodeAndDescendants)],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: true, isExplicit: false);
+
+        yield return Row("Path entry beats virtual-root: path Deny overrides virtual-root Allow",
+            entries:
+            [
+                (-1, "editors", PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+                (0,  "editors", PermissionState.Deny,  PermissionScope.ThisNodeAndDescendants),
+            ],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: false, isExplicit: false);
+
+        // ── Priority ordering (two roles) ────────────────────────────────────
+        yield return Row("ExplicitDeny beats ExplicitAllow (different roles, same depth)",
+            entries:
+            [
+                (1, "$everyone", PermissionState.Deny,  PermissionScope.ThisNodeOnly),
+                (1, "editors",   PermissionState.Allow, PermissionScope.ThisNodeOnly),
+            ],
+            pathLen: 2, targetIdx: 1, roles: ["$everyone", "editors"],
+            allow: false, isExplicit: true);
+
+        yield return Row("ExplicitDeny beats ImplicitAllow (explicit deny at target, implicit allow from parent — no explicit allow present)",
+            entries:
+            [
+                (1, "roleA", PermissionState.Deny,  PermissionScope.ThisNodeOnly),
+                (0, "roleB", PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            ],
+            pathLen: 2, targetIdx: 1, roles: ["roleA", "roleB"],
+            allow: false, isExplicit: true);
+
+        yield return Row("Nothing set for any role → effective deny (default deny, not explicit)",
+            entries: [],
+            pathLen: 3, targetIdx: 2, roles: ["groupA", "groupB"],
+            allow: false, isExplicit: false);
+
+        yield return Row("ExplicitAllow beats ImplicitDeny (explicit at target, implicit from parent)",
+            entries:
+            [
+                (0, "editors", PermissionState.Deny,  PermissionScope.ThisNodeAndDescendants),
+                (1, "editors", PermissionState.Allow, PermissionScope.ThisNodeOnly),
+            ],
+            pathLen: 2, targetIdx: 1, roles: ["editors"],
+            allow: true, isExplicit: true);
+
+        yield return Row("ImplicitDeny beats ImplicitAllow (deny from path, allow from virtual-root)",
+            entries:
+            [
+                (0,  "roleA", PermissionState.Deny,  PermissionScope.ThisNodeAndDescendants),
+                (-1, "roleB", PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            ],
+            pathLen: 2, targetIdx: 1, roles: ["roleA", "roleB"],
+            allow: false, isExplicit: false);
+
+        // ── Nearest ancestor wins ─────────────────────────────────────────────
+        yield return Row("Nearest ancestor wins: parent DescendantsOnly Deny beats grandparent Allow",
+            entries:
+            [
+                (0, "editors", PermissionState.Allow, PermissionScope.DescendantsOnly),
+                (1, "editors", PermissionState.Deny,  PermissionScope.DescendantsOnly),
+            ],
+            pathLen: 3, targetIdx: 2, roles: ["editors"],
+            allow: false, isExplicit: false);
+
+        yield return Row("Nearest ancestor wins: parent ThisNodeAndDescendants Allow beats grandparent Deny",
+            entries:
+            [
+                (0, "editors", PermissionState.Deny,  PermissionScope.ThisNodeAndDescendants),
+                (1, "editors", PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            ],
+            pathLen: 3, targetIdx: 2, roles: ["editors"],
+            allow: true, isExplicit: false);
+
+        // ── Three-role scenarios ─────────────────────────────────────────────
+        yield return Row("Three roles: ExplicitDeny beats ExplicitAllow and ImplicitAllow",
+            entries:
+            [
+                (2, "roleA", PermissionState.Deny,  PermissionScope.ThisNodeOnly),
+                (2, "roleB", PermissionState.Allow, PermissionScope.ThisNodeOnly),
+                (0, "roleC", PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            ],
+            pathLen: 3, targetIdx: 2, roles: ["roleA", "roleB", "roleC"],
+            allow: false, isExplicit: true);
+
+        yield return Row("Three roles: ImplicitDeny beats two ImplicitAllows",
+            entries:
+            [
+                (1,  "roleA", PermissionState.Deny,  PermissionScope.ThisNodeAndDescendants),
+                (-1, "roleB", PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+                (-1, "roleC", PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            ],
+            pathLen: 3, targetIdx: 2, roles: ["roleA", "roleB", "roleC"],
+            allow: false, isExplicit: false);
+
+        yield return Row("Three roles, one has no opinion: remaining ExplicitAllow wins",
+            entries:
+            [
+                (2, "roleA", PermissionState.Allow, PermissionScope.ThisNodeOnly),
+                // roleB and roleC have no entries
+            ],
+            pathLen: 3, targetIdx: 2, roles: ["roleA", "roleB", "roleC"],
+            allow: true, isExplicit: true);
+
+        // ── Multi-group user (two groups with conflicting entries) ────────────
+        yield return Row("User in two groups: implicit Deny (group A at depth 2) beats implicit Allow (group B at depth 1)",
+            entries:
+            [
+                (0, "groupA", PermissionState.Deny,  PermissionScope.ThisNodeAndDescendants),
+                (1, "groupB", PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            ],
+            pathLen: 3, targetIdx: 2, roles: ["groupA", "groupB"],
+            allow: false, isExplicit: false);
+
+        yield return Row("User in two groups: explicit Allow from group B at target beats implicit Deny from group A",
+            entries:
+            [
+                (0, "groupA", PermissionState.Deny,  PermissionScope.ThisNodeAndDescendants),
+                (2, "groupB", PermissionState.Allow, PermissionScope.ThisNodeOnly),
+            ],
+            pathLen: 3, targetIdx: 2, roles: ["groupA", "groupB"],
+            allow: true, isExplicit: true);
+
+        yield return Row("User in two groups: both explicitly allow → allow",
+            entries:
+            [
+                (2, "groupA", PermissionState.Allow, PermissionScope.ThisNodeOnly),
+                (2, "groupB", PermissionState.Allow, PermissionScope.ThisNodeOnly),
+            ],
+            pathLen: 3, targetIdx: 2, roles: ["groupA", "groupB"],
+            allow: true, isExplicit: true);
+    }
+
+    /// <summary>
+    /// Data-driven resolution matrix: verifies IsAllowed and IsExplicit for each scenario defined
+    /// in <see cref="ResolutionMatrixData"/>. The scenario name is included in failure messages.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ResolutionMatrixData))]
+    public void ResolutionMatrix(
+        string scenarioName,
+        List<(int nodeIdx, string role, PermissionState state, PermissionScope scope)> entrySpecs,
+        int pathLen,
+        int targetIdx,
+        List<string> roles,
+        bool expectedAllow,
+        bool expectedExplicit)
+    {
+        var nodes = Enumerable.Range(0, pathLen).Select(_ => Guid.NewGuid()).ToList();
+        var target = nodes[targetIdx];
+
+        var entries = entrySpecs.Select(e =>
+        {
+            var nodeKey = e.nodeIdx == -1
+                ? AdvancedPermissionsConstants.VirtualRootNodeKey
+                : nodes[e.nodeIdx];
+            return Entry(nodeKey, e.role, AdvancedPermissionsConstants.VerbDelete, e.state, e.scope);
+        }).ToList();
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: nodes,
+            RoleAliases: roles,
+            StoredEntries: entries);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        Assert.True(result.IsAllowed == expectedAllow,
+            $"Scenario '{scenarioName}': expected IsAllowed={expectedAllow} but got {result.IsAllowed}");
+        Assert.True(result.IsExplicit == expectedExplicit,
+            $"Scenario '{scenarioName}': expected IsExplicit={expectedExplicit} but got {result.IsExplicit}");
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Helper: builds a [Theory] row from named parameters
+    // ───────────────────────────────────────────────────────────────────────
+
+    private static object[] Row(
+        string name,
+        (int nodeIdx, string role, PermissionState state, PermissionScope scope)[] entries,
+        int pathLen,
+        int targetIdx,
+        string[] roles,
+        bool allow,
+        bool isExplicit)
+        => [name, entries.ToList(), pathLen, targetIdx, roles.ToList(), allow, isExplicit];
 }

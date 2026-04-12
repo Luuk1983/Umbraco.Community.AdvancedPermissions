@@ -532,6 +532,166 @@ public sealed class AdvancedPermissionServiceTests
         await _repository.DidNotReceive().GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>());
     }
 
+    // ─── Multi-group user resolution (end-to-end with real resolver) ────────────
+
+    /// <summary>
+    /// A user belonging to two groups where one group explicitly allows and the other has no opinion.
+    /// The explicit allow must propagate — the silent group must not prevent it.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_UserInTwoGroups_SilentGroupDoesNotPreventAllow()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var parentKey = Guid.NewGuid();
+        var path = new List<Guid> { parentKey, nodeKey };
+        SetupUser(userKey, "editors", "writers");
+
+        var editorsAllow = MakeEntry(nodeKey, "editors", VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly);
+        // "writers" has no entries for VerbDelete
+
+        _repository.GetByRoleAsync("editors", Arg.Any<CancellationToken>()).Returns([editorsAllow]);
+        _repository.GetByRoleAsync("writers", Arg.Any<CancellationToken>()).Returns([]);
+        _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
+
+        var sut = new AdvancedPermissionService(
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+
+        var results = await sut.ResolveAllAsync(userKey, nodeKey, path, verbs: [VerbDelete]);
+
+        Assert.True(results[VerbDelete].IsAllowed, "editors' explicit Allow must win when writers has no opinion.");
+        Assert.True(results[VerbDelete].IsExplicit);
+    }
+
+    /// <summary>
+    /// A user belonging to two groups where one group denies and the other allows, both implicitly
+    /// (from ancestor entries). Implicit Deny beats Implicit Allow.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_UserInTwoGroups_ImplicitDenyBeatsImplicitAllow()
+    {
+        var userKey = Guid.NewGuid();
+        var ancestorKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { ancestorKey, nodeKey };
+        SetupUser(userKey, "editors", "writers");
+
+        // editors: Allow at ancestor (inherited at nodeKey)
+        var editorsAllow = MakeEntry(ancestorKey, "editors", VerbUpdate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
+        // writers: Deny at ancestor (also inherited at nodeKey)
+        var writersDeny = MakeEntry(ancestorKey, "writers", VerbUpdate, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants);
+
+        _repository.GetByRoleAsync("editors", Arg.Any<CancellationToken>()).Returns([editorsAllow]);
+        _repository.GetByRoleAsync("writers", Arg.Any<CancellationToken>()).Returns([writersDeny]);
+        _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
+
+        var sut = new AdvancedPermissionService(
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+
+        var results = await sut.ResolveAllAsync(userKey, nodeKey, path, verbs: [VerbUpdate]);
+
+        Assert.False(results[VerbUpdate].IsAllowed, "Implicit Deny from writers must beat Implicit Allow from editors.");
+        Assert.False(results[VerbUpdate].IsExplicit);
+    }
+
+    /// <summary>
+    /// A user belonging to two groups where one group explicitly allows and the other explicitly denies
+    /// on the same node. Explicit Deny beats Explicit Allow regardless of group order.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_UserInTwoGroups_ExplicitDenyBeatsExplicitAllow()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+        SetupUser(userKey, "editors", "writers");
+
+        var editorsAllow = MakeEntry(nodeKey, "editors", VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly);
+        var writersDeny  = MakeEntry(nodeKey, "writers", VerbDelete, PermissionState.Deny,  PermissionScope.ThisNodeOnly);
+
+        _repository.GetByRoleAsync("editors", Arg.Any<CancellationToken>()).Returns([editorsAllow]);
+        _repository.GetByRoleAsync("writers", Arg.Any<CancellationToken>()).Returns([writersDeny]);
+        _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
+
+        var sut = new AdvancedPermissionService(
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+
+        var results = await sut.ResolveAllAsync(userKey, nodeKey, path, verbs: [VerbDelete]);
+
+        Assert.False(results[VerbDelete].IsAllowed, "Explicit Deny from writers must beat Explicit Allow from editors.");
+        Assert.True(results[VerbDelete].IsExplicit);
+    }
+
+    /// <summary>
+    /// A user in a group with a split entry (Deny ThisNodeOnly + Allow DescendantsOnly) at a parent:
+    /// the user must get Allow at the child, because the DescendantsOnly Allow propagates down.
+    /// $everyone's Deny at that parent must NOT influence the user resolution (it is included but must
+    /// not override the group's own DescendantsOnly Allow when priority is considered).
+    /// In this test $everyone also has ImplicitDeny, so editors ImplicitAllow (depth 1) vs
+    /// $everyone ImplicitDeny (depth 1) — ImplicitDeny wins. This confirms the priority logic
+    /// and acts as a regression anchor for future changes.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_UserInGroup_SplitEntryAtParent_PriorityAppliedCorrectly()
+    {
+        var userKey = Guid.NewGuid();
+        var parentKey = Guid.NewGuid();
+        var childKey = Guid.NewGuid();
+        var path = new List<Guid> { parentKey, childKey };
+        SetupUser(userKey, "editors");
+
+        // editors: split at parent — Deny (ThisNodeOnly) + Allow (DescendantsOnly)
+        var editorsDeny    = MakeEntry(parentKey, "editors", VerbDelete, PermissionState.Deny,  PermissionScope.ThisNodeOnly);
+        var editorsAllow   = MakeEntry(parentKey, "editors", VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly);
+        // $everyone: Deny at parent (ThisNodeAndDescendants) → ImplicitDeny for child
+        var everyoneDeny   = MakeEntry(parentKey, EveryoneRoleAlias, VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants);
+
+        _repository.GetByRoleAsync("editors", Arg.Any<CancellationToken>()).Returns([editorsDeny, editorsAllow]);
+        _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([everyoneDeny]);
+
+        var sut = new AdvancedPermissionService(
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+
+        var results = await sut.ResolveAllAsync(userKey, childKey, path, verbs: [VerbDelete]);
+        var result = results[VerbDelete];
+
+        // editors→ImplicitAllow (DescendantsOnly at parent, depth 1)
+        // $everyone→ImplicitDeny (ThisNodeAndDescendants at parent, depth 1)
+        // Priority: ImplicitDeny beats ImplicitAllow → Deny
+        Assert.False(result.IsAllowed,
+            "User resolution includes $everyone, whose ImplicitDeny beats the group's ImplicitAllow.");
+        Assert.False(result.IsExplicit);
+    }
+
+    /// <summary>
+    /// $everyone provides a baseline allow (virtual-root) but a user's own group has an explicit deny
+    /// on the target node — the explicit deny must win.
+    /// </summary>
+    [Fact]
+    public async Task ResolveAllAsync_GroupExplicitDenyBeatsEveryoneDefaultAllow()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new List<Guid> { Guid.NewGuid(), nodeKey };
+        SetupUser(userKey, "editors");
+
+        // $everyone: virtual-root Allow (global default)
+        var everyoneDefault = MakeEntry(VirtualRootNodeKey, EveryoneRoleAlias, VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
+        // editors: explicit Deny at target
+        var editorsDeny = MakeEntry(nodeKey, "editors", VerbRead, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+
+        _repository.GetByRoleAsync("editors", Arg.Any<CancellationToken>()).Returns([editorsDeny]);
+        _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([everyoneDefault]);
+
+        var sut = new AdvancedPermissionService(
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+
+        var results = await sut.ResolveAllAsync(userKey, nodeKey, path, verbs: [VerbRead]);
+
+        Assert.False(results[VerbRead].IsAllowed, "Explicit Deny from editors must beat $everyone's implicit allow.");
+        Assert.True(results[VerbRead].IsExplicit);
+    }
+
     // ─── Repository delegation ────────────────────────────────────────────────
 
     /// <summary>

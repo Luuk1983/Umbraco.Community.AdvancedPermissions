@@ -21,7 +21,7 @@
     <Authors>Luuk Peters</Authors>
     <Copyright>Copyright (c) Luuk Peters</Copyright>
     <Description>Advanced permission management for Umbraco v17: explicit Allow/Deny permissions per role per content node, inheritance through the content tree, an Everyone role for global constraints, and dedicated Permissions Editor + Access Viewer UIs.</Description>
-    <PackageTags>umbraco;permissions;cms</PackageTags>
+    <PackageTags>umbraco;permissions;cms;umbraco-marketplace</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/Luuk1983/LP.Umbraco.AdvancedPermissions</RepositoryUrl>

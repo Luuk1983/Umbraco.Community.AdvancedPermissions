@@ -1,0 +1,28 @@
+{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "Title": "Advanced Permissions for Umbraco",
+  "Category": "Editor Tools",
+  "AlternateCategory": "Developer Tools",
+  "Description": "Fine-grained, node-level permission management for Umbraco. Adds explicit Allow/Deny permissions per user group per content node, inheritance through the content tree with configurable scope, an All Users Group for global constraints, and dedicated Permissions Editor and Access Viewer backoffice sections with full audit reasoning.",
+  "PackageType": "Package",
+  "LicenseTypes": ["Free"],
+  "AuthorDetails": {
+    "Name": "Luuk Peters",
+    "Description": "Umbraco developer building packages that extend the CMS with enterprise-grade features. Creator of Advanced Permissions for Umbraco.",
+    "Url": "https://github.com/Luuk1983",
+    "SyncContributorsFromRepository": true
+  },
+  "DocumentationUrl": "https://github.com/Luuk1983/LP.Umbraco.AdvancedPermissions",
+  "IssueTrackerUrl": "https://github.com/Luuk1983/LP.Umbraco.AdvancedPermissions/issues",
+  "Tags": [
+    "permissions",
+    "security",
+    "user groups",
+    "access control",
+    "content tree",
+    "allow deny",
+    "inheritance",
+    "backoffice"
+  ],
+  "Screenshots": []
+}

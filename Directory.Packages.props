@@ -1,0 +1,43 @@
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Umbraco -->
+    <PackageVersion Include="Umbraco.Cms" Version="17.3.0" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="17.3.0" />
+    <PackageVersion Include="Umbraco.Cms.Core" Version="17.3.0" />
+    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="17.3.0" />
+    <PackageVersion Include="Umbraco.Cms.Persistence.EFCore" Version="17.3.0" />
+    <PackageVersion Include="uSync" Version="17.0.4" />
+
+    <!-- Entity Framework Core -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.5" />
+
+    <!-- Build / versioning -->
+    <PackageVersion Include="MinVer" Version="6.0.0" />
+
+    <!-- Testing -->
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageVersion Include="NSubstitute" Version="5.3.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
+
+    <!--
+      Transient dependency version overrides: force non-vulnerable versions of packages
+      pulled in transitively via Umbraco/ASP.NET. Paired with top-level PackageReference
+      entries in the affected projects. These entries (and the corresponding PackageReferences)
+      can be deleted once the transient dependencies are fixed upstream.
+      - MailKit: GHSA-9j88-vvj5-vhgr (moderate) in < 4.16.0
+      - System.Security.Cryptography.Xml: GHSA-37gx-xxp4-5rgx, GHSA-w3x6-4m5h-cxqf (high) in < 10.0.6
+    -->
+    <PackageVersion Include="MailKit" Version="4.16.0" />
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.6" />
+  </ItemGroup>
+
+</Project>

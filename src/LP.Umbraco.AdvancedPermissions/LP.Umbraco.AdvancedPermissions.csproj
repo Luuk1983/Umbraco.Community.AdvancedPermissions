@@ -49,10 +49,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="all" />
-    <PackageReference Include="Umbraco.Cms.Core" Version="17.3.0" />
-    <PackageReference Include="Umbraco.Cms.Infrastructure" Version="17.3.0" />
-    <PackageReference Include="Umbraco.Cms.Api.Management" Version="17.3.0" />
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <PackageReference Include="Umbraco.Cms.Core" />
+    <PackageReference Include="Umbraco.Cms.Infrastructure" />
+    <PackageReference Include="Umbraco.Cms.Api.Management" />
   </ItemGroup>
 
   <!-- Include Core and Data DLLs in the NuGet package (lib/net10.0/) -->

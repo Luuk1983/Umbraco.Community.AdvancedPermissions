@@ -12,9 +12,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms" Version="17.3.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.5" />
-    <PackageReference Include="uSync" Version="17.0.4" />
+    <PackageReference Include="Umbraco.Cms" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="uSync" />
+  </ItemGroup>
+
+  <!--
+    Transient dependency version override: forces a non-vulnerable MailKit version.
+    Pulled in transitively via Umbraco.Cms. Fixes GHSA-9j88-vvj5-vhgr (moderate) in < 4.16.0.
+    This top-level reference (and the corresponding PackageVersion in Directory.Packages.props)
+    can be deleted once the transient dependency is fixed upstream.
+  -->
+  <ItemGroup>
+    <PackageReference Include="MailKit" />
   </ItemGroup>
 
 </Project>

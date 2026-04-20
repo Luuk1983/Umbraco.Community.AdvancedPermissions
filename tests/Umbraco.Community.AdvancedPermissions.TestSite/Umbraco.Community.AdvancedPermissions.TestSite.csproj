@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Umbraco.Community.AdvancedPermissions.TestSite</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Umbraco.Community.AdvancedPermissions\Umbraco.Community.AdvancedPermissions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="uSync" />
+  </ItemGroup>
+
+  <!--
+    Transient dependency version override: forces a non-vulnerable MailKit version.
+    Pulled in transitively via Umbraco.Cms. Fixes GHSA-9j88-vvj5-vhgr (moderate) in < 4.16.0.
+    This top-level reference (and the corresponding PackageVersion in Directory.Packages.props)
+    can be deleted once the transient dependency is fixed upstream.
+  -->
+  <ItemGroup>
+    <PackageReference Include="MailKit" />
+  </ItemGroup>
+
+</Project>

@@ -1,4 +1,4 @@
-# LP.Umbraco.AdvancedPermissions
+# Umbraco.Community.AdvancedPermissions
 
 Advanced permission management for Umbraco v17 that adds explicit Allow/Deny permissions, inheritance through the content tree, an Everyone role for global constraints, and dedicated backoffice UIs.
 
@@ -27,7 +27,7 @@ Permissions are stored as entries with a **verb** (e.g. Read, Write, Publish), a
 ## Installation
 
 ```bash
-dotnet add package LP.Umbraco.AdvancedPermissions
+dotnet add package Umbraco.Community.AdvancedPermissions
 ```
 
 The package auto-registers via Umbraco's `IComposer` discovery — no additional setup code is needed. After installation, two new sections appear in the Umbraco backoffice: **Permissions Editor** and **Access Viewer**.

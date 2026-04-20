@@ -6,14 +6,14 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5173,
-      "cwd": "src/LP.Umbraco.AdvancedPermissions.Client"
+      "cwd": "src/Umbraco.Community.AdvancedPermissions.Client"
     },
     {
       "name": "Umbraco TestSite",
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--launch-profile", "https"],
       "port": 7067,
-      "cwd": "tests/LP.Umbraco.AdvancedPermissions.TestSite"
+      "cwd": "tests/Umbraco.Community.AdvancedPermissions.TestSite"
     }
   ]
 }

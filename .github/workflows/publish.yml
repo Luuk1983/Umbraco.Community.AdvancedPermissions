@@ -32,7 +32,7 @@ jobs:
         run: dotnet restore
 
       - name: Build frontend
-        working-directory: src/LP.Umbraco.AdvancedPermissions.Client
+        working-directory: src/Umbraco.Community.AdvancedPermissions.Client
         run: |
           npm ci
           npm run build
@@ -44,7 +44,7 @@ jobs:
         run: dotnet test --configuration Release --no-build --verbosity normal
 
       - name: Pack
-        run: dotnet pack src/LP.Umbraco.AdvancedPermissions/ --configuration Release --output ./artifacts
+        run: dotnet pack src/Umbraco.Community.AdvancedPermissions/ --configuration Release --output ./artifacts
 
       - name: Login to NuGet (trusted publishing)
         id: nuget-login

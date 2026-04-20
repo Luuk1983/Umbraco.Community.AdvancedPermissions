@@ -1,0 +1,93 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Only audit direct dependencies; transitive vulnerability warnings from Umbraco's
+         dependencies (System.Net.Http, System.Text.Encodings.Web) are not actionable here. -->
+    <NuGetAuditMode>direct</NuGetAuditMode>
+    <RootNamespace>Umbraco.Community.AdvancedPermissions</RootNamespace>
+    <AssemblyName>Umbraco.Community.AdvancedPermissions</AssemblyName>
+    <!-- Serve wwwroot content at the web root (/) rather than the default /_content/{assembly}/ path.
+         This allows App_Plugins files to be accessible at /App_Plugins/... as Umbraco expects. -->
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+
+    <!-- NuGet package metadata -->
+    <PackageId>Umbraco.Community.AdvancedPermissions</PackageId>
+    <Title>Advanced Permissions for Umbraco</Title>
+    <Authors>Luuk Peters</Authors>
+    <Copyright>Copyright (c) Luuk Peters</Copyright>
+    <Description>Advanced permission management for Umbraco v17: explicit Allow/Deny permissions per role per content node, inheritance through the content tree, an Everyone role for global constraints, and dedicated Permissions Editor + Access Viewer UIs.</Description>
+    <PackageTags>umbraco;permissions;cms</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>package_logo_128x128.png</PackageIcon>
+
+    <!-- Versioning: MinVer derives version from git tags (e.g. v1.0.0) -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerAutoIncrement>minor</MinVerAutoIncrement>
+    <MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
+
+    <!-- Bundle project-referenced DLLs into this package instead of declaring them as NuGet dependencies -->
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="package_logo_128x128.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Umbraco.Community.AdvancedPermissions.Core\Umbraco.Community.AdvancedPermissions.Core.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\Umbraco.Community.AdvancedPermissions.Data\Umbraco.Community.AdvancedPermissions.Data.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <PackageReference Include="Umbraco.Cms.Core" />
+    <PackageReference Include="Umbraco.Cms.Infrastructure" />
+    <PackageReference Include="Umbraco.Cms.Api.Management" />
+  </ItemGroup>
+
+  <!-- Include Core and Data DLLs in the NuGet package (lib/net10.0/) -->
+  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths)"
+        Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Sync umbraco-package.json version with MinVer-derived version at build time.
+       The source file keeps "0.0.0" as placeholder; this target replaces it. -->
+  <UsingTask TaskName="SetJsonVersion"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <FilePath ParameterType="System.String" Required="true" />
+      <VersionValue ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+var text = System.IO.File.ReadAllText(FilePath);
+text = System.Text.RegularExpressions.Regex.Replace(
+    text, @"""version"":\s*""[^""]*""", $@"""version"": ""{VersionValue}""");
+System.IO.File.WriteAllText(FilePath, text);
+Log.LogMessage(MessageImportance.High, $"Set version in {FilePath} to {VersionValue}");
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="SyncUmbracoPackageVersion" AfterTargets="MinVer"
+          Condition="'$(MinVerVersion)' != ''">
+    <SetJsonVersion
+      FilePath="$(ProjectDir)wwwroot\App_Plugins\Umbraco.Community.AdvancedPermissions\umbraco-package.json"
+      VersionValue="$(MinVerVersion)" />
+  </Target>
+
+</Project>

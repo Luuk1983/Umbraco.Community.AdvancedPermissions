@@ -5,7 +5,7 @@
 
 ## Context
 
-The main package project (`LP.Umbraco.AdvancedPermissions`) needs to expose frontend files in `wwwroot/App_Plugins/` so they are served correctly when the package is consumed by a host application. Initially the project used `Microsoft.NET.Sdk`.
+The main package project (`Umbraco.Community.AdvancedPermissions`) needs to expose frontend files in `wwwroot/App_Plugins/` so they are served correctly when the package is consumed by a host application. Initially the project used `Microsoft.NET.Sdk`.
 
 ## Problem
 
@@ -13,7 +13,7 @@ The main package project (`LP.Umbraco.AdvancedPermissions`) needs to expose fron
 
 ## Decision
 
-Change the SDK in `LP.Umbraco.AdvancedPermissions.csproj` from `Microsoft.NET.Sdk` to `Microsoft.NET.Sdk.Razor`:
+Change the SDK in `Umbraco.Community.AdvancedPermissions.csproj` from `Microsoft.NET.Sdk` to `Microsoft.NET.Sdk.Razor`:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Razor">

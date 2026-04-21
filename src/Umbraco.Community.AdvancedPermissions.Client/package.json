@@ -6,12 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate-client": "node scripts/generate-openapi.js http://localhost:5266/umbraco/swagger/management/swagger.json"
   },
   "dependencies": {
     "@umbraco-cms/backoffice": "^17.3.0"
   },
   "devDependencies": {
+    "@hey-api/client-fetch": "^0.13.0",
+    "@hey-api/openapi-ts": "^0.85.0",
+    "chalk": "^5.6.2",
+    "node-fetch": "^3.3.2",
     "typescript": "^5.7.3",
     "vite": "^6.3.1"
   }

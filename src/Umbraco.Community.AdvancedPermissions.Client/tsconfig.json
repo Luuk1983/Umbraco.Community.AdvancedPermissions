@@ -13,5 +13,6 @@
     "useDefineForClassFields": false,
     "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/api/generated/client", "src/api/generated/core"]
 }

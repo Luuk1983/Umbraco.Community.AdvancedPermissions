@@ -58,7 +58,7 @@ The built-in permission system applies every node-level entry to all descendants
 
 This lets you express patterns like "deny editing on the branch root, but allow it on everything below" in a single entry.
 
-![Editing a permission entry: Allow or Deny with a configurable scope](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/verb_permission_editor.jpg)
+![Editing a permission entry: Allow or Deny with a configurable scope](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/verb_permissions_editor.jpg)
 
 ### Reasoning Chain
 

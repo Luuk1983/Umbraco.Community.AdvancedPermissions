@@ -1,118 +1,130 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Luuk1983/LP.Umbraco.AdvancedPermissions/main/src/LP.Umbraco.AdvancedPermissions/package_logo_128x128.png" alt="Advanced Permissions for Umbraco" width="128" />
+  <img src="https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/src/Umbraco.Community.AdvancedPermissions/package_logo_128x128.png" alt="Advanced Permissions for Umbraco" width="128" />
 </p>
 
 <h1 align="center">Advanced Permissions for Umbraco</h1>
 
 <p align="center">
-  Fine-grained, node-level permission management for Umbraco v17 — with explicit Allow/Deny, content tree inheritance, and full audit reasoning.
+  Fine-grained permission management for Umbraco v17: explicit Allow/Deny, per-entry scope control, an All Users Group baseline that can lock down critical nodes with a single entry, and full audit reasoning.
 </p>
 
 <p align="center">
-  <a href="https://www.nuget.org/packages/LP.Umbraco.AdvancedPermissions"><img src="https://img.shields.io/nuget/v/LP.Umbraco.AdvancedPermissions" alt="NuGet" /></a>
-  <a href="https://www.nuget.org/packages/LP.Umbraco.AdvancedPermissions"><img src="https://img.shields.io/nuget/dt/LP.Umbraco.AdvancedPermissions" alt="NuGet Downloads" /></a>
-  <a href="https://github.com/Luuk1983/LP.Umbraco.AdvancedPermissions/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Luuk1983/LP.Umbraco.AdvancedPermissions" alt="License" /></a>
+  <a href="https://www.nuget.org/packages/Umbraco.Community.AdvancedPermissions"><img src="https://img.shields.io/nuget/v/Umbraco.Community.AdvancedPermissions" alt="NuGet" /></a>
+  <a href="https://www.nuget.org/packages/Umbraco.Community.AdvancedPermissions"><img src="https://img.shields.io/nuget/dt/Umbraco.Community.AdvancedPermissions" alt="NuGet Downloads" /></a>
+  <a href="https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Luuk1983/Umbraco.Community.AdvancedPermissions" alt="License" /></a>
 </p>
 
 ---
 
-Umbraco's built-in permission system assigns permissions at the user group level — every member of a group gets the same access everywhere. **Advanced Permissions** gives you control at the content node level, with explicit Allow and Deny states, inheritance through the content tree, and a dedicated "All Users Group" that applies constraints across all users regardless of group membership.
+Umbraco's built-in permission system lets you grant a user group a set of permissions, optionally overridden per content node, with those overrides inherited down the content tree. Advanced Permissions builds on that model and adds the controls that are missing: explicit Deny entries that can revoke inherited Allows, scope control over how far each entry reaches, an All Users Group for setting baselines that apply to everyone, and a full reasoning chain that explains exactly why a permission was granted or denied.
 
 ## Why Advanced Permissions?
 
+- Protect critical content with a single explicit Deny that nothing can override.
+- Pick how far each entry reaches: this node only, this node and its descendants, or descendants only.
+- Use the All Users Group to apply a rule to every user at once.
+- See exactly why any permission was granted or denied, with the reasoning chain in the Access Viewer.
+- Your existing Umbraco user group permissions are imported automatically on first boot, so you don't start from scratch.
+
+How it compares to the built-in permission system:
+
 | Capability | Umbraco Built-in | Advanced Permissions |
 |---|---|---|
-| Permission granularity | Per user group, applies everywhere | Per user group **per content node** |
-| Allow / Deny | Allow only (no explicit Deny) | Explicit **Allow** and **Deny** |
-| Content tree inheritance | No inheritance | Permissions **propagate down the tree** with configurable scope |
-| Scope control | N/A | **This Node Only**, **This Node and Descendants**, or **Descendants Only** |
-| Global constraints | No built-in mechanism | **All Users Group** — applies to every user; specific groups can override |
-| Audit trail | No reasoning available | Full **reasoning chain** showing exactly why each permission was granted or denied |
-| Dedicated UI | Managed within user group settings | **Permissions Editor** + **Access Viewer** as separate backoffice sections |
+| Grant types | Positive only (Allow). Absence of a permission implicitly denies it, but an inherited Allow cannot be explicitly revoked. | Positive and negative (Allow and Deny). An explicit Deny on a node always wins over any Allow, from any user group, whether explicit or inherited. |
+| Scope control | Every node-level entry applies to the node and all descendants. | Choose This Node Only, This Node and Descendants, or Descendants Only per entry. |
+| Global constraints | No built-in mechanism. | All Users Group: combine with an explicit Deny to lock down critical nodes so that no user in any group can perform the action. |
+| Audit trail | Only the effective outcome is visible. | Full reasoning chain showing which user group contributed, from which node, and whether it was explicit or inherited. |
+| Dedicated UI | Managed per user group via the native permissions editor. | Permissions Editor (browse the tree, manage entries per user group) and Access Viewer (inspect effective permissions with reasoning). |
 
 ## Features
 
-### Explicit Allow / Deny per Content Node
-
-Assign Allow or Deny permissions for any verb (Read, Create, Update, Delete, Publish, and more) on any content node, for any user group. No more all-or-nothing group permissions.
-
-### Content Tree Inheritance with Scope Control
-
-Permissions propagate through the content tree. Choose how far each permission reaches:
-
-- **This Node Only** — applies only to the node where it is set
-- **This Node and Descendants** — applies to the node and everything below it
-- **Descendants Only** — skips the current node, applies to children and below
-
 ### All Users Group
 
-The All Users Group applies permissions to every user regardless of their group membership. Use it to set global constraints (e.g., deny Publish on a specific branch), then override with specific user group entries where needed.
+The All Users Group is a virtual user group that applies to every backoffice user regardless of their real group membership. The resolver treats it exactly like any other user group, but because it reaches everyone, a single entry on it acts as a global rule. Combined with an explicit Deny, this lets you enforce a global rule with one entry: put a Deny on a critical node for the All Users Group, and the operation is locked. Nothing overrides it: not an Allow from another user group, not an inherited permission from an ancestor. The only way to lift it is to go back and change that one entry. Use this pattern to lock down deletion of key nodes, prevent unpublishing of landing pages, or enforce any other global constraint.
 
 ### Permissions Editor
 
-A dedicated backoffice section to manage permission entries. Select a user group, browse the content tree, and set Allow or Deny for each verb with full scope control.
+Browse the content tree, pick a user group, and manage all of its permission entries from one place. Set Allow or Deny for each verb, control the scope, and see at a glance which nodes in the tree have entries defined.
 
-<!-- TODO: Add screenshot of Permissions Editor UI -->
+![Permissions Editor: content tree with permission entries per user group](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/permissions_editor.jpg)
 
-### Access Viewer
+### Scope Control per Entry
 
-View the effective (resolved) permissions for any user or user group at any content node. Each permission shows a full reasoning chain explaining exactly how it was determined — which user group contributed, whether it was inherited or explicit, and from which node.
+The built-in permission system applies every node-level entry to all descendants. Advanced Permissions lets you pick the scope per entry:
 
-<!-- TODO: Add screenshot of Access Viewer UI -->
+- **This Node Only**: applies only to the node where it is set
+- **This Node and Descendants**: applies to the node and everything below it
+- **Descendants Only**: skips the current node, applies to children and below
 
-### Intelligent Resolution
+This lets you express patterns like "deny editing on the branch root, but allow it on everything below" in a single entry.
 
-The resolver walks the content tree from the current node upward:
+![Editing a permission entry: Allow or Deny with a configurable scope](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/verb_permission_editor.jpg)
 
-1. Check for an explicit entry on the current node
-2. If none found, inherit from the nearest ancestor with a matching entry
-3. The All Users Group is evaluated first; specific user group entries override it
-4. If no entry exists anywhere in the tree, the default is **Deny**
+### Reasoning Chain
 
-**Example:** Suppose the "Editors" user group has Publish set to Allow with scope "This Node and Descendants" on the Home node. A content editor in that group can publish any page under Home. Now you set Publish to Deny on the "Press Releases" node for the same group — editors can still publish everywhere under Home *except* the Press Releases branch.
+The Access Viewer shows the effective permissions for any user or user group at any content node, along with a full reasoning chain explaining exactly how each permission was determined: which user group contributed, from which node, and whether it was inherited or set explicitly.
+
+![Access Viewer: effective permissions for a user or user group at a node](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/access_viewer.jpg)
+
+![Reasoning chain detail: how a permission was resolved, with contributing user group, source node, and explicit/inherited state](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/verb_access_viewer.jpg)
+
+### Automatic import of existing permissions
+
+When the package boots for the first time, the permissions on your existing user groups are imported automatically. Group-level defaults become virtual-root Allow entries; per-node granular permissions become node-level entries, with matching Deny entries for any defaults the granular set was overriding. The effective security state right after install matches what you had before, so nothing has to be reconfigured by hand. New user groups created later in the native Umbraco UI are seeded into the advanced system the same way, keeping the two aligned over time.
+
+### Resolution Order
+
+When the resolver is asked whether a user may perform a verb on a node, it gathers every applicable entry from every user group the user belongs to (including the All Users Group), honouring each entry's scope, and applies a strict priority order:
+
+1. Any explicit Deny (from any user group, on the current node) wins.
+2. Any explicit Allow (from any user group, on the current node) wins.
+3. Any inherited Deny (from an ancestor, via any user group).
+4. Any inherited Allow (from an ancestor, via any user group).
+5. If no entry applies anywhere in the tree, the default is Deny.
+
+The precedence does not depend on the user group. A single explicit Deny on a node beats every other result in the list: every explicit Allow from every other user group, and every inherited Allow or Deny from every ancestor. The resolver does not care which user group the Deny came from; one is enough.
+
+**Example 1. Lock a node against deletion.**
+You have a critical landing page and want to guarantee nobody deletes it. Add a single entry: All Users Group, Deny, Delete, scope "This Node Only". Done. It does not matter which user groups a user belongs to, what those groups inherit from ancestors, or whether any of them have an explicit Allow for Delete on this same node. The Deny wins. To lift the protection, you have to remove or edit that one entry.
+
+**Example 2. Carve out an exception to a broad Allow.**
+The "Editors" user group has Allow for Publish on the Home node with scope "This Node and Descendants", so editors can publish anywhere under Home. You want to take that away for the Press Releases branch but keep every other permission. In the built-in system you would need to redeclare every permission you want to keep on Press Releases so that Publish falls out of the list. With Advanced Permissions, one Deny entry for Publish on Press Releases does it. Every other inherited permission stays exactly as it was.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Umbraco **v17.3.0** or later
-- .NET **10**
+- Umbraco v17.3.0 or later
+- .NET 10
 
 ### Installation
 
 ```bash
-dotnet add package LP.Umbraco.AdvancedPermissions
+dotnet add package Umbraco.Community.AdvancedPermissions
 ```
 
-The package auto-registers via Umbraco's `IComposer` discovery — **no additional setup code is needed**.
+The package auto-registers, so no additional setup code is needed.
 
-After installation, two new sections appear in the Umbraco backoffice:
+On first boot the package imports the permissions from your existing user groups into the advanced system, so your current security setup carries over automatically and nothing has to be reconfigured. New user groups created later are seeded the same way.
 
-- **Permissions Editor** — manage permission entries per user group and content node
-- **Access Viewer** — inspect effective permissions with full reasoning
+After installation, two new menu items appear in the sidebar of the Users section in the Umbraco backoffice:
+
+- **Permissions Editor**: manage permission entries per user group across the content tree
+- **Access Viewer**: inspect effective permissions for any user or user group, with full reasoning
+
+![Advanced Permissions menu items in the sidebar of the Users section](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/advanced-permissions_menu.jpg)
+
+In each user group's editor, the native Documents permissions panel is replaced with a short message directing you to the Permissions Editor, where all document permission management now lives.
+
+![Native Documents permissions panel in the user group editor, replaced with a link to the Permissions Editor](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/replaced_permissions_panel.jpg)
 
 ### Configuration
 
 No configuration is required. The package works out of the box with sensible defaults. Permission verbs are automatically derived from the standard Umbraco permissions.
 
-## Management API
-
-All endpoints are under `/umbraco/management/api/v1/advanced-permissions/` and require backoffice authentication.
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/roles` | All assignable user groups (including All Users Group) |
-| GET | `/verbs` | All permission verbs with display names |
-| GET | `/tree/root?roleAlias=` | Root content nodes with permission entries for a user group |
-| GET | `/tree/children?parentKey=&roleAlias=` | Child nodes with permission entries |
-| GET | `/permissions?nodeKey=&roleAlias=` | Stored entries for a specific node and user group |
-| PUT | `/permissions` | Save (replace) entries for a node and user group |
-| GET | `/effective?userKey=&nodeKey=` | Effective permissions for a user at a node |
-| GET | `/effective/by-role?roleAlias=&nodeKey=` | Effective permissions for a user group at a node |
-
 ## Feedback
 
-Found a bug or have a feature request? Please [open an issue](https://github.com/Luuk1983/LP.Umbraco.AdvancedPermissions/issues) on GitHub.
+Found a bug or have a feature request? Please [open an issue](https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions/issues) on GitHub.
 
 ## License
 

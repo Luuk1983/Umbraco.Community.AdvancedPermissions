@@ -1,0 +1,54 @@
+{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "Title": "Advanced Permissions for Umbraco",
+  "Category": "Editor Tools",
+  "AlternateCategory": "Developer Tools",
+  "Description": "Fine-grained permission management for Umbraco that extends the built-in permission system with the controls it lacks: explicit Allow and Deny entries, per-entry scope control (This Node Only, This Node and Descendants, Descendants Only), an All Users Group that applies to every user, and a full reasoning chain that explains why each permission was granted or denied.\n\nGot a critical node that must never be deleted? Set an explicit Deny for Delete on that node for the All Users Group. From that point on, the node cannot be deleted by anyone, from any user group, under any circumstances. An explicit Deny is absolute: nothing overrides it, not an inherited Allow, not an explicit Allow from another user group on the same node. The only way to lift the lock is to remove or edit that one entry. The same pattern works for any permission on any node: lock unpublishing on landing pages, block edits to integration nodes, enforce any other global safety rule.\n\nAdds two menu items to the Users section of the backoffice: a Permissions Editor for managing entries per user group across the content tree, and an Access Viewer for inspecting effective permissions with full reasoning. On first boot the package imports the permissions from your existing user groups automatically, so your current security setup carries over without any manual migration. New user groups created later are seeded the same way.",
+  "PackageType": "Package",
+  "LicenseTypes": ["Free"],
+  "AuthorDetails": {
+    "Name": "Luuk Peters",
+    "Description": "Umbraco developer building packages that extend the CMS with enterprise-grade features. Creator of Advanced Permissions for Umbraco.",
+    "Url": "https://github.com/Luuk1983",
+    "SyncContributorsFromRepository": true
+  },
+  "DocumentationUrl": "https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions",
+  "IssueTrackerUrl": "https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions/issues",
+  "Tags": [
+    "permissions",
+    "security",
+    "user groups",
+    "access control",
+    "allow deny",
+    "deny",
+    "scope",
+    "content tree",
+    "backoffice"
+  ],
+  "Screenshots": [
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/permissions_editor.jpg",
+      "Caption": "Permissions Editor: browse the content tree and manage permission entries per user group."
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/verb_permission_editor.jpg",
+      "Caption": "Set Allow or Deny for each verb, with a configurable scope (This Node Only, This Node and Descendants, or Descendants Only)."
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/access_viewer.jpg",
+      "Caption": "Access Viewer: inspect effective permissions for any user or user group at any content node."
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/verb_access_viewer.jpg",
+      "Caption": "Full reasoning chain showing which user group contributed, from which node, and whether it was explicit or inherited."
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/advanced-permissions_menu.jpg",
+      "Caption": "Two menu items appear in the sidebar of the Users section: Permissions Editor and Access Viewer."
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/replaced_permissions_panel.jpg",
+      "Caption": "In each user group's editor, the native Documents permissions panel is replaced with a link to the Permissions Editor."
+    }
+  ]
+}

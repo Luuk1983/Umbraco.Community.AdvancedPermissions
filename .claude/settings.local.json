@@ -10,7 +10,13 @@
       "Bash(grep -r \"uui-pagination\\\\|\\\\.total\\\\|\\\\.current\" C:githubUmbracoVersionsv17srcUmbraco.Web.UI.Clientsrcpackages --include=*.ts -l)",
       "Bash(grep -r \"uui-combobox\\\\|umb-user\\\\|user.*input\" C:/github/UmbracoVersions/v17/src/Umbraco.Web.UI.Client/src/packages/user --include=*.ts --include=*.html)",
       "mcp__Claude_Preview__preview_start",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(curl -s https://marketplace.umbraco.com/umbraco-marketplace-schema.json)",
+      "Bash(python -c \"import json; json.load\\(open\\('umbraco-marketplace.json'\\)\\); print\\('JSON valid'\\)\")",
+      "Bash(python -c \"import json; d = json.load\\(open\\('umbraco-marketplace.json'\\)\\); print\\(f'JSON valid — Description length: {len\\(d[\\\\\"Description\\\\\"]\\)} chars \\(max 4000\\)'\\)\")",
+      "Bash(python -c \"import json; d = json.load\\(open\\('umbraco-marketplace.json'\\)\\); print\\(f'JSON valid \\\\u2014 Description length: {len\\(d[\\\\\"Description\\\\\"]\\)} / 4000 chars'\\)\")",
+      "Bash(python -c \"import json; d = json.load\\(open\\('umbraco-marketplace.json'\\)\\); print\\(f'JSON valid, Description length: {len\\(d[\\\\\"Description\\\\\"]\\)} / 4000 chars'\\)\")",
+      "Bash(python -c ' *)"
     ]
   }
 }

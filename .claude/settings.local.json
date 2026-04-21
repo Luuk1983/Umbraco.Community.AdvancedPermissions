@@ -10,7 +10,7 @@
       "Bash(grep -r \"uui-pagination\\\\|\\\\.total\\\\|\\\\.current\" C:githubUmbracoVersionsv17srcUmbraco.Web.UI.Clientsrcpackages --include=*.ts -l)",
       "Bash(grep -r \"uui-combobox\\\\|umb-user\\\\|user.*input\" C:/github/UmbracoVersions/v17/src/Umbraco.Web.UI.Client/src/packages/user --include=*.ts --include=*.html)",
       "mcp__Claude_Preview__preview_start",
-      "Bash(unzip -l /tmp/nupkg-test/LP.Umbraco.AdvancedPermissions.1.0.0-alpha.0.18.nupkg)"
+      "Bash(git mv *)"
     ]
   }
 }

@@ -1,0 +1,14 @@
+{
+  "$schema": "../node_modules/@umbraco-cms/backoffice/umbraco-package-schema.json",
+  "name": "Advanced Permissions for Umbraco",
+  "version": "0.0.0",
+  "allowPublicAccess": false,
+  "extensions": [
+    {
+      "type": "bundle",
+      "alias": "UAP.Bundle",
+      "name": "Advanced Permissions Bundle",
+      "js": "/App_Plugins/Umbraco.Community.AdvancedPermissions/uap.js"
+    }
+  ]
+}

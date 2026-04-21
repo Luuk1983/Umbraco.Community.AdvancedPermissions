@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>Umbraco.Community.AdvancedPermissions.Data</RootNamespace>
+    <AssemblyName>Umbraco.Community.AdvancedPermissions.Data</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Umbraco.Community.AdvancedPermissions.Core\Umbraco.Community.AdvancedPermissions.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Persistence.EFCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!--
+    Transient dependency version override: forces a non-vulnerable MailKit version.
+    Pulled in transitively via Umbraco.Cms.Persistence.EFCore -> Umbraco.Cms.Infrastructure.
+    Fixes GHSA-9j88-vvj5-vhgr (moderate severity) in MailKit < 4.16.0.
+    This top-level reference (and the corresponding PackageVersion in Directory.Packages.props)
+    can be deleted once the transient dependency is fixed upstream.
+  -->
+  <ItemGroup>
+    <PackageReference Include="MailKit" />
+  </ItemGroup>
+
+</Project>

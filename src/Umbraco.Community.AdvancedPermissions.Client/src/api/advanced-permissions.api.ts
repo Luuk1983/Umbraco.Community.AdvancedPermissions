@@ -1,4 +1,5 @@
-import type { UmbAuthContext } from '@umbraco-cms/backoffice/auth';
+import { UserService } from '@umbraco-cms/backoffice/external/backend-api';
+import { AdvancedPermissionsService } from './generated/sdk.gen.js';
 import type {
   PermissionEntry,
   PermissionState,
@@ -11,73 +12,51 @@ import type {
   UserItem,
 } from '../models/permission.models.js';
 
-const BASE = '/umbraco/management/api/v1/advanced-permissions';
-const UMBRACO_BASE = '/umbraco/management/api/v1';
-
-let _authContext: UmbAuthContext | undefined;
-
-/** Called from the backoffice entry point once the auth context is available. */
-export function setAuthContext(ctx: UmbAuthContext | undefined): void {
-  _authContext = ctx;
-}
-
-/**
- * Performs an authenticated fetch to the Advanced Permissions management API.
- * Gets the bearer token via UMB_AUTH_CONTEXT and falls back to cookie auth.
- */
-async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
-  const openApiConfig = _authContext?.getOpenApiConfiguration();
-  const token = openApiConfig?.token ? await openApiConfig.token() : undefined;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options?.headers as Record<string, string> | undefined),
-  };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${BASE}${path}`, {
-    credentials: openApiConfig?.credentials ?? 'include',
-    ...options,
-    headers,
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(text || `HTTP ${res.status}`);
-  }
-  return res;
-}
+// Thin wrappers over the hey-api generated SDK. Auth + 401 retry are handled
+// by the Umbraco auth context via `authContext.configureClient(client)` in
+// entrypoint.ts — nothing to do here per-request.
+//
+// The generated types model `state` / `scope` as `string` because the backend
+// exposes them as plain strings in OpenAPI. Our hand-written models narrow
+// them to string unions; we cast at this boundary (runtime values are
+// guaranteed by the backend).
 
 /** Returns all assignable roles (user groups + $everyone). */
-export async function getRoles(): Promise<RoleInfo[]> {
-  return (await apiFetch('/roles')).json() as Promise<RoleInfo[]>;
+export async function getRoles(signal?: AbortSignal): Promise<RoleInfo[]> {
+  const { data } = await AdvancedPermissionsService.getRoles({
+    throwOnError: true,
+    ...(signal ? { signal } : {}),
+  });
+  return data;
 }
 
 /** Returns all available permission verbs with display names. */
-export async function getVerbs(): Promise<VerbInfo[]> {
-  return (await apiFetch('/verbs')).json() as Promise<VerbInfo[]>;
-}
-
-/** Builds a RequestInit with an optional AbortSignal, handling exactOptionalPropertyTypes. */
-function withSignal(signal?: AbortSignal, extra?: RequestInit): RequestInit {
-  const opts: RequestInit = { ...extra };
-  if (signal) {
-    opts.signal = signal;
-  }
-  return opts;
+export async function getVerbs(signal?: AbortSignal): Promise<VerbInfo[]> {
+  const { data } = await AdvancedPermissionsService.getVerbs({
+    throwOnError: true,
+    ...(signal ? { signal } : {}),
+  });
+  return data;
 }
 
 /** Returns root content nodes with stored permission entries for the given role. */
 export async function getTreeRoot(roleAlias: string, signal?: AbortSignal): Promise<TreeNode[]> {
-  return (await apiFetch(`/tree/root?roleAlias=${encodeURIComponent(roleAlias)}`, withSignal(signal))).json() as Promise<TreeNode[]>;
+  const { data } = await AdvancedPermissionsService.getRoot({
+    throwOnError: true,
+    query: { roleAlias },
+    ...(signal ? { signal } : {}),
+  });
+  return data as TreeNode[];
 }
 
 /** Returns children of a content node with stored permission entries for the given role. */
 export async function getTreeChildren(parentKey: string, roleAlias: string, signal?: AbortSignal): Promise<TreeNode[]> {
-  return (
-    await apiFetch(`/tree/children?parentKey=${parentKey}&roleAlias=${encodeURIComponent(roleAlias)}`, withSignal(signal))
-  ).json() as Promise<TreeNode[]>;
+  const { data } = await AdvancedPermissionsService.getChildren({
+    throwOnError: true,
+    query: { parentKey, roleAlias },
+    ...(signal ? { signal } : {}),
+  });
+  return data as TreeNode[];
 }
 
 /**
@@ -90,52 +69,55 @@ export async function savePermissions(
   roleAlias: string,
   entries: Array<{ verb: string; state: PermissionState; scope: PermissionScope }>,
 ): Promise<void> {
-  await apiFetch('/permissions', {
-    method: 'PUT',
-    body: JSON.stringify({ nodeKey, roleAlias, entries }),
+  await AdvancedPermissionsService.savePermissions({
+    throwOnError: true,
+    body: { nodeKey, roleAlias, entries },
   });
 }
 
 /** Returns stored permission entries for a node+role combination. Use VIRTUAL_ROOT_NODE_KEY for virtual-root entries. */
 export async function getPermissions(nodeKey: string, roleAlias: string, signal?: AbortSignal): Promise<PermissionEntry[]> {
-  return (await apiFetch(`/permissions?nodeKey=${nodeKey}&roleAlias=${encodeURIComponent(roleAlias)}`, withSignal(signal))).json() as Promise<PermissionEntry[]>;
+  const { data } = await AdvancedPermissionsService.getPermissions({
+    throwOnError: true,
+    query: { nodeKey, roleAlias },
+    ...(signal ? { signal } : {}),
+  });
+  return data as PermissionEntry[];
 }
 
 /** Returns the inheritance path and raw entries for a verb along that path. */
 export async function getPermissionsForPath(nodeKey: string, verb: string, signal?: AbortSignal): Promise<PathEntriesResponse> {
-  return (
-    await apiFetch(`/permissions/for-path?nodeKey=${nodeKey}&verb=${encodeURIComponent(verb)}`, withSignal(signal))
-  ).json() as Promise<PathEntriesResponse>;
+  const { data } = await AdvancedPermissionsService.getPermissionsForPath({
+    throwOnError: true,
+    query: { nodeKey, verb },
+    ...(signal ? { signal } : {}),
+  });
+  return data as PathEntriesResponse;
 }
 
 /** Resolves effective permissions for a user at a content node. */
 export async function getEffectiveForUser(userKey: string, nodeKey: string, signal?: AbortSignal): Promise<EffectivePermissions> {
-  return (await apiFetch(`/effective?userKey=${userKey}&nodeKey=${nodeKey}`, withSignal(signal))).json() as Promise<EffectivePermissions>;
+  const { data } = await AdvancedPermissionsService.getEffectiveForUser({
+    throwOnError: true,
+    query: { userKey, nodeKey },
+    ...(signal ? { signal } : {}),
+  });
+  return data as EffectivePermissions;
 }
 
 /** Resolves effective permissions for a role at a content node. */
 export async function getEffectiveForRole(roleAlias: string, nodeKey: string, signal?: AbortSignal): Promise<EffectivePermissions> {
-  return (
-    await apiFetch(`/effective/by-role?roleAlias=${encodeURIComponent(roleAlias)}&nodeKey=${nodeKey}`, withSignal(signal))
-  ).json() as Promise<EffectivePermissions>;
+  const { data } = await AdvancedPermissionsService.getEffectiveForRole({
+    throwOnError: true,
+    query: { roleAlias, nodeKey },
+    ...(signal ? { signal } : {}),
+  });
+  return data as EffectivePermissions;
 }
 
 /** Fetches all users from Umbraco's management API, sorted by name. */
 export async function getUsers(): Promise<UserItem[]> {
-  const openApiConfig = _authContext?.getOpenApiConfiguration();
-  const token = openApiConfig?.token ? await openApiConfig.token() : undefined;
-
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${UMBRACO_BASE}/filter/user?take=500`, {
-    credentials: openApiConfig?.credentials ?? 'include',
-    headers,
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-  const data = (await res.json()) as { items: Array<{ id: string; name: string; avatarUrls: string[] }> };
-  return data.items.map((u) => ({ unique: u.id, name: u.name, avatarUrls: u.avatarUrls }));
+  const { data } = await UserService.getFilterUser({ query: { take: 500 }, throwOnError: true });
+  const items = data?.items ?? [];
+  return items.map((u) => ({ unique: u.id, name: u.name, avatarUrls: u.avatarUrls }));
 }

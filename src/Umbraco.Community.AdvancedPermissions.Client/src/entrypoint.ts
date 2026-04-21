@@ -1,6 +1,6 @@
 import type { UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
 import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
-import { setAuthContext } from './api/advanced-permissions.api.js';
+import { client } from './api/generated/client.gen.js';
 
 const DOCUMENT_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.Document';
 
@@ -26,8 +26,17 @@ const DOCUMENT_ENTITY_PERMISSION_ALIASES = [
 ];
 
 export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
+  // Wire our hey-api generated client through Umbraco's auth pipeline.
+  // configureClient() installs:
+  //   - an auth callback that calls #ensureTokenReady() (refreshes the session
+  //     cookie if expired) before each request;
+  //   - the default response interceptors (401 retry queue for GETs, 403, error
+  //     → ProblemDetails, umb-notifications forwarding).
+  // This is what the official Umbraco backoffice uses for its own API calls;
+  // without it, expired sessions surface as intermittent 401s in the UI.
   _host.consumeContext(UMB_AUTH_CONTEXT, (authContext) => {
-    setAuthContext(authContext ?? undefined);
+    if (!authContext) return;
+    authContext.configureClient(client);
   });
 
   // Replace the native document permission condition with the Advanced Permissions version.
@@ -52,6 +61,6 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
   }
 };
 
-export const onUnload: UmbEntryPointOnUnload = (_host, _extensionRegistry) => {
-  setAuthContext(undefined);
+export const onUnload: UmbEntryPointOnUnload = () => {
+  // configureClient() is idempotent (guarded by #configuredClients); no teardown needed.
 };

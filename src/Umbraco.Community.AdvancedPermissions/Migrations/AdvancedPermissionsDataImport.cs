@@ -6,8 +6,10 @@ using Umbraco.Cms.Core.Models.Membership.Permissions;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Runtime;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Services.Navigation;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
+using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 using Umbraco.Community.AdvancedPermissions.Data.Context;
 using Umbraco.Community.AdvancedPermissions.Data.Entities;
@@ -33,6 +35,8 @@ namespace Umbraco.Community.AdvancedPermissions.Migrations;
 public sealed class AdvancedPermissionsDataImport(
     AdvancedPermissionsDbContext dbContext,
     IUserGroupService userGroupService,
+    IDocumentNavigationQueryService navigationQueryService,
+    IPermissionResolver permissionResolver,
     IMainDom mainDom,
     IServerRoleAccessor serverRoleAccessor,
     ILogger<AdvancedPermissionsDataImport> logger)
@@ -88,12 +92,18 @@ public sealed class AdvancedPermissionsDataImport(
         }
     }
 
+    /// <summary>
+    /// Seeds the <c>$everyone</c> row and then iterates user groups page-by-page, flushing each
+    /// group's computed rows to the DB independently so memory stays bounded to one group's
+    /// worth of entries at any time.
+    /// </summary>
     private async Task ImportAsync(CancellationToken cancellationToken)
     {
-        var entries = new List<AdvancedPermissionEntity>();
+        var totalInserted = 0;
 
-        // $everyone always gets Allow Read at the virtual root
-        entries.Add(new AdvancedPermissionEntity
+        // $everyone always gets Allow Read at the virtual root. Persist it first, in isolation —
+        // it is never consulted during per-group resolver calls (each role resolves in isolation).
+        var everyoneRow = new AdvancedPermissionEntity
         {
             Id = Guid.NewGuid(),
             NodeKey = AdvancedPermissionsConstants.VirtualRootNodeKey,
@@ -101,9 +111,12 @@ public sealed class AdvancedPermissionsDataImport(
             Verb = AdvancedPermissionsConstants.VerbRead,
             State = PermissionState.Allow,
             Scope = PermissionScope.ThisNodeAndDescendants,
-        });
+        };
+        await dbContext.Permissions.AddAsync(everyoneRow, cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        totalInserted += 1;
 
-        // Load all user groups and compute entries from their native permissions
+        // Paginate user groups and flush per group.
         var skip = 0;
         const int take = 100;
         while (true)
@@ -111,7 +124,15 @@ public sealed class AdvancedPermissionsDataImport(
             var page = await userGroupService.GetAllAsync(skip, take);
             foreach (var group in page.Items)
             {
-                AppendGroupEntries(entries, group);
+                var rows = ComputeGroupEntries(group);
+                if (rows.Count == 0)
+                {
+                    continue;
+                }
+
+                await dbContext.Permissions.AddRangeAsync(rows, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+                totalInserted += rows.Count;
             }
 
             skip += take;
@@ -121,16 +142,15 @@ public sealed class AdvancedPermissionsDataImport(
             }
         }
 
-        await dbContext.Permissions.AddRangeAsync(entries, cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken);
-
         logger.LogInformation(
             "Advanced Permissions: Imported {Count} permission entries from native Umbraco settings",
-            entries.Count);
+            totalInserted);
     }
 
     /// <summary>
-    /// Computes the <see cref="AdvancedPermissionEntity"/> entries to create for a single user group.
+    /// Computes the minimal set of <see cref="AdvancedPermissionEntity"/> rows required to make the
+    /// <see cref="IPermissionResolver"/> produce the same effective permissions for
+    /// <paramref name="group"/> as native Umbraco.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -139,72 +159,133 @@ public sealed class AdvancedPermissionsDataImport(
     /// for any node with no explicit permissions" behaviour of the native system.
     /// </para>
     /// <para>
-    /// Granular per-node permissions replace the defaults at their node and cascade to descendants.
-    /// For each node with granular permissions:
-    /// <list type="bullet">
-    ///   <item>Verbs present in the granular set → Allow (ThisNodeAndDescendants)</item>
-    ///   <item>Verbs present in group defaults but absent from the granular set → Deny (ThisNodeAndDescendants)</item>
+    /// For every native <see cref="DocumentGranularPermission"/> node, the method:
+    /// </para>
+    /// <list type="number">
+    ///   <item>Resolves the node's <c>PathFromRoot</c> via <see cref="IDocumentNavigationQueryService"/>.
+    ///   Nodes whose key no longer exists in the content tree are skipped with a warning.</item>
+    ///   <item>Sorts the granular nodes ancestors-first so the resolver sees ancestor entries
+    ///   before their descendants.</item>
+    ///   <item>For each verb in the union of the group's defaults and the node's granular set,
+    ///   asks the resolver what the current effective state is given the entries already emitted
+    ///   for this group. If that state differs from what native Umbraco would produce at that node
+    ///   (<c>Allow</c> iff the verb is in the granular set, otherwise <c>Deny</c>), a single row is
+    ///   emitted to force the correction — otherwise nothing is written.</item>
     /// </list>
-    /// This replicates the native "granular permissions override all defaults" behaviour.
+    /// <para>
+    /// This produces the minimal, resolver-equivalent row set — including correct behaviour for
+    /// nested granular permissions where an inner node re-enables a verb that an outer node stripped.
     /// </para>
     /// </remarks>
-    private static void AppendGroupEntries(List<AdvancedPermissionEntity> entries, IUserGroup group)
+    private List<AdvancedPermissionEntity> ComputeGroupEntries(IUserGroup group)
     {
-        var defaultVerbs = group.Permissions.ToHashSet(StringComparer.Ordinal);
+        var defaults = group.Permissions.ToHashSet(StringComparer.Ordinal);
 
-        // Virtual-root Allow entries for each verb in the group's native defaults
-        foreach (var verb in defaultVerbs)
+        // The in-memory view of entries the resolver will see for this group.
+        // Grows as we emit, so descendants observe the effects of their ancestors' entries.
+        var entriesForResolver = new List<AdvancedPermissionEntry>(defaults.Count);
+
+        // The parallel list of entities to persist.
+        var persistEntities = new List<AdvancedPermissionEntity>(defaults.Count);
+
+        // Virtual-root Allow entries for each verb in the group's native defaults.
+        foreach (var verb in defaults)
         {
-            entries.Add(new AdvancedPermissionEntity
-            {
-                Id = Guid.NewGuid(),
-                NodeKey = AdvancedPermissionsConstants.VirtualRootNodeKey,
-                RoleAlias = group.Alias,
-                Verb = verb,
-                State = PermissionState.Allow,
-                Scope = PermissionScope.ThisNodeAndDescendants,
-            });
+            var entry = NewEntry(
+                AdvancedPermissionsConstants.VirtualRootNodeKey,
+                group.Alias,
+                verb,
+                PermissionState.Allow);
+            entriesForResolver.Add(entry);
+            persistEntities.Add(ToEntity(entry));
         }
 
-        // Per-node overrides from native granular document permissions
-        var nodeGroups = group.GranularPermissions
+        // Group native granular permissions by node.
+        var granularByNode = group.GranularPermissions
             .OfType<DocumentGranularPermission>()
-            .GroupBy(p => p.Key);
+            .GroupBy(p => p.Key)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(p => p.Permission).ToHashSet(StringComparer.Ordinal));
 
-        foreach (var nodeGroup in nodeGroups)
+        if (granularByNode.Count == 0)
         {
-            var nodeKey = nodeGroup.Key;
-            var allowedVerbs = nodeGroup.Select(p => p.Permission)
-                .ToHashSet(StringComparer.Ordinal);
+            return persistEntities;
+        }
 
-            // Allow entries for verbs that the granular permission grants
-            foreach (var verb in allowedVerbs)
+        // Resolve the root-to-node path for every granular node, skipping orphans.
+        var plannedNodes = new List<(Guid NodeKey, IReadOnlyList<Guid> PathFromRoot, HashSet<string> GranularVerbs)>(granularByNode.Count);
+        foreach (var (nodeKey, granularVerbs) in granularByNode)
+        {
+            if (!navigationQueryService.TryGetAncestorsOrSelfKeys(nodeKey, out IEnumerable<Guid> ancestorsOrSelf))
             {
-                entries.Add(new AdvancedPermissionEntity
-                {
-                    Id = Guid.NewGuid(),
-                    NodeKey = nodeKey,
-                    RoleAlias = group.Alias,
-                    Verb = verb,
-                    State = PermissionState.Allow,
-                    Scope = PermissionScope.ThisNodeAndDescendants,
-                });
+                logger.LogWarning(
+                    "Advanced Permissions: Skipping granular permission for group '{Alias}' at node {NodeKey} — node no longer exists in the content tree.",
+                    group.Alias,
+                    nodeKey);
+                continue;
             }
 
-            // Deny entries for default verbs NOT in the granular set
-            // Replicates the native "granular entry replaces all defaults" semantic
-            foreach (var verb in defaultVerbs.Except(allowedVerbs, StringComparer.Ordinal))
+            // TryGetAncestorsOrSelfKeys returns [self, parent, …, root]; PathFromRoot needs the reverse.
+            var pathFromRoot = ancestorsOrSelf.Reverse().ToArray();
+            plannedNodes.Add((nodeKey, pathFromRoot, granularVerbs));
+        }
+
+        // Process ancestors first so descendants see the ancestor's entries when the resolver runs.
+        plannedNodes.Sort((a, b) => a.PathFromRoot.Count.CompareTo(b.PathFromRoot.Count));
+
+        var singleRoleAliases = new[] { group.Alias };
+
+        foreach (var (nodeKey, pathFromRoot, granularVerbs) in plannedNodes)
+        {
+            // For every verb in either the defaults or the granular set, ask the resolver
+            // what it currently returns at this node and emit a correction only where needed.
+            foreach (var verb in defaults.Concat(granularVerbs).Distinct(StringComparer.Ordinal))
             {
-                entries.Add(new AdvancedPermissionEntity
+                var context = new PermissionResolutionContext(
+                    TargetNodeKey: nodeKey,
+                    PathFromRoot: pathFromRoot,
+                    RoleAliases: singleRoleAliases,
+                    StoredEntries: entriesForResolver);
+
+                var current = permissionResolver.Resolve(context, verb);
+                var desiredAllow = granularVerbs.Contains(verb);
+
+                if (current.IsAllowed == desiredAllow)
                 {
-                    Id = Guid.NewGuid(),
-                    NodeKey = nodeKey,
-                    RoleAlias = group.Alias,
-                    Verb = verb,
-                    State = PermissionState.Deny,
-                    Scope = PermissionScope.ThisNodeAndDescendants,
-                });
+                    continue;
+                }
+
+                var entry = NewEntry(
+                    nodeKey,
+                    group.Alias,
+                    verb,
+                    desiredAllow ? PermissionState.Allow : PermissionState.Deny);
+                entriesForResolver.Add(entry);
+                persistEntities.Add(ToEntity(entry));
             }
         }
+
+        return persistEntities;
     }
+
+    private static AdvancedPermissionEntry NewEntry(Guid nodeKey, string roleAlias, string verb, PermissionState state) =>
+        new(
+            Id: Guid.NewGuid(),
+            NodeKey: nodeKey,
+            RoleAlias: roleAlias,
+            Verb: verb,
+            State: state,
+            Scope: PermissionScope.ThisNodeAndDescendants);
+
+    private static AdvancedPermissionEntity ToEntity(AdvancedPermissionEntry entry) =>
+        new()
+        {
+            Id = entry.Id,
+            NodeKey = entry.NodeKey,
+            RoleAlias = entry.RoleAlias,
+            Verb = entry.Verb,
+            State = entry.State,
+            Scope = entry.Scope,
+        };
 }

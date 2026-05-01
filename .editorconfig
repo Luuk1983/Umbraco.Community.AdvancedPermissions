@@ -1,0 +1,56 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+# C# / .NET
+[*.{cs,csx}]
+indent_size = 4
+
+# Project files
+[*.{csproj,props,targets,xml}]
+indent_size = 2
+
+# Frontend
+[*.{ts,tsx,js,jsx,json,html,css}]
+indent_size = 2
+
+# Markdown — preserve trailing whitespace (used for line breaks)
+[*.md]
+trim_trailing_whitespace = false
+indent_size = 2
+
+# YAML
+[*.{yml,yaml}]
+indent_size = 2
+
+# C# style preferences
+# Three rules are forced (:error) — they're hard requirements project-wide:
+#   - file-scoped namespaces (IDE0161)
+#   - var for built-in types (IDE0007)
+#   - primary constructors when applicable (IDE0290)
+# Forcing requires <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>, set in
+# Directory.Build.props.
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:error
+csharp_style_var_when_type_is_apparent = true:error
+csharp_style_var_for_built_in_types = true:error
+csharp_style_prefer_primary_constructors = true:error
+
+# Other style rules — suggestions only, won't fail the build
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+
+# EF Core scaffolds migrations with block namespaces and explicit types — relax the
+# forced rules in that folder so `dotnet ef migrations add` produces buildable code
+# without manual reformatting.
+[**/Migrations/**.cs]
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_prefer_primary_constructors = true:suggestion

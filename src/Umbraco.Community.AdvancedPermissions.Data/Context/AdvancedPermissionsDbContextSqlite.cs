@@ -17,17 +17,10 @@ namespace Umbraco.Community.AdvancedPermissions.Data.Context;
 /// dotnet ef migrations add &lt;MigrationName&gt; --context AdvancedPermissionsDbContextSqlite --output-dir Migrations/Sqlite
 /// </code>
 /// </example>
-public sealed class AdvancedPermissionsDbContextSqlite : AdvancedPermissionsDbContext
+/// <param name="options">The SQLite-configured DbContext options.</param>
+public sealed class AdvancedPermissionsDbContextSqlite(DbContextOptions<AdvancedPermissionsDbContextSqlite> options)
+    : AdvancedPermissionsDbContext(options)
 {
-    /// <summary>
-    /// Initializes a new instance with SQLite-specific options.
-    /// </summary>
-    /// <param name="options">The SQLite-configured DbContext options.</param>
-    public AdvancedPermissionsDbContextSqlite(DbContextOptions<AdvancedPermissionsDbContextSqlite> options)
-        : base(options)
-    {
-    }
-
     /// <inheritdoc />
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

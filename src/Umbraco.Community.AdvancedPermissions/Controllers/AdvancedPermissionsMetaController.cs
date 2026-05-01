@@ -53,7 +53,7 @@ public sealed class AdvancedPermissionsMetaController(IUserGroupService userGrou
                 IsEveryone: true),
         };
 
-        int skip = 0;
+        var skip = 0;
         const int take = 100;
 
         while (true)

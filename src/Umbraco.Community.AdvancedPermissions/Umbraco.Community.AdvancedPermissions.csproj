@@ -34,6 +34,14 @@
     <MinVerAutoIncrement>minor</MinVerAutoIncrement>
     <MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
 
+    <!-- Symbols package + SourceLink: lets consumers debug into the package source from
+         GitHub at the exact commit the package was built from. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DeterministicSourcePaths Condition="'$(GITHUB_ACTIONS)' == 'true'">true</DeterministicSourcePaths>
+
     <!-- Bundle project-referenced DLLs into this package instead of declaring them as NuGet dependencies -->
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
   </PropertyGroup>
@@ -50,6 +58,7 @@
 
   <ItemGroup>
     <PackageReference Include="MinVer" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
     <PackageReference Include="Umbraco.Cms.Core" />
     <PackageReference Include="Umbraco.Cms.Infrastructure" />
     <PackageReference Include="Umbraco.Cms.Api.Management" />

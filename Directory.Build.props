@@ -1,0 +1,11 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Surface .editorconfig style rules during dotnet build (not just in IDEs).
+         Combined with rule severities of :error in .editorconfig, this makes
+         file-scoped namespaces, var-for-built-in-types, and primary constructors
+         hard build requirements rather than editor-only suggestions. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+</Project>

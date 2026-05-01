@@ -1,9 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Api.Management.Controllers;
 using Umbraco.Cms.Api.Management.Routing;
 using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 
@@ -13,8 +14,14 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// Base controller for all Advanced Security management API endpoints.
 /// Provides shared utilities for building paths from root and mapping domain models to view models.
 /// </summary>
+/// <remarks>
+/// All endpoints are gated on Users-section access — the same gate the Permissions Editor UI
+/// uses. Without this, any authenticated backoffice user could call the mutating endpoints
+/// directly and grant themselves arbitrary permissions, bypassing the UI restriction.
+/// </remarks>
 [VersionedApiBackOfficeRoute("advanced-permissions")]
 [ApiExplorerSettings(GroupName = "Advanced Permissions")]
+[Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public abstract class AdvancedPermissionsControllerBase : ManagementApiControllerBase
 {
     /// <summary>
@@ -33,7 +40,7 @@ public abstract class AdvancedPermissionsControllerBase : ManagementApiControlle
             return [];
         }
 
-        int[] pathIds = pathEntry.Path
+        var pathIds = pathEntry.Path
             .Split(',')
             .Select(s => int.TryParse(s, out var id) ? id : 0)
             .Where(id => id > 0)

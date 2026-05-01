@@ -60,7 +60,7 @@ public sealed class AdvancedContentPermissionService(
         }
 
         // Check that each content item falls within the user's start node subtree
-        int[]? startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
+        var startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
         foreach (TreeEntityPath entityPath in entityPaths)
         {
             if (!ContentPermissions.HasPathAccess(
@@ -123,7 +123,7 @@ public sealed class AdvancedContentPermissionService(
 
             foreach (IEntitySlim descendant in descendants)
             {
-                bool hasPathAccess = user.HasContentPathAccess(descendant, entityService, appCaches);
+                var hasPathAccess = user.HasContentPathAccess(descendant, entityService, appCaches);
 
                 if (!hasPathAccess || denied.Any(d => descendant.Path.StartsWith($"{d.Path},")))
                 {
@@ -153,7 +153,7 @@ public sealed class AdvancedContentPermissionService(
     {
         // The content root (-1) is a virtual node, not a real content item.
         // We use HasPathAccess against the root path to check start node access.
-        int[]? startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
+        var startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
         var hasAccess = ContentPermissions.HasPathAccess(
             Constants.System.RootString, startNodeIds, Constants.System.RecycleBinContent);
 
@@ -166,7 +166,7 @@ public sealed class AdvancedContentPermissionService(
     public Task<ContentAuthorizationStatus> AuthorizeBinAccessAsync(IUser user, ISet<string> permissionsToCheck)
     {
         // The recycle bin (-20) is a virtual node, not a real content item.
-        int[]? startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
+        var startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
         var hasAccess = ContentPermissions.HasPathAccess(
             Constants.System.RecycleBinContentString, startNodeIds, Constants.System.RecycleBinContent);
 
@@ -218,7 +218,7 @@ public sealed class AdvancedContentPermissionService(
             return authorizedKeys;
         }
 
-        int[]? startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
+        var startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
         var idToKeyCache = new Dictionary<int, Guid>();
 
         foreach (TreeEntityPath entityPath in entityPaths)
@@ -261,7 +261,7 @@ public sealed class AdvancedContentPermissionService(
     /// <returns>An ordered list of Guids for the real content nodes in the path.</returns>
     private IReadOnlyList<Guid> BuildPathFromRoot(string path, Dictionary<int, Guid>? idToKeyCache = null)
     {
-        int[] pathIds = path.Split(',')
+        var pathIds = path.Split(',')
             .Select(int.Parse)
             .Where(id => id > 0)
             .ToArray();
@@ -272,7 +272,7 @@ public sealed class AdvancedContentPermissionService(
         }
 
         // Find IDs that are not yet cached
-        int[] uncachedIds = idToKeyCache is null
+        var uncachedIds = idToKeyCache is null
             ? pathIds
             : pathIds.Where(id => !idToKeyCache.ContainsKey(id)).ToArray();
 

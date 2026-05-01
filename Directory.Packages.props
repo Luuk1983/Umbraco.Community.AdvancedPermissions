@@ -13,10 +13,10 @@
     <PackageVersion Include="Umbraco.Cms.Persistence.EFCore" Version="17.3.0" />
     <PackageVersion Include="uSync" Version="17.0.4" />
 
-    <!-- Entity Framework Core -->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.5" />
+    <!-- Entity Framework Core: track Umbraco's transitive version (floor only). -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.4" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.4" />
 
     <!-- Build / versioning -->
     <PackageVersion Include="MinVer" Version="6.0.0" />

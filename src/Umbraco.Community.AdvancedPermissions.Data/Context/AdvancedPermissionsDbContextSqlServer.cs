@@ -17,17 +17,10 @@ namespace Umbraco.Community.AdvancedPermissions.Data.Context;
 /// dotnet ef migrations add &lt;MigrationName&gt; --context AdvancedPermissionsDbContextSqlServer --output-dir Migrations/SqlServer
 /// </code>
 /// </example>
-public sealed class AdvancedPermissionsDbContextSqlServer : AdvancedPermissionsDbContext
+/// <param name="options">The SQL Server-configured DbContext options.</param>
+public sealed class AdvancedPermissionsDbContextSqlServer(DbContextOptions<AdvancedPermissionsDbContextSqlServer> options)
+    : AdvancedPermissionsDbContext(options)
 {
-    /// <summary>
-    /// Initializes a new instance with SQL Server-specific options.
-    /// </summary>
-    /// <param name="options">The SQL Server-configured DbContext options.</param>
-    public AdvancedPermissionsDbContextSqlServer(DbContextOptions<AdvancedPermissionsDbContextSqlServer> options)
-        : base(options)
-    {
-    }
-
     /// <inheritdoc />
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

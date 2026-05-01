@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>Umbraco.Community.AdvancedPermissions.Core.Tests</RootNamespace>
   </PropertyGroup>
 

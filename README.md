@@ -1,18 +1,10 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/src/Umbraco.Community.AdvancedPermissions/package_logo_128x128.png" alt="Advanced Permissions for Umbraco" width="128" />
-</p>
+![Advanced Permissions for Umbraco](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/src/Umbraco.Community.AdvancedPermissions/package_logo_128x128.png)
 
-<h1 align="center">Advanced Permissions for Umbraco</h1>
+# Advanced Permissions for Umbraco
 
-<p align="center">
-  Fine-grained permission management for Umbraco v17: explicit Allow/Deny, per-entry scope control, an All Users Group baseline that can lock down critical nodes with a single entry, and full audit reasoning.
-</p>
+Fine-grained user group permission management with explicit Allow/Deny entries, per-entry scope control, an All Users Group baseline that can lock down critical nodes with a single entry, and full audit reasoning.
 
-<p align="center">
-  <a href="https://www.nuget.org/packages/Umbraco.Community.AdvancedPermissions"><img src="https://img.shields.io/nuget/v/Umbraco.Community.AdvancedPermissions" alt="NuGet" /></a>
-  <a href="https://www.nuget.org/packages/Umbraco.Community.AdvancedPermissions"><img src="https://img.shields.io/nuget/dt/Umbraco.Community.AdvancedPermissions" alt="NuGet Downloads" /></a>
-  <a href="https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Luuk1983/Umbraco.Community.AdvancedPermissions" alt="License" /></a>
-</p>
+[![NuGet](https://img.shields.io/nuget/v/Umbraco.Community.AdvancedPermissions)](https://www.nuget.org/packages/Umbraco.Community.AdvancedPermissions) [![NuGet Downloads](https://img.shields.io/nuget/dt/Umbraco.Community.AdvancedPermissions)](https://www.nuget.org/packages/Umbraco.Community.AdvancedPermissions) [![License](https://img.shields.io/github/license/Luuk1983/Umbraco.Community.AdvancedPermissions)](https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions/blob/main/LICENSE)
 
 ---
 

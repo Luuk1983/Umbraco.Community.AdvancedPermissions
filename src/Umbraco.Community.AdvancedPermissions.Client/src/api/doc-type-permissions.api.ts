@@ -1,31 +1,22 @@
-import { client } from './generated/client.gen.js';
+import { AdvancedPermissionsService } from './generated/sdk.gen.js';
 import type {
   DocTypeListItem,
   DocTypePermissionEntry,
   SaveDocTypePermissionItem,
-  DocTypeCreateAuditItem,
+  DocTypeAuditForNodeResponse,
+  DocTypePathEntriesResponse,
 } from '../models/doc-type-permission.models.js';
 
-// Direct calls against the auth-configured hey-api client. The SDK class
-// (`AdvancedPermissionsService`) hasn't been regenerated since adding the
-// new endpoints, so we hit the URLs directly using the same security pipeline.
-//
-// Once the SDK is regenerated (next time `npm run generate:client` runs against
-// a running TestSite), these functions can be switched to the typed wrappers.
-
-const BASE = '/umbraco/management/api/v1/advanced-permissions';
-
-const SECURITY = [{ scheme: 'bearer' as const, type: 'http' as const }];
+// Thin wrappers over the regenerated hey-api SDK. Auth + 401 retry are handled by the
+// Umbraco auth context (`authContext.configureClient(client)` in entrypoint.ts).
 
 /** Lists every non-element document type for the editor picker. */
 export async function getDocTypes(signal?: AbortSignal): Promise<DocTypeListItem[]> {
-  const { data } = await client.get<DocTypeListItem[], unknown, true>({
-    url: `${BASE}/doc-type-permissions/doc-types`,
-    security: SECURITY,
+  const { data } = await AdvancedPermissionsService.getDocTypes({
     throwOnError: true,
     ...(signal ? { signal } : {}),
   });
-  return data;
+  return data as DocTypeListItem[];
 }
 
 /** Gets the stored entries for the editor's selected (role, content-type). */
@@ -34,43 +25,62 @@ export async function getDocTypePermissions(
   contentTypeKey: string,
   signal?: AbortSignal,
 ): Promise<DocTypePermissionEntry[]> {
-  const { data } = await client.get<DocTypePermissionEntry[], unknown, true>({
-    url: `${BASE}/doc-type-permissions`,
-    security: SECURITY,
+  const { data } = await AdvancedPermissionsService.getForEditor({
     throwOnError: true,
     query: { roleAlias, contentTypeKey },
     ...(signal ? { signal } : {}),
   });
-  return data;
+  return data as DocTypePermissionEntry[];
 }
 
-/** Replaces all entries for a (node, role, content-type) triple. */
+/** Replaces all entries for a (node, role, content-type) triple. Empty list clears. */
 export async function saveDocTypePermissions(
   nodeKey: string,
   roleAlias: string,
   contentTypeKey: string,
   entries: SaveDocTypePermissionItem[],
 ): Promise<void> {
-  await client.put<unknown, unknown, true>({
-    url: `${BASE}/doc-type-permissions`,
-    security: SECURITY,
+  await AdvancedPermissionsService.save({
     throwOnError: true,
     body: { nodeKey, roleAlias, contentTypeKey, entries },
   });
 }
 
-/** Returns the Create Audit listing for a user under a given parent. */
-export async function getDocTypeCreateAudit(
-  userKey: string,
-  parentKey: string,
+/**
+ * Tree-style audit. Returns one row per non-element doc type for a single node, including
+ * `isInAllowedChildren` so the UI can show `n/a` when a type is structurally disallowed.
+ * Caller supplies EITHER `userKey` or `roleAlias` (not both).
+ */
+export async function getDocTypeAuditForNode(
+  subject: { userKey: string } | { roleAlias: string },
+  nodeKey: string,
   signal?: AbortSignal,
-): Promise<DocTypeCreateAuditItem[]> {
-  const { data } = await client.get<DocTypeCreateAuditItem[], unknown, true>({
-    url: `${BASE}/doc-type-permissions/audit`,
-    security: SECURITY,
+): Promise<DocTypeAuditForNodeResponse> {
+  const query: { nodeKey: string; userKey?: string; roleAlias?: string } = { nodeKey };
+  if ('userKey' in subject) query.userKey = subject.userKey;
+  else query.roleAlias = subject.roleAlias;
+
+  const { data } = await AdvancedPermissionsService.auditForNode({
     throwOnError: true,
-    query: { userKey, parentKey },
+    query,
     ...(signal ? { signal } : {}),
   });
-  return data;
+  return data as DocTypeAuditForNodeResponse;
+}
+
+/**
+ * Returns the inheritance path plus all stored doc-type entries along that path filtered to
+ * one content-type. Used by the reasoning dialog of the tree-style audit.
+ */
+export async function getDocTypePathEntries(
+  nodeKey: string,
+  contentTypeKey: string,
+  signal?: AbortSignal,
+): Promise<DocTypePathEntriesResponse> {
+  const { data } = await AdvancedPermissionsService.pathEntries({
+    throwOnError: true,
+    query: { nodeKey, contentTypeKey },
+    ...(signal ? { signal } : {}),
+  });
+  return data as DocTypePathEntriesResponse;
 }

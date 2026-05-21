@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
@@ -14,12 +15,14 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// Management API for the document-type permission editor and the Create Audit view.
 /// </summary>
 /// <param name="docTypeService">The doc-type permission service.</param>
+/// <param name="docTypeRepository">The doc-type permission repository (raw entry lookups for the reasoning dialog).</param>
 /// <param name="contentTypeService">The Umbraco content-type service used to list doc-types.</param>
 /// <param name="entityService">Used to resolve content node paths for the audit.</param>
 /// <param name="userService">Used to look up the audited user's groups.</param>
 [ApiVersion("1.0")]
 public sealed class DocTypePermissionsController(
     IDocTypePermissionService docTypeService,
+    IDocTypePermissionRepository docTypeRepository,
     IContentTypeService contentTypeService,
     IEntityService entityService,
     IUserService userService)
@@ -133,56 +136,85 @@ public sealed class DocTypePermissionsController(
     }
 
     /// <summary>
-    /// Returns the Create Audit listing for a given user under a given parent: every non-element
-    /// doc-type with whether the user may create it, plus reasoning.
+    /// Tree-style audit endpoint: for one node, returns one row per non-element doc-type with
+    /// whether the audited subject may create it, plus an <c>IsInAllowedChildren</c> flag so
+    /// the UI can render a distinct `n/a` state when the type is structurally disallowed under
+    /// the parent (regardless of resolver outcome).
+    ///
+    /// Supply EITHER <paramref name="userKey"/> (audits a user — all their groups plus $everyone)
+    /// or <paramref name="roleAlias"/> (audits a single role — just that role plus $everyone).
     /// </summary>
     /// <param name="cancellationToken">Token to support cancellation.</param>
-    /// <param name="userKey">The audited user.</param>
-    /// <param name="parentKey">
-    /// The parent node, or <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> for root-level creates.
+    /// <param name="nodeKey">
+    /// The parent node, or <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> for root-level audits.
     /// </param>
-    /// <returns>One row per candidate doc-type.</returns>
-    [HttpGet("doc-type-permissions/audit")]
+    /// <param name="userKey">The user whose effective permissions to compute. Mutually exclusive with <paramref name="roleAlias"/>.</param>
+    /// <param name="roleAlias">A specific role to audit. Mutually exclusive with <paramref name="userKey"/>.</param>
+    [HttpGet("doc-type-permissions/audit-for-node")]
     [MapToApiVersion("1.0")]
-    [ProducesResponseType<IReadOnlyList<DocTypeCreateAuditItemResponseModel>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<DocTypeAuditForNodeResponseModel>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    [EndpointSummary("Audits which doc-types a user may create under a given parent.")]
-    public async Task<IActionResult> Audit(
+    [EndpointSummary("Audits which doc-types a subject may create under a given parent (tree-style).")]
+    public async Task<IActionResult> AuditForNode(
         CancellationToken cancellationToken,
-        Guid userKey,
-        Guid parentKey)
+        Guid nodeKey,
+        Guid? userKey = null,
+        string? roleAlias = null)
     {
-        var user = await userService.GetAsync(userKey);
-        if (user is null)
+        var hasUser = userKey.HasValue && userKey.Value != Guid.Empty;
+        var hasRole = !string.IsNullOrWhiteSpace(roleAlias);
+        if (hasUser == hasRole)
         {
-            return NotFound(new ProblemDetails
+            return BadRequest(new ProblemDetails
             {
-                Title = "User not found",
-                Detail = $"No user with key {userKey}.",
-                Status = StatusCodes.Status404NotFound,
+                Title = "Invalid subject",
+                Detail = "Supply exactly one of userKey or roleAlias.",
+                Status = StatusCodes.Status400BadRequest,
             });
         }
 
-        var path = parentKey == AdvancedPermissionsConstants.VirtualRootNodeKey
-            ? [AdvancedPermissionsConstants.VirtualRootNodeKey]
-            : BuildPathFromRoot(parentKey, entityService);
+        IReadOnlyList<string> roleAliases;
+        if (hasUser)
+        {
+            var user = await userService.GetAsync(userKey!.Value);
+            if (user is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "User not found",
+                    Detail = $"No user with key {userKey}.",
+                    Status = StatusCodes.Status404NotFound,
+                });
+            }
+            var aliases = new List<string>(user.Groups.Count() + 1);
+            aliases.AddRange(user.Groups.Select(g => g.Alias));
+            aliases.Add(AdvancedPermissionsConstants.EveryoneRoleAlias);
+            roleAliases = aliases;
+        }
+        else
+        {
+            // Role mode: just the chosen role + $everyone.
+            roleAliases = [roleAlias!, AdvancedPermissionsConstants.EveryoneRoleAlias];
+        }
 
+        var isVirtualRoot = nodeKey == AdvancedPermissionsConstants.VirtualRootNodeKey;
+        var path = isVirtualRoot
+            ? [AdvancedPermissionsConstants.VirtualRootNodeKey]
+            : BuildPathFromRoot(nodeKey, entityService);
         if (path.Count == 0)
         {
-            // Treat unresolvable parent as root-level
             path = [AdvancedPermissionsConstants.VirtualRootNodeKey];
         }
 
-        var roleAliases = new List<string>(user.Groups.Count() + 1);
-        roleAliases.AddRange(user.Groups.Select(g => g.Alias));
-        roleAliases.Add(AdvancedPermissionsConstants.EveryoneRoleAlias);
+        var allowedChildren = await GetAllowedChildrenKeysAsync(nodeKey, isVirtualRoot);
 
         var candidates = contentTypeService.GetAll()
             .Where(ct => !ct.IsElement)
             .OrderBy(ct => ct.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var rows = new List<DocTypeCreateAuditItemResponseModel>(candidates.Count);
+        var rows = new List<DocTypeAuditForNodeRowResponseModel>(candidates.Count);
         foreach (var ct in candidates)
         {
             var effective = await docTypeService.ResolveCreateForRolesAsync(
@@ -191,13 +223,14 @@ public sealed class DocTypePermissionsController(
                 ct.Key,
                 cancellationToken);
 
-            rows.Add(new DocTypeCreateAuditItemResponseModel(
+            rows.Add(new DocTypeAuditForNodeRowResponseModel(
                 ContentTypeKey: ct.Key,
                 ContentTypeAlias: ct.Alias,
                 ContentTypeName: ct.Name ?? ct.Alias,
                 ContentTypeIcon: ct.Icon,
                 IsAllowed: effective.IsAllowed,
                 IsExplicit: effective.IsExplicit,
+                IsInAllowedChildren: allowedChildren.Contains(ct.Key),
                 Reasoning: effective.Reasoning.Select(r => new ReasoningItem(
                     r.ContributingRole,
                     r.State.ToString(),
@@ -207,7 +240,112 @@ public sealed class DocTypePermissionsController(
                     r.IsFromGroupDefault)).ToList()));
         }
 
-        return Ok(rows);
+        return Ok(new DocTypeAuditForNodeResponseModel(nodeKey, rows));
+    }
+
+    /// <summary>
+    /// Returns the inheritance path for a node together with all stored doc-type entries along
+    /// that path filtered to the supplied content-type-key. Powers the reasoning dialog of the
+    /// tree-style audit.
+    /// </summary>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <param name="nodeKey">The audited node, or virtual root.</param>
+    /// <param name="contentTypeKey">The doc-type whose reasoning to surface.</param>
+    [HttpGet("doc-type-permissions/path-entries")]
+    [MapToApiVersion("1.0")]
+    [ProducesResponseType<DocTypePathEntriesResponseModel>(StatusCodes.Status200OK)]
+    [EndpointSummary("Gets the inheritance path and stored doc-type entries along that path for a content-type.")]
+    public async Task<IActionResult> PathEntries(
+        CancellationToken cancellationToken,
+        Guid nodeKey,
+        Guid contentTypeKey)
+    {
+        var isVirtualRoot = nodeKey == AdvancedPermissionsConstants.VirtualRootNodeKey;
+        var contentPath = isVirtualRoot ? [] : BuildPathFromRoot(nodeKey, entityService);
+
+        var pathNodes = new List<PathNodeModel>
+        {
+            new(
+                AdvancedPermissionsConstants.VirtualRootNodeKey,
+                AdvancedPermissionsConstants.EveryoneRoleDisplayName,
+                "icon-globe"),
+        };
+
+        if (contentPath.Count > 0)
+        {
+            var entities = entityService
+                .GetAll(UmbracoObjectTypes.Document, contentPath.ToArray())
+                .ToDictionary(e => e.Key);
+
+            foreach (var key in contentPath)
+            {
+                if (entities.TryGetValue(key, out var entity))
+                {
+                    var icon = entity is IContentEntitySlim contentSlim ? contentSlim.ContentTypeIcon : null;
+                    pathNodes.Add(new PathNodeModel(key, entity.Name ?? string.Empty, icon));
+                }
+            }
+        }
+
+        var entries = await docTypeRepository.GetByContentTypeAndNodesAsync(
+            contentTypeKey,
+            pathNodes.Select(p => p.Key),
+            cancellationToken);
+
+        var mapped = entries
+            .Select(e => new DocTypePathEntryResponseModel(
+                e.Id,
+                e.NodeKey,
+                e.ContentTypeKey,
+                e.RoleAlias,
+                e.Verb,
+                e.State.ToString(),
+                e.Scope.ToString()))
+            .ToList();
+
+        return Ok(new DocTypePathEntriesResponseModel(pathNodes, mapped));
+    }
+
+    /// <summary>
+    /// Resolves the set of doc-type keys structurally allowed as children of the supplied parent.
+    /// For the virtual root, returns the set of doc-types flagged <c>IsAllowedAsRoot</c>.
+    /// </summary>
+    /// <param name="parentNodeKey">The parent node key, or virtual root.</param>
+    /// <param name="isVirtualRoot">Whether the parent is the virtual root.</param>
+    /// <returns>A set of doc-type keys structurally permitted under the parent.</returns>
+    private Task<HashSet<Guid>> GetAllowedChildrenKeysAsync(Guid parentNodeKey, bool isVirtualRoot)
+    {
+        if (isVirtualRoot)
+        {
+            return Task.FromResult(contentTypeService.GetAll()
+                .Where(ct => !ct.IsElement && ct.AllowedAsRoot)
+                .Select(ct => ct.Key)
+                .ToHashSet());
+        }
+
+        // Resolve the parent's content type, then read its allowed-children list
+        var parent = entityService.Get(parentNodeKey, UmbracoObjectTypes.Document);
+        if (parent is null)
+        {
+            return Task.FromResult(new HashSet<Guid>());
+        }
+
+        // The parent's content-type key comes through IContentEntitySlim
+        if (parent is not IContentEntitySlim slim)
+        {
+            return Task.FromResult(new HashSet<Guid>());
+        }
+
+        var parentContentType = contentTypeService.Get(slim.ContentTypeAlias);
+        if (parentContentType?.AllowedContentTypes is null)
+        {
+            return Task.FromResult(new HashSet<Guid>());
+        }
+
+        return Task.FromResult(parentContentType.AllowedContentTypes
+            .Select(c => c.Key)
+            .Where(k => k != Guid.Empty)
+            .ToHashSet());
     }
 
     /// <summary>

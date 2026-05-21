@@ -12,12 +12,16 @@ import type {
   PathNode,
   PermissionEntry,
 } from '../models/permission.models.js';
-import { VIRTUAL_ROOT_NODE_KEY } from '../models/permission.models.js';
 import { getVerbs, getRoles, getTreeRoot, getTreeChildren, getEffectiveForUser, getEffectiveForRole, getPermissionsForPath } from '../api/advanced-permissions.api.js';
 
 import { UAP_ROLE_PICKER_MODAL } from './role-picker-modal.token.js';
 import { UAP_USER_PICKER_MODAL } from './user-picker-modal.token.js';
+import type { CellInfo } from '../utils/cell-info.js';
+import { updateNode } from '../utils/tree-ops.js';
 import '../components/uap-picker-button.element.js';
+import '../shared/components/uap-perm-block.element.js';
+import '../shared/components/uap-reasoning-dialog.element.js';
+import type { UapReasoningDialogElement } from '../shared/components/uap-reasoning-dialog.element.js';
 
 /** Client-side tree node with effective permissions for all verbs. */
 interface ViewerTreeNode {
@@ -67,7 +71,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   /** Whether the dialog should show stars on deny entries (deny trumping allow). */
   @state() private _dialogShowStars = false;
 
-  @query('.reasoning-dialog') private _reasoningDialog!: HTMLDialogElement;
+  @query('uap-reasoning-dialog') private _reasoningDialog!: UapReasoningDialogElement;
 
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
@@ -270,18 +274,9 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     }
   }
 
-  #updateNode(key: string, changes: Partial<ViewerTreeNode>, nodes: ViewerTreeNode[] = this._treeNodes): boolean {
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].key === key) {
-        nodes[i] = { ...nodes[i], ...changes };
-        this._treeNodes = [...this._treeNodes];
-        return true;
-      }
-      if (nodes[i].children && this.#updateNode(key, changes, nodes[i].children!)) {
-        return true;
-      }
-    }
-    return false;
+  /** Wrapper over the shared `updateNode` tree-op helper. */
+  #updateNode(key: string, changes: Partial<ViewerTreeNode>): void {
+    this._treeNodes = updateNode(this._treeNodes, key, changes);
   }
 
   // ── Picker methods ────────────────────────────────────────────────────────
@@ -344,7 +339,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     this._dialogLoading = true;
     this._dialogShowStars = false;
 
-    void this.updateComplete.then(() => this._reasoningDialog.showModal());
+    void this.updateComplete.then(() => this._reasoningDialog.open());
 
     try {
       const result = await getPermissionsForPath(node.key, verb);
@@ -470,134 +465,26 @@ export class UapAccessViewerRootElement extends UmbLitElement {
 
   #renderEffectiveCell(node: ViewerTreeNode, verb: string) {
     if (!node.effectivePerms) {
-      return html`<td class="perm-td" title=${verb}><div class="perm-block loading">\u2026</div></td>`;
-    }
-
-    const perm = node.effectivePerms.get(verb);
-    const isAllowed = perm?.isAllowed ?? false;
-    const cls = isAllowed ? 'allow' : 'deny';
-    const icon = isAllowed ? '\u2713' : '\u2717';
-
-    return html`
-      <td class="perm-td" title=${this.#localize.term('uap_clickForReasoning', isAllowed ? this.#localize.term('uap_allow') : this.#localize.term('uap_deny'))}
-        @click=${() => this.#openReasoning(node, verb)}>
-        <div class="perm-block ${cls}">${icon}</div>
-      </td>
-    `;
-  }
-
-  // ── Dialog rendering helpers ────────────────────────────────────────────
-
-  /** Renders the effective permission summary banner above the inheritance tree. */
-  #renderEffectiveBanner(): TemplateResult {
-    const node = this._reasoningNode;
-    const verb = this._reasoningVerb;
-    if (!node || !verb) return html``;
-
-    const perm = node.effectivePerms?.get(verb);
-    if (!perm) return html``;
-
-    const isAllowed = perm.isAllowed;
-    const cls = isAllowed ? 'result-allow' : 'result-deny';
-    const icon = isAllowed ? '\u2713' : '\u2717';
-
-    const subjectName = this._activeSubject === 'role'
-      ? this._selectedRole?.name ?? ''
-      : this._selectedUser?.name ?? '';
-
-    const verbLabel = verb.split('.').pop() ?? '';
-
-    // Build the full content path (skip virtual root)
-    const contentPath = this._dialogPath
-      .filter((n) => n.key !== VIRTUAL_ROOT_NODE_KEY)
-      .map((n) => n.name)
-      .join(' > ');
-    const nodePath = contentPath || node.name;
-
-    const message = isAllowed
-      ? this.#localize.term('uap_effectiveAllowed', subjectName, verbLabel, nodePath)
-      : this.#localize.term('uap_effectiveDenied', subjectName, verbLabel, nodePath);
-
-    return html`
-      <div class="effective-banner ${cls}">
-        <span class="banner-icon">${icon}</span>
-        <span class="banner-text">${message}</span>
-      </div>
-    `;
-  }
-
-  #stateIcon(cls: string): string {
-    if (cls === 'allow') return '\u2713'; // ✓
-    if (cls === 'deny') return '\u2717';  // ✗
-    return '\u2014';                       // —
-  }
-
-  /**
-   * Renders the "Security" column content for a node in the reasoning dialog.
-   * Shows raw stored entries using security-editor visual style (split cells + role names).
-   */
-  #renderSecurityCell(nodeKey: string): TemplateResult {
-    const roleEntries = this._dialogEntriesByNode.get(nodeKey);
-
-    // No entries at this node → inherit indicator
-    if (!roleEntries || roleEntries.length === 0) {
       return html`
-        <td class="dialog-security-cell">
-          <div class="security-entry">
-            <div class="d-perm-block uniform inherit">${this.#stateIcon('inherit')}</div>
-          </div>
+        <td class="perm-td" title=${verb}>
+          <uap-perm-block loading></uap-perm-block>
         </td>
       `;
     }
 
-    // Show entries with role display names; star on deny-only roles when they override allow roles
+    const perm = node.effectivePerms.get(verb);
+    const isAllowed = perm?.isAllowed ?? false;
+    const cls: 'allow' | 'deny' = isAllowed ? 'allow' : 'deny';
+    const info: CellInfo = { split: false, nodeClass: cls, descClass: cls };
+
     return html`
-      <td class="dialog-security-cell">
-        ${roleEntries.map(({ role, entries }) => {
-          // Star goes on roles that have deny entries (and no allow entries) when there's a cross-role conflict
-          const roleHasDeny = entries.some((e) => e.state === 'Deny');
-          const roleHasAllow = entries.some((e) => e.state === 'Allow');
-          const showStar = this._dialogShowStars && roleHasDeny && !roleHasAllow;
-          return html`
-            <div class="security-entry">
-              ${this.#renderPermBlock(entries)}
-              <span class="security-role">${this.#roleName(role)}</span>
-              ${showStar ? html`<span class="winner-star" title=${this.#localize.term('uap_determiningEntry')}>\u2605</span>` : nothing}
-            </div>
-          `;
-        })}
+      <td class="perm-td" title=${this.#localize.term('uap_clickForReasoning', isAllowed ? this.#localize.term('uap_allow') : this.#localize.term('uap_deny'))}
+        @click=${() => this.#openReasoning(node, verb)}>
+        <uap-perm-block .info=${info}></uap-perm-block>
       </td>
     `;
   }
 
-  /**
-   * Renders a single permission block for a set of entries.
-   * After scope filtering, entries always resolve to a single uniform state (no splits).
-   */
-  #renderPermBlock(entries: PermissionEntry[]): TemplateResult {
-    // After scope filtering, all remaining entries for a role should agree.
-    // Use the first entry's state as the display state.
-    const state = entries[0]?.state === 'Allow' ? 'allow' : entries[0]?.state === 'Deny' ? 'deny' : 'inherit';
-    return html`<div class="d-perm-block uniform ${state}">${this.#stateIcon(state)}</div>`;
-  }
-
-  /** Renders all path rows for the dialog table. */
-  #renderDialogPathRows(): TemplateResult[] {
-    return this._dialogPath.map((node, i) => {
-      const isVirtualRoot = node.key === VIRTUAL_ROOT_NODE_KEY;
-      return html`
-        <tr>
-          <td class="dialog-node-cell">
-            <div class="dialog-node-inner" style="--depth: ${isVirtualRoot ? 0 : i}">
-              <umb-icon name=${node.icon ?? 'icon-document'}></umb-icon>
-              <span class="node-name">${isVirtualRoot ? this.#localize.term('uap_defaultPermissions') : node.name}</span>
-            </div>
-          </td>
-          ${this.#renderSecurityCell(node.key)}
-        </tr>
-      `;
-    });
-  }
 
   override render() {
     return html`
@@ -640,50 +527,42 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
           : nothing}
       </umb-body-layout>
 
-      <!-- Reasoning modal dialog -->
-      <dialog
-        class="reasoning-dialog"
-        @close=${() => {
-          this._reasoningNode = null;
-          this._reasoningVerb = null;
-          this._dialogPath = [];
-          this._dialogEntriesByNode = new Map();
-          this._dialogShowStars = false;
-        }}>
-        <uui-dialog-layout
-          headline=${this.#localize.term('uap_reasoningHeadline', this._reasoningVerb?.split('.').pop() ?? '', this._reasoningNode?.name ?? '')}>
-
-          ${this.#renderEffectiveBanner()}
-
-          ${this._dialogLoading
-            ? html`<div class="dialog-loading"><uui-loader-circle></uui-loader-circle></div>`
-            : this._dialogPath.length > 0
-              ? html`
-                  <div class="dialog-table-wrap">
-                    <table class="dialog-table">
-                      <thead>
-                        <tr>
-                          <th class="dialog-node-header">${this.#localize.term('uap_contentNodeHeader')}</th>
-                          <th class="dialog-security-header">${this.#localize.term('uap_dialogSecurityHeader')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${this.#renderDialogPathRows()}
-                      </tbody>
-                    </table>
-                  </div>
-                `
-              : html`<p class="no-reasoning">${this.#localize.term('uap_noReasoningData')}</p>`}
-
-          <div slot="actions">
-            <uui-button look="primary" @click=${() => this._reasoningDialog.close()}>
-              ${this.#localize.term('uap_close')}
-            </uui-button>
-          </div>
-        </uui-dialog-layout>
-      </dialog>
+      <uap-reasoning-dialog
+        .path=${this._dialogPath}
+        .entriesByNode=${this._dialogEntriesByNode}
+        .showStars=${this._dialogShowStars}
+        .effectivePerm=${this.#currentEffectivePerm()}
+        .subjectName=${this.#currentSubjectName()}
+        .verbLabel=${this._reasoningVerb?.split('.').pop() ?? ''}
+        .nodeName=${this._reasoningNode?.name ?? ''}
+        .loading=${this._dialogLoading}
+        .roleNameLookup=${(alias: string) => this.#roleName(alias)}
+        @uap-reasoning-close=${this.#onReasoningClose}>
+      </uap-reasoning-dialog>
     `;
   }
+
+  /** Returns the effective permission to show in the reasoning dialog banner. */
+  #currentEffectivePerm() {
+    if (!this._reasoningNode || !this._reasoningVerb) return null;
+    return this._reasoningNode.effectivePerms?.get(this._reasoningVerb) ?? null;
+  }
+
+  /** Returns the subject's display name for the reasoning dialog banner. */
+  #currentSubjectName(): string {
+    if (this._activeSubject === 'role') return this._selectedRole?.name ?? '';
+    if (this._activeSubject === 'user') return this._selectedUser?.name ?? '';
+    return '';
+  }
+
+  /** Resets dialog state when the user closes the reasoning dialog. */
+  #onReasoningClose = (): void => {
+    this._reasoningNode = null;
+    this._reasoningVerb = null;
+    this._dialogPath = [];
+    this._dialogEntriesByNode = new Map();
+    this._dialogShowStars = false;
+  };
 
   static override styles = css`
     :host {
@@ -805,225 +684,6 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
       cursor: pointer;
     }
 
-    .perm-block {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 26px;
-      border: 1px solid var(--uui-color-border, #ddd);
-      border-radius: 4px;
-      user-select: none;
-      overflow: hidden;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .perm-block:hover {
-      border-color: var(--uui-color-border-emphasis, #bbb);
-    }
-
-    .perm-block.loading {
-      color: var(--uui-color-text-alt, #aaa);
-      font-size: 11px;
-      font-weight: 400;
-    }
-
-    .perm-block.allow {
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
-      border-color: color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
-    }
-
-    .perm-block.deny {
-      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
-      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
-      border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
-    }
-
-/* ── Reasoning dialog ─────────────────────────────────────── */
-    .reasoning-dialog {
-      border: none;
-      border-radius: 8px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-      padding: 0;
-      min-width: 420px;
-      max-width: 700px;
-      width: max-content;
-    }
-
-    .reasoning-dialog::backdrop {
-      background: rgba(0, 0, 0, 0.4);
-    }
-
-    .dialog-loading {
-      display: flex;
-      justify-content: center;
-      padding: 24px;
-    }
-
-    /* Effective permission banner */
-    .effective-banner {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      padding: 10px 14px;
-      border-radius: 6px;
-      margin-bottom: 16px;
-      font-size: 13px;
-      line-height: 1.4;
-    }
-
-    .effective-banner.result-allow {
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 12%, transparent);
-      border-left: 4px solid var(--uui-color-positive, #34a853);
-    }
-
-    .effective-banner.result-deny {
-      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 10%, transparent);
-      border-left: 4px solid var(--uui-color-danger, #ea4335);
-    }
-
-    .banner-icon {
-      font-size: 16px;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    .result-allow .banner-icon { color: var(--uui-color-positive, #34a853); }
-    .result-deny .banner-icon { color: var(--uui-color-danger, #ea4335); }
-
-    /* Dialog table */
-    .dialog-table-wrap {
-      overflow-x: auto;
-      max-height: 400px;
-      overflow-y: auto;
-      margin-bottom: 12px;
-    }
-
-    .dialog-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .dialog-table thead {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-
-    .dialog-table th {
-      padding: 6px 8px;
-      text-align: left;
-      border-bottom: 1px solid var(--uui-color-border, #ddd);
-      font-weight: 600;
-      font-size: 12px;
-      background: var(--uui-color-surface, #fff);
-      color: var(--uui-color-text-alt, #666);
-      white-space: nowrap;
-    }
-
-    .dialog-table td {
-      border-bottom: 1px solid var(--uui-color-border, #f0f0f0);
-      vertical-align: middle;
-    }
-
-    .dialog-table tr:hover td {
-      background-color: var(--uui-color-surface-emphasis, #fafafa);
-    }
-
-    .dialog-node-header {
-      width: 50%;
-    }
-
-    .dialog-security-header {
-      width: auto;
-    }
-
-    /* Dialog node cell */
-    .dialog-node-cell {
-      padding: 0;
-    }
-
-    .dialog-node-inner {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 0 8px 0 calc(var(--depth, 0) * 18px + 8px);
-      height: 30px;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-
-    .dialog-node-inner umb-icon {
-      font-size: 16px;
-      flex-shrink: 0;
-      color: var(--uui-color-text-alt, #666);
-    }
-
-    /* Dialog security cell */
-    .dialog-security-cell {
-      padding: 4px 8px;
-    }
-
-    .security-entry {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 2px 0;
-    }
-
-    .security-role {
-      font-size: 12px;
-      color: var(--uui-color-text-alt, #666);
-      font-family: monospace;
-    }
-
-    .winner-star {
-      color: var(--uui-color-warning, #f59e0b);
-      font-size: 14px;
-      flex-shrink: 0;
-    }
-
-    /* Dialog permission blocks (security-editor style) */
-    .d-perm-block {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 24px;
-      min-width: 36px;
-      border: 1px solid var(--uui-color-border, #ddd);
-      border-radius: 4px;
-      user-select: none;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-
-    .d-perm-block.uniform {
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .d-perm-block.inherit {
-      color: var(--uui-color-text-alt, #ccc);
-      border-color: var(--uui-color-border, #e8e8e8);
-    }
-
-    .d-perm-block.allow {
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
-      border-color: color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
-    }
-
-    .d-perm-block.deny {
-      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
-      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
-      border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
-    }
-
-    .no-reasoning {
-      color: var(--uui-color-text-alt, #888);
-      font-size: 13px;
-    }
   `;
 }
 

@@ -79,4 +79,21 @@ public interface IDocTypePermissionRepository
     Task DeleteAllForRoleAsync(
         string roleAlias,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all entries for a specific content-type-key across a set of node keys, across all
+    /// roles and verbs. Used by the tree-style audit's reasoning dialog to show which entries
+    /// exist along the inheritance path for the audited doc type.
+    /// </summary>
+    /// <param name="contentTypeKey">The doc-type to filter by.</param>
+    /// <param name="nodeKeys">
+    /// The nodes to include. Pass <c>AdvancedPermissionsConstants.VirtualRootNodeKey</c> to
+    /// include virtual-root entries.
+    /// </param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <returns>All matching entries across all roles.</returns>
+    Task<IReadOnlyList<DocTypePermissionEntry>> GetByContentTypeAndNodesAsync(
+        Guid contentTypeKey,
+        IEnumerable<Guid> nodeKeys,
+        CancellationToken cancellationToken = default);
 }

@@ -4,6 +4,8 @@ export default {
   uap: {
     // ── Navigatie ─────────────────────────────────────────────────────────
     sectionLabel: 'Geavanceerde machtigingen',
+    contentPermissionsSectionLabel: 'Geavanceerde inhoudsmachtigingen',
+    docTypePermissionsSectionLabel: 'Geavanceerde documenttype-machtigingen',
     permissionsEditor: 'Machtigingeneditor',
     accessViewer: 'Toegangsweergave',
 
@@ -99,9 +101,11 @@ export default {
     scope_descendantsOnly: 'Alleen onderliggende',
 
     docTypePermissions_menuLabel: 'Documenttype-machtigingen',
-    docTypePermissions_auditMenuLabel: 'Aanmaakaudit',
+    docTypePermissions_insertOptionsMenuLabel: 'Invoegopties',
     docTypePermissions_workspaceTitle: 'Documenttype-machtigingen',
-    docTypePermissions_auditTitle: 'Audit aanmaakopties',
+    docTypePermissions_auditTitle: 'Invoegopties',
+    docTypePermissions_allDocTypes: 'Alle documenttypes',
+    docTypePermissions_verbInsert: 'Invoegen',
     docTypePermissions_documentType: 'Documenttype',
     docTypePermissions_pickDocType: '— Selecteer een documenttype —',
     docTypePermissions_pickToStart: 'Kies een gebruikersgroep en documenttype om te beginnen.',
@@ -116,5 +120,6 @@ export default {
     docTypePermissions_reasoning: 'Onderbouwing',
     docTypePermissions_defaultAllow: 'Standaard toegestaan',
     docTypePermissions_viaDefault: 'via standaardregel',
+    docTypePermissions_notInAllowedChildren: 'Niet in de lijst met toegestane onderliggende types',
   },
 } satisfies UmbLocalizationDictionary;

@@ -4,6 +4,8 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Advanced Permissions',
+    contentPermissionsSectionLabel: 'Advanced content permissions',
+    docTypePermissionsSectionLabel: 'Advanced document type permissions',
     permissionsEditor: 'Permissions Editor',
     accessViewer: 'Access Viewer',
 
@@ -99,9 +101,11 @@ export default {
     scope_descendantsOnly: 'Descendants only',
 
     docTypePermissions_menuLabel: 'Document Type Permissions',
-    docTypePermissions_auditMenuLabel: 'Create Audit',
+    docTypePermissions_insertOptionsMenuLabel: 'Insert Options',
     docTypePermissions_workspaceTitle: 'Document Type Permissions',
-    docTypePermissions_auditTitle: 'Document Type Create Audit',
+    docTypePermissions_auditTitle: 'Insert Options',
+    docTypePermissions_allDocTypes: 'All document types',
+    docTypePermissions_verbInsert: 'Insert',
     docTypePermissions_documentType: 'Document Type',
     docTypePermissions_pickDocType: '— Select a document type —',
     docTypePermissions_pickToStart: 'Pick a role and document type to start.',
@@ -116,5 +120,6 @@ export default {
     docTypePermissions_reasoning: 'Reasoning',
     docTypePermissions_defaultAllow: 'Allowed by default',
     docTypePermissions_viaDefault: 'from default row',
+    docTypePermissions_notInAllowedChildren: 'Not in this parent\'s allowed children list',
   },
 } satisfies UmbLocalizationDictionary;

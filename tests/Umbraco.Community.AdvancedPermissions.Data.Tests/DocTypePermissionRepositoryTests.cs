@@ -293,6 +293,90 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
     // Field preservation
     // ───────────────────────────────────────────────────────────────────────
 
+    // ───────────────────────────────────────────────────────────────────────
+    // GetByContentTypeAndNodesAsync (audit reasoning path)
+    // ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Verifies GetByContentTypeAndNodesAsync returns entries matching both the content type
+    /// AND any of the supplied node keys, across all roles.
+    /// </summary>
+    [Fact]
+    public async Task GetByContentTypeAndNodesAsync_FiltersCorrectly()
+    {
+        var nodeA = Guid.NewGuid();
+        var nodeB = Guid.NewGuid();
+        var nodeC = Guid.NewGuid();
+        var newsType = Guid.NewGuid();
+        var faqType = Guid.NewGuid();
+
+        // News entries on nodeA and nodeB across two roles — both should appear
+        await _repository.SaveAsync(nodeA, "editors", newsType,
+        [
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+        ]);
+        await _repository.SaveAsync(nodeB, "writers", newsType,
+        [
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeOnly),
+        ]);
+
+        // News entry on nodeC — node not in filter, should not appear
+        await _repository.SaveAsync(nodeC, "editors", newsType,
+        [
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+        ]);
+
+        // FAQ entry on nodeA — different type, should not appear
+        await _repository.SaveAsync(nodeA, "editors", faqType,
+        [
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+        ]);
+
+        var results = await _repository.GetByContentTypeAndNodesAsync(newsType, [nodeA, nodeB]);
+
+        Assert.Equal(2, results.Count);
+        Assert.All(results, r => Assert.Equal(newsType, r.ContentTypeKey));
+        Assert.Contains(results, r => r.NodeKey == nodeA && r.RoleAlias == "editors");
+        Assert.Contains(results, r => r.NodeKey == nodeB && r.RoleAlias == "writers");
+    }
+
+    /// <summary>
+    /// Verifies GetByContentTypeAndNodesAsync includes virtual-root entries when the virtual-root
+    /// key is in the node-key list.
+    /// </summary>
+    [Fact]
+    public async Task GetByContentTypeAndNodesAsync_IncludesVirtualRoot_WhenInList()
+    {
+        var newsType = Guid.NewGuid();
+        var page = Guid.NewGuid();
+
+        await _repository.SaveAsync(AdvancedPermissionsConstants.VirtualRootNodeKey,
+            AdvancedPermissionsConstants.EveryoneRoleAlias, newsType,
+        [
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+        ]);
+        await _repository.SaveAsync(page, "editors", newsType,
+        [
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+        ]);
+
+        var results = await _repository.GetByContentTypeAndNodesAsync(
+            newsType,
+            [AdvancedPermissionsConstants.VirtualRootNodeKey, page]);
+
+        Assert.Equal(2, results.Count);
+    }
+
+    /// <summary>
+    /// Verifies GetByContentTypeAndNodesAsync returns an empty list when nothing matches.
+    /// </summary>
+    [Fact]
+    public async Task GetByContentTypeAndNodesAsync_ReturnsEmpty_WhenNoMatch()
+    {
+        var results = await _repository.GetByContentTypeAndNodesAsync(Guid.NewGuid(), [Guid.NewGuid()]);
+        Assert.Empty(results);
+    }
+
     /// <summary>
     /// Verifies all fields round-trip correctly through save/retrieve.
     /// </summary>

@@ -52,20 +52,46 @@ public sealed record DocTypeListItemModel(
     string? Icon);
 
 /// <summary>
-/// One row of the Create Audit listing.
+/// Per-doc-type result row for the tree-style "audit for node" endpoint. Includes an
+/// <c>IsInAllowedChildren</c> flag so the UI can render `n/a` for doc-types not in the parent's
+/// allowed-children list, distinct from a resolver-driven deny.
 /// </summary>
-/// <param name="ContentTypeKey">The candidate doc-type key.</param>
-/// <param name="ContentTypeAlias">The doc-type alias.</param>
-/// <param name="ContentTypeName">The doc-type name.</param>
-/// <param name="ContentTypeIcon">The doc-type icon alias, if any.</param>
-/// <param name="IsAllowed">Whether the audited user may create the doc-type under the audited parent.</param>
-/// <param name="IsExplicit">Whether the determining entry sits on the parent itself.</param>
-/// <param name="Reasoning">The contributing entries in precedence order.</param>
-public sealed record DocTypeCreateAuditItemResponseModel(
+public sealed record DocTypeAuditForNodeRowResponseModel(
     Guid ContentTypeKey,
     string ContentTypeAlias,
     string ContentTypeName,
     string? ContentTypeIcon,
     bool IsAllowed,
     bool IsExplicit,
+    bool IsInAllowedChildren,
     IReadOnlyList<ReasoningItem> Reasoning);
+
+/// <summary>
+/// Top-level response of <c>GET /doc-type-permissions/audit-for-node</c>: the audited node
+/// key plus one row per non-element doc type.
+/// </summary>
+/// <param name="NodeKey">The audited node (or virtual root).</param>
+/// <param name="Results">One row per non-element doc-type.</param>
+public sealed record DocTypeAuditForNodeResponseModel(
+    Guid NodeKey,
+    IReadOnlyList<DocTypeAuditForNodeRowResponseModel> Results);
+
+/// <summary>
+/// A doc-type permission entry shown along the inheritance path in the reasoning dialog.
+/// </summary>
+public sealed record DocTypePathEntryResponseModel(
+    Guid Id,
+    Guid NodeKey,
+    Guid ContentTypeKey,
+    string RoleAlias,
+    string Verb,
+    string State,
+    string Scope);
+
+/// <summary>
+/// Response for <c>GET /doc-type-permissions/path-entries</c>: the inheritance path plus all
+/// stored doc-type entries along that path filtered to the requested content-type.
+/// </summary>
+public sealed record DocTypePathEntriesResponseModel(
+    IReadOnlyList<PathNodeModel> Path,
+    IReadOnlyList<DocTypePathEntryResponseModel> Entries);

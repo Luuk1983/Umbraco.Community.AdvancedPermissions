@@ -123,6 +123,24 @@ public sealed class DocTypePermissionRepository(IDbContextFactory<AdvancedPermis
             .ExecuteDeleteAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<DocTypePermissionEntry>> GetByContentTypeAndNodesAsync(
+        Guid contentTypeKey,
+        IEnumerable<Guid> nodeKeys,
+        CancellationToken cancellationToken = default)
+    {
+        var keyList = nodeKeys.ToList();
+
+        await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var entities = await db.DocTypePermissions
+            .Where(p => p.ContentTypeKey == contentTypeKey && keyList.Contains(p.NodeKey))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return entities.ConvertAll(MapToDomain);
+    }
+
     /// <summary>
     /// Maps an entity to the domain record.
     /// </summary>

@@ -639,13 +639,19 @@ export type DisableUserRequestModel = {
     userIds: Array<ReferenceByIdModel>;
 };
 
-export type DocTypeCreateAuditItemResponseModel = {
+export type DocTypeAuditForNodeResponseModel = {
+    nodeKey: string;
+    results: Array<DocTypeAuditForNodeRowResponseModel>;
+};
+
+export type DocTypeAuditForNodeRowResponseModel = {
     contentTypeKey: string;
     contentTypeAlias: string;
     contentTypeName: string;
     contentTypeIcon?: string | null;
     isAllowed: boolean;
     isExplicit: boolean;
+    isInAllowedChildren: boolean;
     reasoning: Array<ReasoningItemModel>;
 };
 
@@ -654,6 +660,21 @@ export type DocTypeListItemModel = {
     alias: string;
     name: string;
     icon?: string | null;
+};
+
+export type DocTypePathEntriesResponseModel = {
+    path: Array<PathNodeModel>;
+    entries: Array<DocTypePathEntryResponseModel>;
+};
+
+export type DocTypePathEntryResponseModel = {
+    id: string;
+    nodeKey: string;
+    contentTypeKey: string;
+    roleAlias: string;
+    verb: string;
+    state: string;
+    scope: string;
 };
 
 export type DocTypePermissionEntryResponseModel = {
@@ -3426,17 +3447,22 @@ export type SaveResponses = {
     200: unknown;
 };
 
-export type AuditData = {
+export type AuditForNodeData = {
     body?: never;
     path?: never;
     query?: {
+        nodeKey?: string;
         userKey?: string;
-        parentKey?: string;
+        roleAlias?: string;
     };
-    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/audit';
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/audit-for-node';
 };
 
-export type AuditErrors = {
+export type AuditForNodeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
     /**
      * The resource is protected and requires an authentication token
      */
@@ -3451,16 +3477,16 @@ export type AuditErrors = {
     404: ProblemDetails;
 };
 
-export type AuditError = AuditErrors[keyof AuditErrors];
+export type AuditForNodeError = AuditForNodeErrors[keyof AuditForNodeErrors];
 
-export type AuditResponses = {
+export type AuditForNodeResponses = {
     /**
      * OK
      */
-    200: Array<DocTypeCreateAuditItemResponseModel>;
+    200: DocTypeAuditForNodeResponseModel;
 };
 
-export type AuditResponse = AuditResponses[keyof AuditResponses];
+export type AuditForNodeResponse = AuditForNodeResponses[keyof AuditForNodeResponses];
 
 export type GetDocTypesData = {
     body?: never;
@@ -3488,6 +3514,36 @@ export type GetDocTypesResponses = {
 };
 
 export type GetDocTypesResponse = GetDocTypesResponses[keyof GetDocTypesResponses];
+
+export type PathEntriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        nodeKey?: string;
+        contentTypeKey?: string;
+    };
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/path-entries';
+};
+
+export type PathEntriesErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type PathEntriesResponses = {
+    /**
+     * OK
+     */
+    200: DocTypePathEntriesResponseModel;
+};
+
+export type PathEntriesResponse = PathEntriesResponses[keyof PathEntriesResponses];
 
 export type GetEffectiveForUserData = {
     body?: never;

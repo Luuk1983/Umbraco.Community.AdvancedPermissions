@@ -12,12 +12,32 @@ const manifests: Array<UmbExtensionManifest> = [
     js: () => import('./entrypoint.js'),
   },
 
-  // ─── Section Sidebar App (inside Users section) ───────────────────────────
+  // ─── Section Sidebar Apps (inside Users section) ──────────────────────────
+  // Two distinct sidebar apps so the two feature families are clearly separated in nav:
+  //  - Advanced content permissions: node-level Permissions Editor + Access Viewer
+  //  - Advanced document type permissions: doc-type editor + Insert Options viewer
   {
     type: 'sectionSidebarApp',
     kind: 'menu',
-    alias: 'UAP.SidebarApp.AdvancedPermissions',
-    name: 'Advanced Permissions Sidebar',
+    alias: 'UAP.SidebarApp.ContentPermissions',
+    name: 'Advanced Content Permissions Sidebar',
+    weight: 60,
+    conditions: [
+      {
+        alias: 'Umb.Condition.SectionAlias',
+        match: 'Umb.Section.Users',
+      },
+    ],
+    meta: {
+      label: '#uap_contentPermissionsSectionLabel',
+      menu: 'UAP.Menu.ContentPermissions',
+    },
+  },
+  {
+    type: 'sectionSidebarApp',
+    kind: 'menu',
+    alias: 'UAP.SidebarApp.DocTypePermissions',
+    name: 'Advanced Document Type Permissions Sidebar',
     weight: 50,
     conditions: [
       {
@@ -26,22 +46,25 @@ const manifests: Array<UmbExtensionManifest> = [
       },
     ],
     meta: {
-      label: '#uap_sectionLabel',
-      menu: 'UAP.Menu.AdvancedPermissions',
+      label: '#uap_docTypePermissionsSectionLabel',
+      menu: 'UAP.Menu.DocTypePermissions',
     },
   },
 
-  // ─── Menu ─────────────────────────────────────────────────────────────────
+  // ─── Menus ────────────────────────────────────────────────────────────────
   {
     type: 'menu',
-    alias: 'UAP.Menu.AdvancedPermissions',
-    name: 'Advanced Permissions Menu',
+    alias: 'UAP.Menu.ContentPermissions',
+    name: 'Advanced Content Permissions Menu',
+  },
+  {
+    type: 'menu',
+    alias: 'UAP.Menu.DocTypePermissions',
+    name: 'Advanced Document Type Permissions Menu',
   },
 
   // ─── Menu Items ───────────────────────────────────────────────────────────
-  // Two visually distinct groups within the menu, ordered by weight:
-  //   100 / 90 — Content Permissions (existing)
-  //   50 / 40 — Document Type Permissions (new)
+  // Each sidebar app gets its own pair of menu items.
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.PermissionsEditor',
@@ -51,7 +74,7 @@ const manifests: Array<UmbExtensionManifest> = [
       label: '#uap_permissionsEditor',
       icon: 'icon-lock',
       entityType: 'uap-permissions-editor',
-      menus: ['UAP.Menu.AdvancedPermissions'],
+      menus: ['UAP.Menu.ContentPermissions'],
     },
   },
   {
@@ -63,31 +86,31 @@ const manifests: Array<UmbExtensionManifest> = [
       label: '#uap_accessViewer',
       icon: 'icon-eye',
       entityType: 'uap-access-viewer',
-      menus: ['UAP.Menu.AdvancedPermissions'],
+      menus: ['UAP.Menu.ContentPermissions'],
     },
   },
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.DocTypePermissions',
     name: 'Document Type Permissions Menu Item',
-    weight: 50,
+    weight: 100,
     meta: {
       label: '#uap_docTypePermissions_menuLabel',
       icon: 'icon-document',
       entityType: 'uap-doc-type-permissions',
-      menus: ['UAP.Menu.AdvancedPermissions'],
+      menus: ['UAP.Menu.DocTypePermissions'],
     },
   },
   {
     type: 'menuItem',
-    alias: 'UAP.MenuItem.DocTypeCreateAudit',
-    name: 'Document Type Create Audit Menu Item',
-    weight: 40,
+    alias: 'UAP.MenuItem.InsertOptions',
+    name: 'Insert Options Menu Item',
+    weight: 90,
     meta: {
-      label: '#uap_docTypePermissions_auditMenuLabel',
+      label: '#uap_docTypePermissions_insertOptionsMenuLabel',
       icon: 'icon-eye',
       entityType: 'uap-doc-type-create-audit',
-      menus: ['UAP.Menu.AdvancedPermissions'],
+      menus: ['UAP.Menu.DocTypePermissions'],
     },
   },
 

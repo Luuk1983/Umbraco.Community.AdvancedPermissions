@@ -4,6 +4,8 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Erweiterte Berechtigungen',
+    contentPermissionsSectionLabel: 'Erweiterte Inhaltsberechtigungen',
+    docTypePermissionsSectionLabel: 'Erweiterte Dokumenttyp-Berechtigungen',
     permissionsEditor: 'Berechtigungseditor',
     accessViewer: 'Zugriffsanzeige',
 
@@ -99,9 +101,11 @@ export default {
     scope_descendantsOnly: 'Nur Unterknoten',
 
     docTypePermissions_menuLabel: 'Dokumenttyp-Berechtigungen',
-    docTypePermissions_auditMenuLabel: 'Erstellungs-Audit',
+    docTypePermissions_insertOptionsMenuLabel: 'Einfügeoptionen',
     docTypePermissions_workspaceTitle: 'Dokumenttyp-Berechtigungen',
-    docTypePermissions_auditTitle: 'Erstellungs-Audit',
+    docTypePermissions_auditTitle: 'Einfügeoptionen',
+    docTypePermissions_allDocTypes: 'Alle Dokumenttypen',
+    docTypePermissions_verbInsert: 'Einfügen',
     docTypePermissions_documentType: 'Dokumenttyp',
     docTypePermissions_pickDocType: '\u2014 Dokumenttyp ausw\u00e4hlen \u2014',
     docTypePermissions_pickToStart: 'W\u00e4hlen Sie eine Benutzergruppe und einen Dokumenttyp aus.',
@@ -116,5 +120,6 @@ export default {
     docTypePermissions_reasoning: 'Begr\u00fcndung',
     docTypePermissions_defaultAllow: 'Standardm\u00e4\u00dfig erlaubt',
     docTypePermissions_viaDefault: 'aus Standardzeile',
+    docTypePermissions_notInAllowedChildren: 'Nicht in der Liste der erlaubten Untertypen',
   },
 } satisfies UmbLocalizationDictionary;

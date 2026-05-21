@@ -84,5 +84,37 @@ export default {
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:
       'Document permissions for this user group are managed by the Advanced Permissions package. Open the Permissions Editor in the Users section to configure permissions.',
+
+    // ── Doc-Type Permissions ──────────────────────────────────────────────
+    role: 'User Group',
+    pickRole: 'Pick user group',
+    user: 'User',
+    pickUser: 'Pick user',
+    node: 'Node',
+    pickNode: 'Pick node',
+    state: 'State',
+    scope: 'Scope',
+    scope_thisNodeOnly: 'This node only',
+    scope_thisNodeAndDescendants: 'This node and descendants',
+    scope_descendantsOnly: 'Descendants only',
+
+    docTypePermissions_menuLabel: 'Document Type Permissions',
+    docTypePermissions_auditMenuLabel: 'Create Audit',
+    docTypePermissions_workspaceTitle: 'Document Type Permissions',
+    docTypePermissions_auditTitle: 'Document Type Create Audit',
+    docTypePermissions_documentType: 'Document Type',
+    docTypePermissions_pickDocType: '— Select a document type —',
+    docTypePermissions_pickToStart: 'Pick a role and document type to start.',
+    docTypePermissions_defaultRowLabel: 'Default (applies everywhere)',
+    docTypePermissions_pendingNodeLabel: '(unsaved node)',
+    docTypePermissions_addScopeNode: 'Add scope override',
+    docTypePermissions_notSet: 'Not set',
+    docTypePermissions_noResults: 'No document types found.',
+    docTypePermissions_useRoot: 'Use root',
+    docTypePermissions_pickedNode: 'Node:',
+    docTypePermissions_rootLevel: 'Root level',
+    docTypePermissions_reasoning: 'Reasoning',
+    docTypePermissions_defaultAllow: 'Allowed by default',
+    docTypePermissions_viaDefault: 'from default row',
   },
 } satisfies UmbLocalizationDictionary;

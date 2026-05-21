@@ -84,5 +84,37 @@ export default {
     // ── Weiterleitungsnachricht granulare Berechtigungen ──────────────────
     redirectMessage:
       'Dokumentberechtigungen f\u00fcr diese Benutzergruppe werden durch das Advanced Permissions-Paket verwaltet. \u00d6ffnen Sie den Berechtigungseditor im Benutzerbereich, um Berechtigungen zu konfigurieren.',
+
+    // \u2500\u2500 Dokumenttyp-Berechtigungen \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    role: 'Benutzergruppe',
+    pickRole: 'Benutzergruppe ausw\u00e4hlen',
+    user: 'Benutzer',
+    pickUser: 'Benutzer ausw\u00e4hlen',
+    node: 'Knoten',
+    pickNode: 'Knoten ausw\u00e4hlen',
+    state: 'Status',
+    scope: 'Bereich',
+    scope_thisNodeOnly: 'Nur dieser Knoten',
+    scope_thisNodeAndDescendants: 'Dieser Knoten und Unterknoten',
+    scope_descendantsOnly: 'Nur Unterknoten',
+
+    docTypePermissions_menuLabel: 'Dokumenttyp-Berechtigungen',
+    docTypePermissions_auditMenuLabel: 'Erstellungs-Audit',
+    docTypePermissions_workspaceTitle: 'Dokumenttyp-Berechtigungen',
+    docTypePermissions_auditTitle: 'Erstellungs-Audit',
+    docTypePermissions_documentType: 'Dokumenttyp',
+    docTypePermissions_pickDocType: '\u2014 Dokumenttyp ausw\u00e4hlen \u2014',
+    docTypePermissions_pickToStart: 'W\u00e4hlen Sie eine Benutzergruppe und einen Dokumenttyp aus.',
+    docTypePermissions_defaultRowLabel: 'Standard (gilt \u00fcberall)',
+    docTypePermissions_pendingNodeLabel: '(nicht gespeicherter Knoten)',
+    docTypePermissions_addScopeNode: 'Bereichs\u00fcberschreibung hinzuf\u00fcgen',
+    docTypePermissions_notSet: 'Nicht gesetzt',
+    docTypePermissions_noResults: 'Keine Dokumenttypen gefunden.',
+    docTypePermissions_useRoot: 'Root verwenden',
+    docTypePermissions_pickedNode: 'Knoten:',
+    docTypePermissions_rootLevel: 'Root-Ebene',
+    docTypePermissions_reasoning: 'Begr\u00fcndung',
+    docTypePermissions_defaultAllow: 'Standardm\u00e4\u00dfig erlaubt',
+    docTypePermissions_viaDefault: 'aus Standardzeile',
   },
 } satisfies UmbLocalizationDictionary;

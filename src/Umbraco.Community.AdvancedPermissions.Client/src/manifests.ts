@@ -39,6 +39,9 @@ const manifests: Array<UmbExtensionManifest> = [
   },
 
   // ─── Menu Items ───────────────────────────────────────────────────────────
+  // Two visually distinct groups within the menu, ordered by weight:
+  //   100 / 90 — Content Permissions (existing)
+  //   50 / 40 — Document Type Permissions (new)
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.PermissionsEditor',
@@ -55,11 +58,35 @@ const manifests: Array<UmbExtensionManifest> = [
     type: 'menuItem',
     alias: 'UAP.MenuItem.AccessViewer',
     name: 'Access Viewer Menu Item',
-    weight: 50,
+    weight: 90,
     meta: {
       label: '#uap_accessViewer',
       icon: 'icon-eye',
       entityType: 'uap-access-viewer',
+      menus: ['UAP.Menu.AdvancedPermissions'],
+    },
+  },
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.DocTypePermissions',
+    name: 'Document Type Permissions Menu Item',
+    weight: 50,
+    meta: {
+      label: '#uap_docTypePermissions_menuLabel',
+      icon: 'icon-document',
+      entityType: 'uap-doc-type-permissions',
+      menus: ['UAP.Menu.AdvancedPermissions'],
+    },
+  },
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.DocTypeCreateAudit',
+    name: 'Document Type Create Audit Menu Item',
+    weight: 40,
+    meta: {
+      label: '#uap_docTypePermissions_auditMenuLabel',
+      icon: 'icon-eye',
+      entityType: 'uap-doc-type-create-audit',
       menus: ['UAP.Menu.AdvancedPermissions'],
     },
   },
@@ -105,6 +132,30 @@ const manifests: Array<UmbExtensionManifest> = [
       entityType: 'uap-access-viewer',
     },
     element: () => import('./access-viewer/uap-access-viewer-root.element.js'),
+  },
+
+  // ─── Workspace (Document Type Permissions Editor) ────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.DocTypePermissions',
+    name: 'Document Type Permissions Workspace',
+    meta: {
+      entityType: 'uap-doc-type-permissions',
+    },
+    element: () =>
+      import('./doc-type-permissions/uap-doc-type-permissions-editor-root.element.js'),
+  },
+
+  // ─── Workspace (Document Type Create Audit) ──────────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.DocTypeCreateAudit',
+    name: 'Document Type Create Audit Workspace',
+    meta: {
+      entityType: 'uap-doc-type-create-audit',
+    },
+    element: () =>
+      import('./doc-type-permissions/uap-doc-type-create-audit-root.element.js'),
   },
 
   // ─── Role Picker Modal ────────────────────────────────────────────────────

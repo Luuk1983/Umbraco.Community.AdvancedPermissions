@@ -99,10 +99,24 @@ public static class AdvancedPermissionsConstants
     public const string VerbManagePermissions = "Umb.Document.Permissions";
 
     /// <summary>
+    /// Document-type-scoped verb gating whether a user may create instances of a specific
+    /// document type. Distinct from <see cref="VerbCreate"/>, which is node-scoped and gates
+    /// whether the Create menu is shown at all. Resolved with default state Allow — entries
+    /// narrow the menu by exception.
+    /// </summary>
+    public const string VerbCreateOfType = "Umb.Document.CreateOfType";
+
+    /// <summary>
     /// The default verbs granted to the Everyone role at the virtual root node (ThisNodeAndDescendants scope).
     /// Every user can read documents by default.
     /// </summary>
     public static readonly IReadOnlyList<string> EveryoneDefaultVerbs = [VerbRead];
+
+    /// <summary>
+    /// Verbs that live in the document-type permission table (keyed on both NodeKey and ContentTypeKey)
+    /// rather than the node-level permission table. Used by the doc-type-permissions editor and audit.
+    /// </summary>
+    public static readonly IReadOnlyList<string> DocTypeVerbs = [VerbCreateOfType];
 
     /// <summary>
     /// All standard permission verbs defined by the Advanced Security package.

@@ -4,9 +4,9 @@ export default {
   uap: {
     // ── Navigatie ─────────────────────────────────────────────────────────
     sectionLabel: 'Geavanceerde machtigingen',
-    contentPermissionsSectionLabel: 'Geavanceerde inhoudsmachtigingen',
-    docTypePermissionsSectionLabel: 'Geavanceerde documenttype-machtigingen',
-    permissionsEditor: 'Machtigingeneditor',
+    editorsSectionLabel: 'Editors',
+    viewersSectionLabel: 'Weergaven',
+    permissionsEditor: 'Inhoudsmachtigingen-editor',
     accessViewer: 'Toegangsweergave',
 
     // ── Algemeen ──────────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ export default {
     umbracoUsers: 'Alle gebruikers',
 
     // ── Machtigingeneditor ───────────────────────────────────────────────
-    editorHeadline: 'Machtigingeneditor',
+    editorHeadline: 'Inhoudsmachtigingen-editor',
     selectRolePrompt: 'Selecteer hierboven een gebruikersgroep om de machtigingen te beheren.',
     permissionsSaved: 'Machtigingen opgeslagen.',
     saveFailed: (error: string) => `Opslaan mislukt: ${error}`,
@@ -100,10 +100,10 @@ export default {
     scope_thisNodeAndDescendants: 'Deze pagina en onderliggende',
     scope_descendantsOnly: 'Alleen onderliggende',
 
-    docTypePermissions_menuLabel: 'Documenttype-machtigingen',
-    docTypePermissions_insertOptionsMenuLabel: 'Invoegopties',
-    docTypePermissions_workspaceTitle: 'Documenttype-machtigingen',
-    docTypePermissions_auditTitle: 'Invoegopties',
+    docTypePermissions_menuLabel: 'Documenttype-machtigingeneditor',
+    docTypePermissions_insertOptionsMenuLabel: 'Invoegopties-weergave',
+    docTypePermissions_workspaceTitle: 'Documenttype-machtigingeneditor',
+    docTypePermissions_auditTitle: 'Invoegopties-weergave',
     docTypePermissions_allDocTypes: 'Alle documenttypes',
     docTypePermissions_verbInsert: 'Invoegen',
     docTypePermissions_documentType: 'Documenttype',

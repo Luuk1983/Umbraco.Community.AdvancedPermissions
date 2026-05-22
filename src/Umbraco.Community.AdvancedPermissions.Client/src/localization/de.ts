@@ -4,9 +4,9 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Erweiterte Berechtigungen',
-    contentPermissionsSectionLabel: 'Erweiterte Inhaltsberechtigungen',
-    docTypePermissionsSectionLabel: 'Erweiterte Dokumenttyp-Berechtigungen',
-    permissionsEditor: 'Berechtigungseditor',
+    editorsSectionLabel: 'Editoren',
+    viewersSectionLabel: 'Anzeigen',
+    permissionsEditor: 'Inhaltsberechtigungs-Editor',
     accessViewer: 'Zugriffsanzeige',
 
     // ── Allgemein ─────────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ export default {
     umbracoUsers: 'Alle Benutzer',
 
     // ── Berechtigungseditor ──────────────────────────────────────────────
-    editorHeadline: 'Berechtigungseditor',
+    editorHeadline: 'Inhaltsberechtigungs-Editor',
     selectRolePrompt: 'W\u00e4hlen Sie oben eine Benutzergruppe aus, um deren Berechtigungen zu verwalten.',
     permissionsSaved: 'Berechtigungen gespeichert.',
     saveFailed: (error: string) => `Speichern fehlgeschlagen: ${error}`,
@@ -100,10 +100,10 @@ export default {
     scope_thisNodeAndDescendants: 'Dieser Knoten und Unterknoten',
     scope_descendantsOnly: 'Nur Unterknoten',
 
-    docTypePermissions_menuLabel: 'Dokumenttyp-Berechtigungen',
-    docTypePermissions_insertOptionsMenuLabel: 'Einfügeoptionen',
-    docTypePermissions_workspaceTitle: 'Dokumenttyp-Berechtigungen',
-    docTypePermissions_auditTitle: 'Einfügeoptionen',
+    docTypePermissions_menuLabel: 'Dokumenttyp-Berechtigungs-Editor',
+    docTypePermissions_insertOptionsMenuLabel: 'Einfügeoptionen-Anzeige',
+    docTypePermissions_workspaceTitle: 'Dokumenttyp-Berechtigungs-Editor',
+    docTypePermissions_auditTitle: 'Einfügeoptionen-Anzeige',
     docTypePermissions_allDocTypes: 'Alle Dokumenttypen',
     docTypePermissions_verbInsert: 'Einfügen',
     docTypePermissions_documentType: 'Dokumenttyp',

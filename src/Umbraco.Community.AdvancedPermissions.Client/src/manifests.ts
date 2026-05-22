@@ -13,14 +13,16 @@ const manifests: Array<UmbExtensionManifest> = [
   },
 
   // ─── Section Sidebar Apps (inside Users section) ──────────────────────────
-  // Two distinct sidebar apps so the two feature families are clearly separated in nav:
-  //  - Advanced content permissions: node-level Permissions Editor + Access Viewer
-  //  - Advanced document type permissions: doc-type editor + Insert Options viewer
+  // Grouped by workflow (editing vs inspecting), not by feature family. The Access Viewer is
+  // intentionally NOT scoped to "content permissions" because future of-type verbs
+  // (DeleteOfType, MoveOfType…) will surface in its reasoning chain too — it's downstream of
+  // wherever entries originate. Insert Options Viewer stays separate because it answers a
+  // structurally different question ("which types may I insert here?").
   {
     type: 'sectionSidebarApp',
     kind: 'menu',
-    alias: 'UAP.SidebarApp.ContentPermissions',
-    name: 'Advanced Content Permissions Sidebar',
+    alias: 'UAP.SidebarApp.Editors',
+    name: 'Advanced Permissions Editors Sidebar',
     weight: 60,
     conditions: [
       {
@@ -29,15 +31,15 @@ const manifests: Array<UmbExtensionManifest> = [
       },
     ],
     meta: {
-      label: '#uap_contentPermissionsSectionLabel',
-      menu: 'UAP.Menu.ContentPermissions',
+      label: '#uap_editorsSectionLabel',
+      menu: 'UAP.Menu.Editors',
     },
   },
   {
     type: 'sectionSidebarApp',
     kind: 'menu',
-    alias: 'UAP.SidebarApp.DocTypePermissions',
-    name: 'Advanced Document Type Permissions Sidebar',
+    alias: 'UAP.SidebarApp.Viewers',
+    name: 'Advanced Permissions Viewers Sidebar',
     weight: 50,
     conditions: [
       {
@@ -46,71 +48,70 @@ const manifests: Array<UmbExtensionManifest> = [
       },
     ],
     meta: {
-      label: '#uap_docTypePermissionsSectionLabel',
-      menu: 'UAP.Menu.DocTypePermissions',
+      label: '#uap_viewersSectionLabel',
+      menu: 'UAP.Menu.Viewers',
     },
   },
 
   // ─── Menus ────────────────────────────────────────────────────────────────
   {
     type: 'menu',
-    alias: 'UAP.Menu.ContentPermissions',
-    name: 'Advanced Content Permissions Menu',
+    alias: 'UAP.Menu.Editors',
+    name: 'Advanced Permissions Editors Menu',
   },
   {
     type: 'menu',
-    alias: 'UAP.Menu.DocTypePermissions',
-    name: 'Advanced Document Type Permissions Menu',
+    alias: 'UAP.Menu.Viewers',
+    name: 'Advanced Permissions Viewers Menu',
   },
 
   // ─── Menu Items ───────────────────────────────────────────────────────────
-  // Each sidebar app gets its own pair of menu items.
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.PermissionsEditor',
-    name: 'Permissions Editor Menu Item',
+    name: 'Content Permissions Editor Menu Item',
     weight: 100,
     meta: {
       label: '#uap_permissionsEditor',
       icon: 'icon-lock',
       entityType: 'uap-permissions-editor',
-      menus: ['UAP.Menu.ContentPermissions'],
+      menus: ['UAP.Menu.Editors'],
+    },
+  },
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.DocTypePermissions',
+    name: 'Document Type Permissions Editor Menu Item',
+    weight: 90,
+    meta: {
+      label: '#uap_docTypePermissions_menuLabel',
+      icon: 'icon-document',
+      entityType: 'uap-doc-type-permissions',
+      menus: ['UAP.Menu.Editors'],
     },
   },
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.AccessViewer',
     name: 'Access Viewer Menu Item',
-    weight: 90,
+    weight: 100,
     meta: {
       label: '#uap_accessViewer',
       icon: 'icon-eye',
       entityType: 'uap-access-viewer',
-      menus: ['UAP.Menu.ContentPermissions'],
-    },
-  },
-  {
-    type: 'menuItem',
-    alias: 'UAP.MenuItem.DocTypePermissions',
-    name: 'Document Type Permissions Menu Item',
-    weight: 100,
-    meta: {
-      label: '#uap_docTypePermissions_menuLabel',
-      icon: 'icon-document',
-      entityType: 'uap-doc-type-permissions',
-      menus: ['UAP.Menu.DocTypePermissions'],
+      menus: ['UAP.Menu.Viewers'],
     },
   },
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.InsertOptions',
-    name: 'Insert Options Menu Item',
+    name: 'Insert Options Viewer Menu Item',
     weight: 90,
     meta: {
       label: '#uap_docTypePermissions_insertOptionsMenuLabel',
       icon: 'icon-eye',
       entityType: 'uap-doc-type-create-audit',
-      menus: ['UAP.Menu.DocTypePermissions'],
+      menus: ['UAP.Menu.Viewers'],
     },
   },
 

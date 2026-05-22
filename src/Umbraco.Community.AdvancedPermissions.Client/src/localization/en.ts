@@ -4,9 +4,9 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Advanced Permissions',
-    contentPermissionsSectionLabel: 'Advanced content permissions',
-    docTypePermissionsSectionLabel: 'Advanced document type permissions',
-    permissionsEditor: 'Permissions Editor',
+    editorsSectionLabel: 'Editors',
+    viewersSectionLabel: 'Viewers',
+    permissionsEditor: 'Content Permissions Editor',
     accessViewer: 'Access Viewer',
 
     // ── Common ────────────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ export default {
     umbracoUsers: 'All Users',
 
     // ── Permissions Editor ───────────────────────────────────────────────
-    editorHeadline: 'Permissions Editor',
+    editorHeadline: 'Content Permissions Editor',
     selectRolePrompt: 'Select a user group above to manage its permissions.',
     permissionsSaved: 'Permissions saved.',
     saveFailed: (error: string) => `Save failed: ${error}`,
@@ -100,10 +100,10 @@ export default {
     scope_thisNodeAndDescendants: 'This node and descendants',
     scope_descendantsOnly: 'Descendants only',
 
-    docTypePermissions_menuLabel: 'Document Type Permissions',
-    docTypePermissions_insertOptionsMenuLabel: 'Insert Options',
-    docTypePermissions_workspaceTitle: 'Document Type Permissions',
-    docTypePermissions_auditTitle: 'Insert Options',
+    docTypePermissions_menuLabel: 'Document Type Permissions Editor',
+    docTypePermissions_insertOptionsMenuLabel: 'Insert Options Viewer',
+    docTypePermissions_workspaceTitle: 'Document Type Permissions Editor',
+    docTypePermissions_auditTitle: 'Insert Options Viewer',
     docTypePermissions_allDocTypes: 'All document types',
     docTypePermissions_verbInsert: 'Insert',
     docTypePermissions_documentType: 'Document Type',

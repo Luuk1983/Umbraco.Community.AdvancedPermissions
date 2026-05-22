@@ -639,6 +639,54 @@ export type DisableUserRequestModel = {
     userIds: Array<ReferenceByIdModel>;
 };
 
+export type DocTypeAuditForNodeResponseModel = {
+    nodeKey: string;
+    results: Array<DocTypeAuditForNodeRowResponseModel>;
+};
+
+export type DocTypeAuditForNodeRowResponseModel = {
+    contentTypeKey: string;
+    contentTypeAlias: string;
+    contentTypeName: string;
+    contentTypeIcon?: string | null;
+    isAllowed: boolean;
+    isExplicit: boolean;
+    isInAllowedChildren: boolean;
+    reasoning: Array<ReasoningItemModel>;
+};
+
+export type DocTypeListItemModel = {
+    key: string;
+    alias: string;
+    name: string;
+    icon?: string | null;
+};
+
+export type DocTypePathEntriesResponseModel = {
+    path: Array<PathNodeModel>;
+    entries: Array<DocTypePathEntryResponseModel>;
+};
+
+export type DocTypePathEntryResponseModel = {
+    id: string;
+    nodeKey: string;
+    contentTypeKey: string;
+    roleAlias: string;
+    verb: string;
+    state: string;
+    scope: string;
+};
+
+export type DocTypePermissionEntryResponseModel = {
+    id: string;
+    nodeKey: string;
+    contentTypeKey: string;
+    roleAlias: string;
+    verb: string;
+    state: string;
+    scope: string;
+};
+
 export type DocumentBlueprintItemResponseModel = {
     id: string;
     flags: Array<FlagModel>;
@@ -2378,6 +2426,13 @@ export enum RuntimeModeModel {
     PRODUCTION = 'Production'
 }
 
+export type SaveDocTypePermissionsRequestModel = {
+    nodeKey: string;
+    roleAlias: string;
+    contentTypeKey: string;
+    entries: Array<SavePermissionEntryItemModel>;
+};
+
 export type SavePermissionEntryItemModel = {
     verb: string;
     state: string;
@@ -3331,6 +3386,165 @@ export type UpgradeSettingsResponseModelWritable = {
     oldVersion: string;
 };
 
+export type GetForEditorData = {
+    body?: never;
+    path?: never;
+    query?: {
+        roleAlias?: string;
+        contentTypeKey?: string;
+    };
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions';
+};
+
+export type GetForEditorErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type GetForEditorResponses = {
+    /**
+     * OK
+     */
+    200: Array<DocTypePermissionEntryResponseModel>;
+};
+
+export type GetForEditorResponse = GetForEditorResponses[keyof GetForEditorResponses];
+
+export type SaveData = {
+    body?: SaveDocTypePermissionsRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions';
+};
+
+export type SaveErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type SaveError = SaveErrors[keyof SaveErrors];
+
+export type SaveResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type AuditForNodeData = {
+    body?: never;
+    path?: never;
+    query?: {
+        nodeKey?: string;
+        userKey?: string;
+        roleAlias?: string;
+    };
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/audit-for-node';
+};
+
+export type AuditForNodeErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type AuditForNodeError = AuditForNodeErrors[keyof AuditForNodeErrors];
+
+export type AuditForNodeResponses = {
+    /**
+     * OK
+     */
+    200: DocTypeAuditForNodeResponseModel;
+};
+
+export type AuditForNodeResponse = AuditForNodeResponses[keyof AuditForNodeResponses];
+
+export type GetDocTypesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/doc-types';
+};
+
+export type GetDocTypesErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type GetDocTypesResponses = {
+    /**
+     * OK
+     */
+    200: Array<DocTypeListItemModel>;
+};
+
+export type GetDocTypesResponse = GetDocTypesResponses[keyof GetDocTypesResponses];
+
+export type PathEntriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        nodeKey?: string;
+        contentTypeKey?: string;
+    };
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/path-entries';
+};
+
+export type PathEntriesErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type PathEntriesResponses = {
+    /**
+     * OK
+     */
+    200: DocTypePathEntriesResponseModel;
+};
+
+export type PathEntriesResponse = PathEntriesResponses[keyof PathEntriesResponses];
+
 export type GetEffectiveForUserData = {
     body?: never;
     path?: never;
@@ -3346,6 +3560,10 @@ export type GetEffectiveForUserErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type GetEffectiveForUserResponses = {
@@ -3372,6 +3590,10 @@ export type GetEffectiveForRoleErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type GetEffectiveForRoleResponses = {
@@ -3399,6 +3621,10 @@ export type DeletePermissionErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type DeletePermissionResponses = {
@@ -3423,6 +3649,10 @@ export type GetPermissionsErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type GetPermissionsResponses = {
@@ -3450,6 +3680,10 @@ export type SavePermissionsErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type SavePermissionsError = SavePermissionsErrors[keyof SavePermissionsErrors];
@@ -3475,6 +3709,10 @@ export type GetPermissionsByNodeErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type GetPermissionsByNodeResponses = {
@@ -3501,6 +3739,10 @@ export type GetPermissionsForPathErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type GetPermissionsForPathResponses = {
@@ -3524,6 +3766,10 @@ export type GetRolesErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type GetRolesResponses = {
@@ -3550,6 +3796,10 @@ export type GetChildrenErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type GetChildrenResponses = {
@@ -3575,6 +3825,10 @@ export type GetRootErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type GetRootResponses = {
@@ -3598,6 +3852,10 @@ export type GetVerbsErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type GetVerbsResponses = {

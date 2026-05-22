@@ -4,7 +4,9 @@ export default {
   uap: {
     // ── Navigatie ─────────────────────────────────────────────────────────
     sectionLabel: 'Geavanceerde machtigingen',
-    permissionsEditor: 'Machtigingeneditor',
+    editorsSectionLabel: 'Editors',
+    viewersSectionLabel: 'Weergaven',
+    permissionsEditor: 'Inhoudsmachtigingen-editor',
     accessViewer: 'Toegangsweergave',
 
     // ── Algemeen ──────────────────────────────────────────────────────────
@@ -22,7 +24,7 @@ export default {
     umbracoUsers: 'Alle gebruikers',
 
     // ── Machtigingeneditor ───────────────────────────────────────────────
-    editorHeadline: 'Machtigingeneditor',
+    editorHeadline: 'Inhoudsmachtigingen-editor',
     selectRolePrompt: 'Selecteer hierboven een gebruikersgroep om de machtigingen te beheren.',
     permissionsSaved: 'Machtigingen opgeslagen.',
     saveFailed: (error: string) => `Opslaan mislukt: ${error}`,
@@ -84,5 +86,40 @@ export default {
     // ── Omleidingsbericht granulaire machtigingen ─────────────────────────
     redirectMessage:
       'Documentmachtigingen voor deze gebruikersgroep worden beheerd door het Advanced Permissions-pakket. Open de Machtigingeneditor in de sectie Gebruikers om machtigingen te configureren.',
+
+    // ── Documenttype-machtigingen ─────────────────────────────────────────
+    role: 'Gebruikersgroep',
+    pickRole: 'Kies gebruikersgroep',
+    user: 'Gebruiker',
+    pickUser: 'Kies gebruiker',
+    node: 'Pagina',
+    pickNode: 'Kies pagina',
+    state: 'Status',
+    scope: 'Bereik',
+    scope_thisNodeOnly: 'Alleen deze pagina',
+    scope_thisNodeAndDescendants: 'Deze pagina en onderliggende',
+    scope_descendantsOnly: 'Alleen onderliggende',
+
+    docTypePermissions_menuLabel: 'Documenttype-machtigingeneditor',
+    docTypePermissions_insertOptionsMenuLabel: 'Invoegopties-weergave',
+    docTypePermissions_workspaceTitle: 'Documenttype-machtigingeneditor',
+    docTypePermissions_auditTitle: 'Invoegopties-weergave',
+    docTypePermissions_allDocTypes: 'Alle documenttypes',
+    docTypePermissions_verbInsert: 'Invoegen',
+    docTypePermissions_documentType: 'Documenttype',
+    docTypePermissions_pickDocType: '— Selecteer een documenttype —',
+    docTypePermissions_pickToStart: 'Kies een gebruikersgroep en documenttype om te beginnen.',
+    docTypePermissions_defaultRowLabel: 'Standaard (geldt overal)',
+    docTypePermissions_pendingNodeLabel: '(niet-opgeslagen pagina)',
+    docTypePermissions_addScopeNode: 'Bereik per pagina toevoegen',
+    docTypePermissions_notSet: 'Niet ingesteld',
+    docTypePermissions_noResults: 'Geen documenttypes gevonden.',
+    docTypePermissions_useRoot: 'Gebruik root',
+    docTypePermissions_pickedNode: 'Pagina:',
+    docTypePermissions_rootLevel: 'Rootniveau',
+    docTypePermissions_reasoning: 'Onderbouwing',
+    docTypePermissions_defaultAllow: 'Standaard toegestaan',
+    docTypePermissions_viaDefault: 'via standaardregel',
+    docTypePermissions_notInAllowedChildren: 'Niet in de lijst met toegestane onderliggende types',
   },
 } satisfies UmbLocalizationDictionary;

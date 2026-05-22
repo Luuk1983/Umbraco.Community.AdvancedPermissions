@@ -17,44 +17,16 @@ import { getVerbs, getTreeRoot, getTreeChildren, getPermissions, savePermissions
 import { clearEffectivePermissionCache } from '../conditions/document-user-permission.condition.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
 import { decomposeEntries } from '../utils/decompose-entries.js';
+import { type PendingVerbEntries } from '../utils/compose-entries.js';
+import { getCellInfo } from '../utils/cell-info.js';
+import { updateNode, findNode } from '../utils/tree-ops.js';
 import '../components/uap-picker-button.element.js';
-
-/** Pending entries for a verb: empty array means "inherit" (clear all entries for this verb). */
-type PendingVerbEntries = Array<{ state: PermissionState; scope: PermissionScope }>;
+import '../shared/components/uap-perm-block.element.js';
+import '../shared/components/uap-permission-scope-dialog.element.js';
+import type { UapPermissionScopeDialogElement } from '../shared/components/uap-permission-scope-dialog.element.js';
 
 /** Map of verb → pending entries for a single node. */
 type PendingNodeChanges = Map<string, PendingVerbEntries>;
-
-/**
- * Compose dialog state back into stored entries (using backend scope model).
- * Returns 0, 1, or 2 entries depending on the combination.
- */
-function composeEntries(
-  nodeState: 'inherit' | 'allow' | 'deny',
-  descState: 'inherit' | 'allow' | 'deny',
-  sameAsNode: boolean,
-): PendingVerbEntries {
-  const effectiveDesc = sameAsNode ? nodeState : descState;
-
-  // Both inherit → no entries
-  if (nodeState === 'inherit' && effectiveDesc === 'inherit') return [];
-
-  // Both same → single ThisNodeAndDescendants entry
-  if (nodeState === effectiveDesc) {
-    const state: PermissionState = nodeState === 'allow' ? 'Allow' : 'Deny';
-    return [{ state, scope: 'ThisNodeAndDescendants' }];
-  }
-
-  // Different states → up to 2 entries
-  const result: PendingVerbEntries = [];
-  if (nodeState !== 'inherit') {
-    result.push({ state: nodeState === 'allow' ? 'Allow' : 'Deny', scope: 'ThisNodeOnly' });
-  }
-  if (effectiveDesc !== 'inherit') {
-    result.push({ state: effectiveDesc === 'allow' ? 'Allow' : 'Deny', scope: 'DescendantsOnly' });
-  }
-  return result;
-}
 
 /**
  * Security Editor workspace element.
@@ -88,7 +60,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
   @state() private _pickerDescState: 'inherit' | 'allow' | 'deny' = 'inherit';
   @state() private _pickerSameAsNode = true;
 
-  @query('.scope-dialog') private _scopeDialog!: HTMLDialogElement;
+  @query('uap-permission-scope-dialog') private _scopeDialog!: UapPermissionScopeDialogElement;
 
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
@@ -322,18 +294,12 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     }
   }
 
-  #updateNode(key: string, changes: Partial<TreeNodeState>, nodes: TreeNodeState[] = this._treeNodes): boolean {
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].key === key) {
-        nodes[i] = { ...nodes[i], ...changes };
-        this._treeNodes = [...this._treeNodes];
-        return true;
-      }
-      if (nodes[i].children && this.#updateNode(key, changes, nodes[i].children!)) {
-        return true;
-      }
-    }
-    return false;
+  /**
+   * Immutably updates the node with the given key. Reassigns `_treeNodes` so Lit picks up the
+   * change. Delegates the recursive walk to the shared `updateNode` helper.
+   */
+  #updateNode(key: string, changes: Partial<TreeNodeState>): void {
+    this._treeNodes = updateNode(this._treeNodes, key, changes);
   }
 
   // ── Permission dialog ───────────────────────────────────────────────────
@@ -346,7 +312,6 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     const entries = this.#getCellEntries(node, verb);
 
     if (this._pickerIsVirtualRoot) {
-      // Virtual root: simple mode — only nodeState matters
       const first = entries[0];
       this._pickerNodeState = first ? (first.state === 'Allow' ? 'allow' : 'deny') : 'inherit';
       this._pickerDescState = 'inherit';
@@ -358,32 +323,20 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       this._pickerSameAsNode = decomposed.sameAsNode;
     }
 
-    void this.updateComplete.then(() => this._scopeDialog.showModal());
+    void this.updateComplete.then(() => this._scopeDialog.open());
   }
 
-  #applyPicker(): void {
+  /**
+   * Handles `uap-scope-apply` from the shared scope dialog: writes the composed entries into
+   * the pending-changes map under the cell that opened the dialog.
+   */
+  #handleScopeApply(e: CustomEvent<{ entries: PendingVerbEntries }>): void {
     if (!this._pickerNode || !this._pickerVerb) return;
-
-    let newEntries: PendingVerbEntries;
-
-    if (this._pickerIsVirtualRoot) {
-      // Virtual root always uses ThisNodeAndDescendants
-      if (this._pickerNodeState === 'inherit') {
-        newEntries = [];
-      } else {
-        const state: PermissionState = this._pickerNodeState === 'allow' ? 'Allow' : 'Deny';
-        newEntries = [{ state, scope: 'ThisNodeAndDescendants' }];
-      }
-    } else {
-      newEntries = composeEntries(this._pickerNodeState, this._pickerDescState, this._pickerSameAsNode);
-    }
-
     const nodeKey = this._pickerNode.key;
     const verb = this._pickerVerb;
     const nodeChanges: PendingNodeChanges = this._pendingChanges.get(nodeKey) ?? new Map();
-    nodeChanges.set(verb, newEntries);
+    nodeChanges.set(verb, e.detail.entries);
     this._pendingChanges = new Map(this._pendingChanges).set(nodeKey, nodeChanges);
-    this._scopeDialog.close();
   }
 
   // ── Save ─────────────────────────────────────────────────────────────────
@@ -437,44 +390,15 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  #findNode(key: string, nodes: TreeNodeState[] = this._treeNodes): TreeNodeState | null {
-    for (const node of nodes) {
-      if (node.key === key) return node;
-      if (node.children) {
-        const found = this.#findNode(key, node.children);
-        if (found) return found;
-      }
-    }
-    return null;
+  /** Recursive lookup wrapper using the shared `findNode` helper. */
+  #findNode(key: string): TreeNodeState | null {
+    return findNode(this._treeNodes, key);
   }
 
   #getCellEntries(node: TreeNodeState, verb: string): PendingVerbEntries | PermissionEntry[] {
     const pending = this._pendingChanges.get(node.key);
     if (pending?.has(verb)) return pending.get(verb)!;
     return node.entries.filter((e) => e.verb === verb);
-  }
-
-  /**
-   * Get the cell rendering info for a set of entries.
-   * Returns either a uniform cell (same state for node+desc) or a split cell.
-   */
-  #getCellInfo(entries: ReadonlyArray<{ state: PermissionState; scope: PermissionScope }>): {
-    split: boolean;
-    nodeClass: string;
-    descClass: string;
-  } {
-    if (entries.length === 0) {
-      return { split: false, nodeClass: 'inherit', descClass: 'inherit' };
-    }
-
-    const d = decomposeEntries(entries);
-    const toClass = (s: 'inherit' | 'allow' | 'deny') => s;
-
-    if (d.sameAsNode) {
-      return { split: false, nodeClass: toClass(d.nodeState), descClass: toClass(d.nodeState) };
-    }
-
-    return { split: true, nodeClass: toClass(d.nodeState), descClass: toClass(d.descState) };
   }
 
   // ── Rendering ─────────────────────────────────────────────────────────────
@@ -508,45 +432,24 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     `;
   }
 
-  #stateIcon(cls: string): string {
-    if (cls === 'allow') return '\u2713';  // ✓
-    if (cls === 'deny') return '\u2717';   // ✗
-    return '\u2014';                        // —
-  }
 
   #renderCell(node: TreeNodeState, verb: string) {
     const entries = this.#getCellEntries(node, verb);
     const isPending = this._pendingChanges.get(node.key)?.has(verb) ?? false;
-    const pendingCls = isPending ? ' pending' : '';
-
-    if (entries.length === 0) {
-      return html`
-        <td class="perm-td" title=${verb} @click=${() => this.#openPicker(node, verb)}>
-          <div class="perm-block uniform inherit${pendingCls}">\u2014</div>
-        </td>
-      `;
-    }
-
-    const info = this.#getCellInfo(entries);
-
-    if (!info.split) {
-      return html`
-        <td class="perm-td" title=${verb} @click=${() => this.#openPicker(node, verb)}>
-          <div class="perm-block uniform ${info.nodeClass}${pendingCls}">${this.#stateIcon(info.nodeClass)}</div>
-        </td>
-      `;
-    }
+    const info = getCellInfo(entries);
 
     return html`
       <td class="perm-td" title=${verb} @click=${() => this.#openPicker(node, verb)}>
-        <div class="perm-block split${pendingCls}">
-          <span class="half ${info.nodeClass}">${this.#stateIcon(info.nodeClass)}</span>
-          <span class="half ${info.descClass}">${this.#stateIcon(info.descClass)}</span>
-        </div>
+        <uap-perm-block .info=${info} ?pending=${isPending}></uap-perm-block>
       </td>
     `;
   }
 
+  /**
+   * Renders the shared scope dialog instance. Initial state is pushed from `_pickerNodeState`
+   * etc.; the dialog opens via `#openPicker` (which calls `_scopeDialog.open()` after the next
+   * render). `uap-scope-apply` is handled by `#handleScopeApply`.
+   */
   #renderDialog(): TemplateResult {
     const verbName = this._pickerVerb?.split('.').pop() ?? '';
     const nodeName = this._pickerIsVirtualRoot
@@ -554,193 +457,17 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       : (this._pickerNode?.name ?? '');
 
     return html`
-      <dialog
-        class="scope-dialog"
-        @close=${() => {
-          this._pickerNode = null;
-          this._pickerVerb = null;
-        }}>
-        <uui-dialog-layout
-          headline=${this.#localize.term('uap_dialogHeadline', verbName, nodeName)}>
-
-          ${!this._pickerIsVirtualRoot ? html`<p class="dialog-instructions">${this.#localize.term('uap_dialogInstructions')}</p>` : nothing}
-          ${this._pickerIsVirtualRoot ? this.#renderVirtualRootOptions() : this.#renderNodeOptions()}
-
-          <div slot="actions">
-            <uui-button look="outline" @click=${() => this._scopeDialog.close()}>
-              ${this.#localize.term('uap_cancel')}
-            </uui-button>
-            <uui-button look="primary" color="positive" @click=${() => this.#applyPicker()}>
-              ${this.#localize.term('uap_apply')}
-            </uui-button>
-          </div>
-        </uui-dialog-layout>
-      </dialog>
+      <uap-permission-scope-dialog
+        .verb=${verbName}
+        .nodeName=${nodeName}
+        .isVirtualRoot=${this._pickerIsVirtualRoot}
+        .initialNodeState=${this._pickerNodeState}
+        .initialDescState=${this._pickerDescState}
+        .initialSameAsNode=${this._pickerSameAsNode}
+        @uap-scope-apply=${(e: CustomEvent<{ entries: PendingVerbEntries }>) => this.#handleScopeApply(e)}>
+      </uap-permission-scope-dialog>
     `;
   }
-
-  // ── Option tile helpers ────────────────────────────────────────────────
-
-  #renderOptionTile(
-    type: 'inherit' | 'allow' | 'deny',
-    selected: boolean,
-    onClick: () => void,
-    label?: string,
-  ): TemplateResult {
-    const icons: Record<string, string> = {
-      inherit: '\u2014',
-      allow: '\u2713',
-      deny: '\u2717',
-    };
-    const defaultLabels: Record<string, string> = {
-      inherit: this.#localize.term('uap_inherit'),
-      allow: this.#localize.term('uap_allow'),
-      deny: this.#localize.term('uap_deny'),
-    };
-
-    return html`
-      <button
-        class="perm-option ${type}${selected ? ' selected' : ''}"
-        type="button"
-        @click=${onClick}>
-        <span class="perm-option-icon">${icons[type]}</span>
-        <span class="perm-option-label">${label ?? defaultLabels[type]}</span>
-      </button>
-    `;
-  }
-
-  #getPreviewInfo(): { split: boolean; nodeClass: string; descClass: string } {
-    if (this._pickerIsVirtualRoot) {
-      return { split: false, nodeClass: this._pickerNodeState, descClass: this._pickerNodeState };
-    }
-    const effectiveDesc = this._pickerSameAsNode ? this._pickerNodeState : this._pickerDescState;
-    if (this._pickerNodeState === effectiveDesc) {
-      return { split: false, nodeClass: this._pickerNodeState, descClass: this._pickerNodeState };
-    }
-    return { split: true, nodeClass: this._pickerNodeState, descClass: effectiveDesc };
-  }
-
-  #getPreviewDescription(): string {
-    if (this._pickerIsVirtualRoot) {
-      if (this._pickerNodeState === 'inherit') return this.#localize.term('uap_previewVirtualInherit');
-      const action = this._pickerNodeState === 'allow'
-        ? this.#localize.term('uap_allow')
-        : this.#localize.term('uap_deny');
-      return this.#localize.term('uap_previewVirtualSet', action);
-    }
-
-    const effectiveDesc = this._pickerSameAsNode ? this._pickerNodeState : this._pickerDescState;
-
-    if (this._pickerNodeState === 'inherit' && effectiveDesc === 'inherit') {
-      return this.#localize.term('uap_previewBothInherit');
-    }
-
-    const stateLabel = (s: string) => s === 'allow'
-      ? this.#localize.term('uap_allow')
-      : this.#localize.term('uap_deny');
-
-    if (this._pickerNodeState === effectiveDesc) {
-      return this.#localize.term('uap_previewUniform', stateLabel(this._pickerNodeState));
-    }
-
-    if (this._pickerNodeState !== 'inherit' && effectiveDesc === 'inherit') {
-      return this.#localize.term('uap_previewNodeOnly', stateLabel(this._pickerNodeState));
-    }
-
-    if (this._pickerNodeState === 'inherit' && effectiveDesc !== 'inherit') {
-      return this.#localize.term('uap_previewDescOnly', stateLabel(effectiveDesc));
-    }
-
-    return this.#localize.term('uap_previewSplit', stateLabel(this._pickerNodeState), stateLabel(effectiveDesc));
-  }
-
-  #renderPreview(): TemplateResult {
-    const info = this.#getPreviewInfo();
-    const desc = this.#getPreviewDescription();
-    const block = !info.split
-      ? html`
-          <div class="preview-block-wrapper">
-            <div class="perm-block uniform ${info.nodeClass}">${this.#stateIcon(info.nodeClass)}</div>
-          </div>
-        `
-      : html`
-          <div class="preview-block-wrapper">
-            <div class="perm-block split">
-              <span class="half ${info.nodeClass}">${this.#stateIcon(info.nodeClass)}</span>
-              <span class="half ${info.descClass}">${this.#stateIcon(info.descClass)}</span>
-            </div>
-          </div>
-        `;
-
-    return html`
-      <div class="preview-content">
-        ${block}
-        <p class="preview-desc">${desc}</p>
-      </div>
-    `;
-  }
-
-  // ── Dialog option renderers ─────────────────────────────────────────────
-
-  #renderVirtualRootOptions(): TemplateResult {
-    return html`
-      <div class="dialog-options">
-        <div class="perm-options">
-          ${this.#renderOptionTile('inherit', this._pickerNodeState === 'inherit', () => { this._pickerNodeState = 'inherit'; }, this.#localize.term('uap_virtualRootInherit'))}
-          ${this.#renderOptionTile('allow', this._pickerNodeState === 'allow', () => { this._pickerNodeState = 'allow'; }, this.#localize.term('uap_virtualRootAllow'))}
-          ${this.#renderOptionTile('deny', this._pickerNodeState === 'deny', () => { this._pickerNodeState = 'deny'; }, this.#localize.term('uap_virtualRootDeny'))}
-        </div>
-      </div>
-
-      <div class="dialog-result">
-        <h4>${this.#localize.term('uap_dialogResult')}</h4>
-        ${this.#renderPreview()}
-      </div>
-    `;
-  }
-
-  #renderNodeOptions(): TemplateResult {
-    const nodeName = this._pickerNode?.name ?? '';
-    const descSelected: 'inherit' | 'allow' | 'deny' | null =
-      this._pickerSameAsNode ? null : this._pickerDescState;
-
-    return html`
-      <div class="dialog-sections">
-        <div class="dialog-section">
-          <h4 class="dialog-section-title" title=${nodeName}>${nodeName}</h4>
-          <div class="perm-options">
-            ${this.#renderOptionTile('inherit', this._pickerNodeState === 'inherit', () => { this._pickerNodeState = 'inherit'; })}
-            ${this.#renderOptionTile('allow', this._pickerNodeState === 'allow', () => { this._pickerNodeState = 'allow'; })}
-            ${this.#renderOptionTile('deny', this._pickerNodeState === 'deny', () => { this._pickerNodeState = 'deny'; })}
-          </div>
-        </div>
-
-        <div class="dialog-section">
-          <h4>${this.#localize.term('uap_descendantsSection')}</h4>
-          <div class="perm-options">
-            ${this.#renderOptionTile('inherit', descSelected === 'inherit', () => {
-              if (descSelected === 'inherit') { this._pickerSameAsNode = true; }
-              else { this._pickerSameAsNode = false; this._pickerDescState = 'inherit'; }
-            })}
-            ${this.#renderOptionTile('allow', descSelected === 'allow', () => {
-              if (descSelected === 'allow') { this._pickerSameAsNode = true; }
-              else { this._pickerSameAsNode = false; this._pickerDescState = 'allow'; }
-            })}
-            ${this.#renderOptionTile('deny', descSelected === 'deny', () => {
-              if (descSelected === 'deny') { this._pickerSameAsNode = true; }
-              else { this._pickerSameAsNode = false; this._pickerDescState = 'deny'; }
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div class="dialog-result">
-        <h4>${this.#localize.term('uap_dialogResult')}</h4>
-        ${this.#renderPreview()}
-      </div>
-    `;
-  }
-
   override render() {
     const hasPending = this._pendingChanges.size > 0;
 
@@ -915,236 +642,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       vertical-align: middle;
     }
 
-    .perm-block {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 26px;
-      border: 1px solid var(--uui-color-border, #ddd);
-      border-radius: 4px;
-      cursor: pointer;
-      user-select: none;
-      overflow: hidden;
-    }
 
-    .perm-block:hover {
-      border-color: var(--uui-color-border-emphasis, #bbb);
-    }
-
-    .perm-block.pending {
-      border-color: var(--uui-color-warning-standalone, #f59e0b);
-      border-style: dashed;
-      border-width: 2px;
-    }
-
-    /* ── Uniform block ────────────────────────────────────────── */
-    .perm-block.uniform {
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .perm-block.inherit {
-      color: var(--uui-color-text-alt, #ccc);
-      border-color: var(--uui-color-border, #e8e8e8);
-    }
-
-    .perm-block.allow {
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
-      border-color: color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
-    }
-
-    .perm-block.deny {
-      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
-      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
-      border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
-    }
-
-    /* ── Split block — two halves ─────────────────────────────── */
-    .perm-block.split {
-      padding: 0;
-    }
-
-    .perm-block.split > .half {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
-      height: 100%;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .half.inherit {
-      color: var(--uui-color-text-alt, #ccc);
-    }
-
-    .half.allow {
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
-    }
-
-    .half.deny {
-      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
-      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
-    }
-
-    /* ── Permission dialog ────────────────────────────────────── */
-    .scope-dialog {
-      border: none;
-      border-radius: 8px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-      padding: 0;
-      min-width: 420px;
-      max-width: 540px;
-    }
-
-    .scope-dialog::backdrop {
-      background: rgba(0, 0, 0, 0.4);
-    }
-
-    .dialog-options {
-      margin-bottom: 8px;
-    }
-
-    .dialog-sections {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-bottom: 8px;
-    }
-
-    .dialog-section h4 {
-      margin: 0 0 4px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--uui-color-text, #333);
-    }
-
-    .dialog-section-title {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 100%;
-    }
-
-    .dialog-instructions {
-      margin: 0 0 16px;
-      font-size: 13px;
-      color: var(--uui-color-text-alt, #666);
-      line-height: 1.5;
-    }
-
-    /* ── Option tiles ─────────────────────────────────────────── */
-    .perm-options {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .perm-option {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 6px 10px;
-      border: 2px solid var(--uui-color-border, #ddd);
-      border-radius: 6px;
-      cursor: pointer;
-      background: none;
-      width: 100%;
-      text-align: left;
-      font-family: inherit;
-      transition: border-color 0.15s, background-color 0.15s;
-    }
-
-    .perm-option:hover {
-      border-color: var(--uui-color-border-emphasis, #bbb);
-    }
-
-    .perm-option-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 24px;
-      border-radius: 4px;
-      font-size: 14px;
-      font-weight: 700;
-      border: 1px solid var(--uui-color-border, #ddd);
-      flex-shrink: 0;
-    }
-
-    .perm-option.inherit .perm-option-icon {
-      color: var(--uui-color-text-alt, #ccc);
-      border-color: var(--uui-color-border, #e8e8e8);
-    }
-
-    .perm-option.allow .perm-option-icon {
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
-      border-color: color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
-    }
-
-    .perm-option.deny .perm-option-icon {
-      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
-      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
-      border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
-    }
-
-    .perm-option-label {
-      font-size: 13px;
-      color: var(--uui-color-text, #333);
-    }
-
-    .perm-option.selected {
-      border-color: var(--uui-color-default-standalone, #1b264f);
-      background: var(--uui-color-surface-emphasis, #fafafa);
-    }
-
-    .perm-option.selected.allow {
-      border-color: var(--uui-color-positive, #34a853);
-      background: color-mix(in srgb, var(--uui-color-positive, #34a853) 6%, transparent);
-    }
-
-    .perm-option.selected.deny {
-      border-color: var(--uui-color-danger, #ea4335);
-      background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 4%, transparent);
-    }
-
-    /* ── Preview ──────────────────────────────────────────────── */
-    .dialog-result {
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid var(--uui-color-border, #eee);
-    }
-
-    .dialog-result h4 {
-      margin: 0 0 8px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--uui-color-text, #333);
-    }
-
-    .preview-block-wrapper {
-      width: 64px;
-    }
-
-    .preview-block-wrapper .perm-block {
-      height: 32px;
-    }
-
-    .preview-content {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .preview-desc {
-      margin: 0;
-      font-size: 13px;
-      color: var(--uui-color-text, #333);
-      line-height: 1.4;
-    }
   `;
 }
 

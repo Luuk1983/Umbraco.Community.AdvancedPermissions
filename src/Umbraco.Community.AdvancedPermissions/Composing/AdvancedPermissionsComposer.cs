@@ -13,6 +13,7 @@ using Umbraco.Community.AdvancedPermissions.Core.Services;
 using Umbraco.Community.AdvancedPermissions.Data.Context;
 using Umbraco.Community.AdvancedPermissions.Data.Repositories;
 using Umbraco.Community.AdvancedPermissions.Data.Migrations;
+using Umbraco.Community.AdvancedPermissions.Filters;
 using Umbraco.Community.AdvancedPermissions.Migrations;
 using Umbraco.Community.AdvancedPermissions.Notifications;
 using Umbraco.Community.AdvancedPermissions.Services;
@@ -117,6 +118,16 @@ public sealed class AdvancedPermissionsComposer : IComposer
 
         // Replace Umbraco's built-in IContentPermissionService with our implementation
         builder.Services.AddUnique<IContentPermissionService, AdvancedContentPermissionService>();
+
+        // Doc-type permissions
+        builder.Services.AddSingleton<IDocTypePermissionRepository, DocTypePermissionRepository>();
+        builder.Services.AddSingleton<IDocTypePermissionResolver, DocTypePermissionResolver>();
+        builder.Services.AddSingleton<DocTypePermissionCache>();
+        builder.Services.AddSingleton<IDocTypePermissionService, DocTypePermissionService>();
+
+        // Register the IContentTypeFilter that enforces doc-type create restrictions in
+        // Umbraco's allowed-children / allowed-at-root pipelines.
+        builder.ContentTypeFilters().Append<DocTypeCreateContentTypeFilter>();
     }
 
     /// <summary>
@@ -147,6 +158,18 @@ public sealed class AdvancedPermissionsComposer : IComposer
 
         // Seed root permission entries for newly created user groups
         builder.AddNotificationAsyncHandler<UserGroupSavedNotification, UserGroupPermissionSeeder>();
+
+        // Doc-type permission cache invalidation
+        builder.AddNotificationHandler<ContentMovedNotification, DocTypePermissionCacheInvalidator>();
+        builder.AddNotificationHandler<ContentMovedToRecycleBinNotification, DocTypePermissionCacheInvalidator>();
+        builder.AddNotificationHandler<UserGroupSavedNotification, DocTypePermissionCacheInvalidator>();
+        builder.AddNotificationHandler<UserSavedNotification, DocTypePermissionCacheInvalidator>();
+        builder.AddNotificationHandler<ContentTypeSavedNotification, DocTypePermissionCacheInvalidator>();
+
+        // Doc-type permission cleanup on permanent deletion
+        builder.AddNotificationAsyncHandler<ContentDeletedNotification, DocTypePermissionCleanup>();
+        builder.AddNotificationAsyncHandler<ContentTypeDeletedNotification, DocTypePermissionCleanup>();
+        builder.AddNotificationAsyncHandler<UserGroupDeletedNotification, DocTypePermissionCleanup>();
     }
 
     /// <summary>

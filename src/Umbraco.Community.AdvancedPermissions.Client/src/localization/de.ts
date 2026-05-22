@@ -4,7 +4,9 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Erweiterte Berechtigungen',
-    permissionsEditor: 'Berechtigungseditor',
+    editorsSectionLabel: 'Editoren',
+    viewersSectionLabel: 'Anzeigen',
+    permissionsEditor: 'Inhaltsberechtigungs-Editor',
     accessViewer: 'Zugriffsanzeige',
 
     // ── Allgemein ─────────────────────────────────────────────────────────
@@ -22,7 +24,7 @@ export default {
     umbracoUsers: 'Alle Benutzer',
 
     // ── Berechtigungseditor ──────────────────────────────────────────────
-    editorHeadline: 'Berechtigungseditor',
+    editorHeadline: 'Inhaltsberechtigungs-Editor',
     selectRolePrompt: 'W\u00e4hlen Sie oben eine Benutzergruppe aus, um deren Berechtigungen zu verwalten.',
     permissionsSaved: 'Berechtigungen gespeichert.',
     saveFailed: (error: string) => `Speichern fehlgeschlagen: ${error}`,
@@ -84,5 +86,40 @@ export default {
     // ── Weiterleitungsnachricht granulare Berechtigungen ──────────────────
     redirectMessage:
       'Dokumentberechtigungen f\u00fcr diese Benutzergruppe werden durch das Advanced Permissions-Paket verwaltet. \u00d6ffnen Sie den Berechtigungseditor im Benutzerbereich, um Berechtigungen zu konfigurieren.',
+
+    // \u2500\u2500 Dokumenttyp-Berechtigungen \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    role: 'Benutzergruppe',
+    pickRole: 'Benutzergruppe ausw\u00e4hlen',
+    user: 'Benutzer',
+    pickUser: 'Benutzer ausw\u00e4hlen',
+    node: 'Knoten',
+    pickNode: 'Knoten ausw\u00e4hlen',
+    state: 'Status',
+    scope: 'Bereich',
+    scope_thisNodeOnly: 'Nur dieser Knoten',
+    scope_thisNodeAndDescendants: 'Dieser Knoten und Unterknoten',
+    scope_descendantsOnly: 'Nur Unterknoten',
+
+    docTypePermissions_menuLabel: 'Dokumenttyp-Berechtigungs-Editor',
+    docTypePermissions_insertOptionsMenuLabel: 'Einfügeoptionen-Anzeige',
+    docTypePermissions_workspaceTitle: 'Dokumenttyp-Berechtigungs-Editor',
+    docTypePermissions_auditTitle: 'Einfügeoptionen-Anzeige',
+    docTypePermissions_allDocTypes: 'Alle Dokumenttypen',
+    docTypePermissions_verbInsert: 'Einfügen',
+    docTypePermissions_documentType: 'Dokumenttyp',
+    docTypePermissions_pickDocType: '\u2014 Dokumenttyp ausw\u00e4hlen \u2014',
+    docTypePermissions_pickToStart: 'W\u00e4hlen Sie eine Benutzergruppe und einen Dokumenttyp aus.',
+    docTypePermissions_defaultRowLabel: 'Standard (gilt \u00fcberall)',
+    docTypePermissions_pendingNodeLabel: '(nicht gespeicherter Knoten)',
+    docTypePermissions_addScopeNode: 'Bereichs\u00fcberschreibung hinzuf\u00fcgen',
+    docTypePermissions_notSet: 'Nicht gesetzt',
+    docTypePermissions_noResults: 'Keine Dokumenttypen gefunden.',
+    docTypePermissions_useRoot: 'Root verwenden',
+    docTypePermissions_pickedNode: 'Knoten:',
+    docTypePermissions_rootLevel: 'Root-Ebene',
+    docTypePermissions_reasoning: 'Begr\u00fcndung',
+    docTypePermissions_defaultAllow: 'Standardm\u00e4\u00dfig erlaubt',
+    docTypePermissions_viaDefault: 'aus Standardzeile',
+    docTypePermissions_notInAllowedChildren: 'Nicht in der Liste der erlaubten Untertypen',
   },
 } satisfies UmbLocalizationDictionary;

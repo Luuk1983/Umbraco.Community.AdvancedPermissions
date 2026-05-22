@@ -17,7 +17,7 @@ namespace Umbraco.Community.AdvancedPermissions.Data.Migrations.SqlServer
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("ProductVersion", "10.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -68,6 +68,61 @@ namespace Umbraco.Community.AdvancedPermissions.Data.Migrations.SqlServer
                         .HasDatabaseName("IX_AdvancedPermission_Unique");
 
                     b.ToTable("AdvancedPermission", (string)null);
+                });
+
+            modelBuilder.Entity("Umbraco.Community.AdvancedPermissions.Data.Entities.DocTypePermissionEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("Id");
+
+                    b.Property<Guid>("ContentTypeKey")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ContentTypeKey");
+
+                    b.Property<Guid>("NodeKey")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("NodeKey");
+
+                    b.Property<string>("RoleAlias")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("RoleAlias");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("int")
+                        .HasColumnName("Scope");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int")
+                        .HasColumnName("State");
+
+                    b.Property<string>("Verb")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("Verb");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentTypeKey")
+                        .HasDatabaseName("IX_DocTypePermission_ContentTypeKey");
+
+                    b.HasIndex("NodeKey")
+                        .HasDatabaseName("IX_DocTypePermission_NodeKey");
+
+                    b.HasIndex("RoleAlias")
+                        .HasDatabaseName("IX_DocTypePermission_RoleAlias");
+
+                    b.HasIndex("RoleAlias", "ContentTypeKey", "Verb")
+                        .HasDatabaseName("IX_DocTypePermission_RoleAlias_ContentTypeKey_Verb");
+
+                    b.HasIndex("NodeKey", "ContentTypeKey", "RoleAlias", "Verb", "Scope")
+                        .IsUnique()
+                        .HasDatabaseName("IX_DocTypePermission_Unique");
+
+                    b.ToTable("DocTypePermission", (string)null);
                 });
 #pragma warning restore 612, 618
         }

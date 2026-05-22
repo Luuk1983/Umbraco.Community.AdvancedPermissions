@@ -12,12 +12,34 @@ const manifests: Array<UmbExtensionManifest> = [
     js: () => import('./entrypoint.js'),
   },
 
-  // ─── Section Sidebar App (inside Users section) ───────────────────────────
+  // ─── Section Sidebar Apps (inside Users section) ──────────────────────────
+  // Grouped by workflow (editing vs inspecting), not by feature family. The Access Viewer is
+  // intentionally NOT scoped to "content permissions" because future of-type verbs
+  // (DeleteOfType, MoveOfType…) will surface in its reasoning chain too — it's downstream of
+  // wherever entries originate. Insert Options Viewer stays separate because it answers a
+  // structurally different question ("which types may I insert here?").
   {
     type: 'sectionSidebarApp',
     kind: 'menu',
-    alias: 'UAP.SidebarApp.AdvancedPermissions',
-    name: 'Advanced Permissions Sidebar',
+    alias: 'UAP.SidebarApp.Editors',
+    name: 'Advanced Permissions Editors Sidebar',
+    weight: 60,
+    conditions: [
+      {
+        alias: 'Umb.Condition.SectionAlias',
+        match: 'Umb.Section.Users',
+      },
+    ],
+    meta: {
+      label: '#uap_editorsSectionLabel',
+      menu: 'UAP.Menu.Editors',
+    },
+  },
+  {
+    type: 'sectionSidebarApp',
+    kind: 'menu',
+    alias: 'UAP.SidebarApp.Viewers',
+    name: 'Advanced Permissions Viewers Sidebar',
     weight: 50,
     conditions: [
       {
@@ -26,41 +48,70 @@ const manifests: Array<UmbExtensionManifest> = [
       },
     ],
     meta: {
-      label: '#uap_sectionLabel',
-      menu: 'UAP.Menu.AdvancedPermissions',
+      label: '#uap_viewersSectionLabel',
+      menu: 'UAP.Menu.Viewers',
     },
   },
 
-  // ─── Menu ─────────────────────────────────────────────────────────────────
+  // ─── Menus ────────────────────────────────────────────────────────────────
   {
     type: 'menu',
-    alias: 'UAP.Menu.AdvancedPermissions',
-    name: 'Advanced Permissions Menu',
+    alias: 'UAP.Menu.Editors',
+    name: 'Advanced Permissions Editors Menu',
+  },
+  {
+    type: 'menu',
+    alias: 'UAP.Menu.Viewers',
+    name: 'Advanced Permissions Viewers Menu',
   },
 
   // ─── Menu Items ───────────────────────────────────────────────────────────
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.PermissionsEditor',
-    name: 'Permissions Editor Menu Item',
+    name: 'Content Permissions Editor Menu Item',
     weight: 100,
     meta: {
       label: '#uap_permissionsEditor',
       icon: 'icon-lock',
       entityType: 'uap-permissions-editor',
-      menus: ['UAP.Menu.AdvancedPermissions'],
+      menus: ['UAP.Menu.Editors'],
+    },
+  },
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.DocTypePermissions',
+    name: 'Document Type Permissions Editor Menu Item',
+    weight: 90,
+    meta: {
+      label: '#uap_docTypePermissions_menuLabel',
+      icon: 'icon-document',
+      entityType: 'uap-doc-type-permissions',
+      menus: ['UAP.Menu.Editors'],
     },
   },
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.AccessViewer',
     name: 'Access Viewer Menu Item',
-    weight: 50,
+    weight: 100,
     meta: {
       label: '#uap_accessViewer',
       icon: 'icon-eye',
       entityType: 'uap-access-viewer',
-      menus: ['UAP.Menu.AdvancedPermissions'],
+      menus: ['UAP.Menu.Viewers'],
+    },
+  },
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.InsertOptions',
+    name: 'Insert Options Viewer Menu Item',
+    weight: 90,
+    meta: {
+      label: '#uap_docTypePermissions_insertOptionsMenuLabel',
+      icon: 'icon-eye',
+      entityType: 'uap-doc-type-create-audit',
+      menus: ['UAP.Menu.Viewers'],
     },
   },
 
@@ -105,6 +156,30 @@ const manifests: Array<UmbExtensionManifest> = [
       entityType: 'uap-access-viewer',
     },
     element: () => import('./access-viewer/uap-access-viewer-root.element.js'),
+  },
+
+  // ─── Workspace (Document Type Permissions Editor) ────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.DocTypePermissions',
+    name: 'Document Type Permissions Workspace',
+    meta: {
+      entityType: 'uap-doc-type-permissions',
+    },
+    element: () =>
+      import('./doc-type-permissions/uap-doc-type-permissions-editor-root.element.js'),
+  },
+
+  // ─── Workspace (Document Type Create Audit) ──────────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.DocTypeCreateAudit',
+    name: 'Document Type Create Audit Workspace',
+    meta: {
+      entityType: 'uap-doc-type-create-audit',
+    },
+    element: () =>
+      import('./doc-type-permissions/uap-doc-type-create-audit-root.element.js'),
   },
 
   // ─── Role Picker Modal ────────────────────────────────────────────────────

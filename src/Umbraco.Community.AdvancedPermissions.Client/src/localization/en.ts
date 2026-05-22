@@ -4,7 +4,9 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Advanced Permissions',
-    permissionsEditor: 'Permissions Editor',
+    editorsSectionLabel: 'Editors',
+    viewersSectionLabel: 'Viewers',
+    permissionsEditor: 'Content Permissions Editor',
     accessViewer: 'Access Viewer',
 
     // ── Common ────────────────────────────────────────────────────────────
@@ -22,7 +24,7 @@ export default {
     umbracoUsers: 'All Users',
 
     // ── Permissions Editor ───────────────────────────────────────────────
-    editorHeadline: 'Permissions Editor',
+    editorHeadline: 'Content Permissions Editor',
     selectRolePrompt: 'Select a user group above to manage its permissions.',
     permissionsSaved: 'Permissions saved.',
     saveFailed: (error: string) => `Save failed: ${error}`,
@@ -84,5 +86,40 @@ export default {
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:
       'Document permissions for this user group are managed by the Advanced Permissions package. Open the Permissions Editor in the Users section to configure permissions.',
+
+    // ── Doc-Type Permissions ──────────────────────────────────────────────
+    role: 'User Group',
+    pickRole: 'Pick user group',
+    user: 'User',
+    pickUser: 'Pick user',
+    node: 'Node',
+    pickNode: 'Pick node',
+    state: 'State',
+    scope: 'Scope',
+    scope_thisNodeOnly: 'This node only',
+    scope_thisNodeAndDescendants: 'This node and descendants',
+    scope_descendantsOnly: 'Descendants only',
+
+    docTypePermissions_menuLabel: 'Document Type Permissions Editor',
+    docTypePermissions_insertOptionsMenuLabel: 'Insert Options Viewer',
+    docTypePermissions_workspaceTitle: 'Document Type Permissions Editor',
+    docTypePermissions_auditTitle: 'Insert Options Viewer',
+    docTypePermissions_allDocTypes: 'All document types',
+    docTypePermissions_verbInsert: 'Insert',
+    docTypePermissions_documentType: 'Document Type',
+    docTypePermissions_pickDocType: '— Select a document type —',
+    docTypePermissions_pickToStart: 'Pick a role and document type to start.',
+    docTypePermissions_defaultRowLabel: 'Default (applies everywhere)',
+    docTypePermissions_pendingNodeLabel: '(unsaved node)',
+    docTypePermissions_addScopeNode: 'Add scope override',
+    docTypePermissions_notSet: 'Not set',
+    docTypePermissions_noResults: 'No document types found.',
+    docTypePermissions_useRoot: 'Use root',
+    docTypePermissions_pickedNode: 'Node:',
+    docTypePermissions_rootLevel: 'Root level',
+    docTypePermissions_reasoning: 'Reasoning',
+    docTypePermissions_defaultAllow: 'Allowed by default',
+    docTypePermissions_viaDefault: 'from default row',
+    docTypePermissions_notInAllowedChildren: 'Not in this parent\'s allowed children list',
   },
 } satisfies UmbLocalizationDictionary;

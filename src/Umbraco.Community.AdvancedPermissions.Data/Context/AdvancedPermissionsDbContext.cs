@@ -92,6 +92,11 @@ public class AdvancedPermissionsDbContext : DbContext
                 .HasColumnName("Scope")
                 .IsRequired();
 
+            entity.Property(e => e.IsPriorityOverride)
+                .HasColumnName("IsPriorityOverride")
+                .HasDefaultValue(false)
+                .IsRequired();
+
             // Index for the most common lookup: by node + role
             entity.HasIndex(e => new { e.NodeKey, e.RoleAlias })
                 .HasDatabaseName("IX_AdvancedPermission_NodeKey_RoleAlias");
@@ -154,6 +159,11 @@ public class AdvancedPermissionsDbContext : DbContext
 
             entity.Property(e => e.Scope)
                 .HasColumnName("Scope")
+                .IsRequired();
+
+            entity.Property(e => e.IsPriorityOverride)
+                .HasColumnName("IsPriorityOverride")
+                .HasDefaultValue(false)
                 .IsRequired();
 
             // Primary query path for the filter: role + content-type + verb

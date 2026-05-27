@@ -35,8 +35,8 @@ export default {
 
     // ── Berechtigungsdialog ───────────────────────────────────────────────
     dialogHeadline: (verb: string, nodeName: string) => `${verb}-Berechtigung f\u00fcr \u201e${nodeName}\u201c festlegen`,
-    descendantsSection: '\u00dcberschreibung untergeordneter Knoten',
-    dialogInstructions: 'Legen Sie die Berechtigung f\u00fcr diesen Knoten fest. Standardm\u00e4\u00dfig gilt dies auch f\u00fcr alle untergeordneten Knoten. Verwenden Sie die \u00dcberschreibung, um eine andere Berechtigung f\u00fcr untergeordnete Knoten festzulegen.',
+    descendantsSection: 'Untergeordnete Knoten (falls abweichend)',
+    dialogInstructions: 'Legen Sie die Berechtigung f\u00fcr diesen Knoten fest. Standardm\u00e4\u00dfig gilt dies auch f\u00fcr alle untergeordneten Knoten. Verwenden Sie \u201eUntergeordnete Knoten (falls abweichend)\u201c, um eine andere Berechtigung f\u00fcr untergeordnete Knoten festzulegen.',
     virtualRootInherit: 'Nicht festgelegt (Eintrag entfernen)',
     virtualRootAllow: 'Erlauben (gesamter Inhalt)',
     virtualRootDeny: 'Verweigern (gesamter Inhalt)',
@@ -48,6 +48,18 @@ export default {
     previewSplit: (nodeAction: string, descAction: string) => `${nodeAction} f\u00fcr diesen Knoten. ${descAction} f\u00fcr alle untergeordneten Knoten.`,
     previewVirtualInherit: 'Keine Standardberechtigung festgelegt.',
     previewVirtualSet: (action: string) => `${action} standardm\u00e4\u00dfig f\u00fcr gesamten Inhalt.`,
+    previewPriorityNode: 'Priorit\u00e4ts-\u00dcberschreibung ist f\u00fcr diesen Knoten gesetzt.',
+    previewPriorityDesc: 'Priorit\u00e4ts-\u00dcberschreibung ist f\u00fcr untergeordnete Knoten gesetzt.',
+    previewPriorityBoth: 'Priorit\u00e4ts-\u00dcberschreibung ist gesetzt.',
+
+    // \u2500\u2500 Priorit\u00e4ts-\u00dcberschreibung \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    priorityOverride: 'Priorit\u00e4ts-\u00dcberschreibung',
+    priorityOverrideTooltip: (permission: string, nodeName: string) =>
+      `Ein Benutzer kann mehreren Benutzergruppen angeh\u00f6ren. Normalerweise folgt die effektive Berechtigung einer festen Priorit\u00e4tsreihenfolge. Wenn Sie dieses K\u00e4stchen aktivieren, wird diese Reihenfolge \u00fcberschrieben, sodass die hier gew\u00e4hlte Einstellung f\u00fcr \u201e${permission}\u201c fast immer zum Ergebnis f\u00fcr \u201e${nodeName}\u201c wird \u2013 unabh\u00e4ngig von den anderen Gruppen des Benutzers. Sparsam verwenden.`,
+    priorityOverrideBadgeTitle: 'Priorit\u00e4ts-\u00dcberschreibung ist f\u00fcr diesen Eintrag gesetzt',
+    priorityOverrideWonTitle: 'Aufgel\u00f6st \u00fcber Priorit\u00e4ts-\u00dcberschreibung',
+    priorityOverrideSuppressedHeader: 'Priorit\u00e4ts-\u00dcberschreibung hat das Ergebnis ge\u00e4ndert',
+    priorityOverrideSuppressedHint: 'Andernfalls w\u00e4re das Ergebnis gewesen:',
 
     // ── Zugriffsanzeige ───────────────────────────────────────────────────
     viewerHeadline: 'Zugriffsanzeige',

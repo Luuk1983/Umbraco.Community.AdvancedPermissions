@@ -334,4 +334,122 @@ public class DocTypePermissionResolverTests
 
         Assert.True(result.IsAllowed); // entry was for a different verb → default Allow
     }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Priority override — same semantics as node-level: per (verb, parent-node) only,
+    // does not inherit, only escapes cross-role Explicit Deny. The "target node" for
+    // doc-type resolution is the ParentNodeKey under which content would be created.
+    // ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Cross-role override: groupA explicitly denies CreateOfType at the parent; groupB allows
+    /// it with priority override at the same parent for the same content type. Override wins.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverrideAllow_OnParent_BeatsExplicitDeny_FromOtherRole()
+    {
+        var root = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var newsType = Guid.NewGuid();
+
+        var denyA = Entry(parent, newsType, "groupA", AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+        var allowOverrideB = Entry(parent, newsType, "groupB", AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeOnly) with { IsPriorityOverride = true };
+
+        var ctx = new DocTypePermissionResolutionContext(
+            ContentTypeKey: newsType,
+            ParentNodeKey: parent,
+            PathFromRoot: [root, parent],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [denyA, allowOverrideB]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbCreateOfType);
+
+        Assert.True(result.IsAllowed);
+        Assert.True(result.IsExplicit);
+    }
+
+    /// <summary>
+    /// A priority override on an ancestor parent must NOT activate at a different (deeper)
+    /// parent — the flag is node-local.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverride_OnAncestorParent_DoesNotActivateAtDescendantParent()
+    {
+        var root = Guid.NewGuid();
+        var section = Guid.NewGuid();
+        var deeperParent = Guid.NewGuid();
+        var newsType = Guid.NewGuid();
+
+        // groupA: Allow + override on the SECTION (inherited/implicit at deeperParent)
+        var allowOverrideOnSection = Entry(section, newsType, "groupA", AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants) with { IsPriorityOverride = true };
+        // groupB: Deny explicit on deeperParent (no override) — must still win because the
+        // explicit tier is selected first, so groupA's flagged-but-implicit Allow never enters
+        // the tie-break. Explicit beats implicit.
+        var denyOnDeeper = Entry(deeperParent, newsType, "groupB", AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+
+        var ctx = new DocTypePermissionResolutionContext(
+            ContentTypeKey: newsType,
+            ParentNodeKey: deeperParent,
+            PathFromRoot: [root, section, deeperParent],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [allowOverrideOnSection, denyOnDeeper]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbCreateOfType);
+
+        Assert.False(result.IsAllowed);
+    }
+
+    /// <summary>
+    /// Example C for doc-types — a flagged inherited rule beats a non-flagged inherited rule when
+    /// the target parent has no explicit doc-type entry of its own. This makes a descendant-scoped
+    /// override on an ancestor meaningful for creates deeper in the tree.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverride_FlaggedImplicit_BeatsNonFlaggedImplicit_WhenNoExplicit()
+    {
+        var root = Guid.NewGuid();
+        var section = Guid.NewGuid();
+        var deeperParent = Guid.NewGuid();
+        var newsType = Guid.NewGuid();
+
+        // Both inherited (DescendantsOnly on the section) → both implicit at deeperParent.
+        var denyDesc = Entry(section, newsType, "groupA", AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.DescendantsOnly);
+        var allowOverrideDesc = Entry(section, newsType, "groupB", AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.DescendantsOnly) with { IsPriorityOverride = true };
+
+        var ctx = new DocTypePermissionResolutionContext(
+            ContentTypeKey: newsType,
+            ParentNodeKey: deeperParent,
+            PathFromRoot: [root, section, deeperParent],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [denyDesc, allowOverrideDesc]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbCreateOfType);
+
+        // Implicit tier active; groupB flagged → Allow wins (would have been Deny without the flag).
+        Assert.True(result.IsAllowed);
+        Assert.True(result.WasPriorityOverrideActive);
+    }
+
+    /// <summary>
+    /// Default-Allow semantics still apply when no entries match the verb — the override
+    /// flag changes priority logic but not the no-entries-default-state behavior.
+    /// </summary>
+    [Fact]
+    public void Resolve_NoPriorityOverrideEntries_DefaultAllowSemanticsUnchanged()
+    {
+        var root = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var newsType = Guid.NewGuid();
+
+        var ctx = new DocTypePermissionResolutionContext(
+            ContentTypeKey: newsType,
+            ParentNodeKey: parent,
+            PathFromRoot: [root, parent],
+            RoleAliases: ["editors"],
+            StoredEntries: []);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbCreateOfType);
+
+        Assert.True(result.IsAllowed);
+    }
 }

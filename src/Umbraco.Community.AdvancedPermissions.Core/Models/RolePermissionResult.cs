@@ -16,9 +16,13 @@ namespace Umbraco.Community.AdvancedPermissions.Core.Models;
 /// <param name="SourceScope">
 /// The scope of the determining entry, or <see langword="null"/> if derived from group defaults.
 /// </param>
+/// <param name="IsPriorityOverride">
+/// <see langword="true"/> if the determining entry carried the priority-override flag.
+/// </param>
 internal sealed record RolePermissionResult(
     string RoleAlias,
     PermissionState State,
     bool IsExplicit,
     Guid SourceNodeKey,
-    PermissionScope? SourceScope);
+    PermissionScope? SourceScope,
+    bool IsPriorityOverride = false);

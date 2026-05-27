@@ -79,7 +79,8 @@ public abstract class AdvancedPermissionsControllerBase : ManagementApiControlle
             entry.RoleAlias,
             entry.Verb,
             entry.State.ToString(),
-            entry.Scope.ToString());
+            entry.Scope.ToString(),
+            entry.IsPriorityOverride);
 
     /// <summary>
     /// Maps a domain <see cref="EffectivePermission"/> to an API <see cref="EffectivePermissionItem"/>.
@@ -91,11 +92,22 @@ public abstract class AdvancedPermissionsControllerBase : ManagementApiControlle
             ep.Verb,
             ep.IsAllowed,
             ep.IsExplicit,
-            ep.Reasoning.Select(r => new ReasoningItem(
-                r.ContributingRole,
-                r.State.ToString(),
-                r.IsExplicit,
-                r.SourceNodeKey,
-                r.SourceScope?.ToString(),
-                r.IsFromGroupDefault)).ToList());
+            ep.Reasoning.Select(MapReasoning).ToList(),
+            ep.WasPriorityOverrideActive,
+            (ep.SuppressedReasoning ?? []).Select(MapReasoning).ToList());
+
+    /// <summary>
+    /// Maps a single <see cref="PermissionReasoning"/> entry to the API <see cref="ReasoningItem"/>.
+    /// </summary>
+    /// <param name="r">The domain reasoning entry.</param>
+    /// <returns>The mapped item.</returns>
+    private static ReasoningItem MapReasoning(PermissionReasoning r) =>
+        new(
+            r.ContributingRole,
+            r.State.ToString(),
+            r.IsExplicit,
+            r.SourceNodeKey,
+            r.SourceScope?.ToString(),
+            r.IsFromGroupDefault,
+            r.IsPriorityOverride);
 }

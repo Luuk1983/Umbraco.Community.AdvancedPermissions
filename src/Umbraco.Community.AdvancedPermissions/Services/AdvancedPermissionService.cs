@@ -116,7 +116,7 @@ public sealed class AdvancedPermissionService(
     public async Task SaveEntriesAsync(
         Guid nodeKey,
         string roleAlias,
-        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope)> entries,
+        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
         CancellationToken cancellationToken = default)
     {
         await repository.SaveAsync(nodeKey, roleAlias, entries, cancellationToken);

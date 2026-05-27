@@ -111,6 +111,7 @@ public sealed class AdvancedPermissionsDataImport(
             Verb = AdvancedPermissionsConstants.VerbRead,
             State = PermissionState.Allow,
             Scope = PermissionScope.ThisNodeAndDescendants,
+            IsPriorityOverride = false,
         };
         await dbContext.Permissions.AddAsync(everyoneRow, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -287,5 +288,6 @@ public sealed class AdvancedPermissionsDataImport(
             Verb = entry.Verb,
             State = entry.State,
             Scope = entry.Scope,
+            IsPriorityOverride = entry.IsPriorityOverride,
         };
 }

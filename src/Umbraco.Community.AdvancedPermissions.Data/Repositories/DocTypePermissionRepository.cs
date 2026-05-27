@@ -53,7 +53,7 @@ public sealed class DocTypePermissionRepository(IDbContextFactory<AdvancedPermis
         Guid nodeKey,
         string roleAlias,
         Guid contentTypeKey,
-        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope)> entries,
+        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
         CancellationToken cancellationToken = default)
     {
         var newEntries = entries.ToList();
@@ -69,7 +69,7 @@ public sealed class DocTypePermissionRepository(IDbContextFactory<AdvancedPermis
 
         if (newEntries.Count > 0)
         {
-            foreach (var (verb, state, scope) in newEntries)
+            foreach (var (verb, state, scope, isPriorityOverride) in newEntries)
             {
                 db.DocTypePermissions.Add(new DocTypePermissionEntity
                 {
@@ -80,6 +80,7 @@ public sealed class DocTypePermissionRepository(IDbContextFactory<AdvancedPermis
                     Verb = verb,
                     State = state,
                     Scope = scope,
+                    IsPriorityOverride = isPriorityOverride,
                 });
             }
 
@@ -147,5 +148,5 @@ public sealed class DocTypePermissionRepository(IDbContextFactory<AdvancedPermis
     /// <param name="entity">The entity to map.</param>
     /// <returns>The corresponding domain record.</returns>
     private static DocTypePermissionEntry MapToDomain(DocTypePermissionEntity entity) =>
-        new(entity.Id, entity.NodeKey, entity.ContentTypeKey, entity.RoleAlias, entity.Verb, entity.State, entity.Scope);
+        new(entity.Id, entity.NodeKey, entity.ContentTypeKey, entity.RoleAlias, entity.Verb, entity.State, entity.Scope, entity.IsPriorityOverride);
 }

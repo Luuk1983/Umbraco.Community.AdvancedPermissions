@@ -1084,4 +1084,323 @@ public class PermissionResolverTests
         bool allow,
         bool isExplicit)
         => [name, entries.ToList(), pathLen, targetIdx, roles.ToList(), allow, isExplicit];
+
+    // ───────────────────────────────────────────────────────────────────────
+    // Priority override — node-local, verb-local escape hatch for cross-role
+    // Explicit Deny. Activates when at least one applicable entry on the
+    // target node carries IsPriorityOverride=true; in that case only flagged
+    // entries on the target node participate in aggregation. Does not inherit,
+    // does not propagate to other nodes or other verbs.
+    // ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Headline cross-role scenario: role B's Allow with priority override on the target node
+    /// must beat role A's Explicit Deny on the target node.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverrideAllow_OnTargetNode_BeatsExplicitDeny_FromOtherRole()
+    {
+        var root = Guid.NewGuid();
+        var target = Guid.NewGuid();
+        var deny = Entry(target, "groupA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+        var allowOverride = Entry(target, "groupB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly) with { IsPriorityOverride = true };
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: [root, target],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [deny, allowOverride]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        Assert.True(result.IsAllowed);
+        Assert.True(result.IsExplicit);
+    }
+
+    /// <summary>
+    /// When both roles have a priority override on the target node and they disagree,
+    /// the existing 4-bucket priority applies: Explicit Deny beats Explicit Allow.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverrideDeny_BeatsPriorityOverrideAllow_OnSameNode()
+    {
+        var root = Guid.NewGuid();
+        var target = Guid.NewGuid();
+        var allowOverride = Entry(target, "groupA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly) with { IsPriorityOverride = true };
+        var denyOverride = Entry(target, "groupB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly) with { IsPriorityOverride = true };
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: [root, target],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [allowOverride, denyOverride]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        Assert.False(result.IsAllowed);
+        Assert.True(result.IsExplicit);
+    }
+
+    /// <summary>
+    /// A priority override on an ancestor must NOT activate at a descendant — the flag
+    /// is node-local. The entry itself still applies as a regular inherited rule, but
+    /// it does not suppress other roles' entries at the descendant.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverride_OnAncestorOnly_DoesNotSuppressOtherRoles_AtDescendant()
+    {
+        var root = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var child = Guid.NewGuid();
+        // groupA: Allow with override on the PARENT (inherited/implicit at the child)
+        var allowOverrideOnParent = Entry(parent, "groupA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants) with { IsPriorityOverride = true };
+        // groupB: Explicit Deny on the child target — must still beat groupA's inherited Allow.
+        // The active tier at the child is the EXPLICIT tier (groupB), so groupA's flagged but
+        // implicit Allow never enters the tie-break. Explicit always beats implicit.
+        var denyOnChild = Entry(child, "groupB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: child,
+            PathFromRoot: [root, parent, child],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [allowOverrideOnParent, denyOnChild]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        Assert.False(result.IsAllowed);
+        Assert.True(result.IsExplicit);
+    }
+
+    /// <summary>
+    /// Priority override is per-verb. A flag on verb X at the target must not affect
+    /// resolution of verb Y at the same target.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverride_OnOneVerb_DoesNotAffectOtherVerb()
+    {
+        var root = Guid.NewGuid();
+        var target = Guid.NewGuid();
+        // groupA Deny Delete + groupB Allow Delete with override → groupB wins for Delete
+        var denyDelete = Entry(target, "groupA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+        var allowOverrideDelete = Entry(target, "groupB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly) with { IsPriorityOverride = true };
+        // groupA Deny Read (no override) — groupB has no entry for Read → groupA's Deny must win for Read
+        var denyRead = Entry(target, "groupA", AdvancedPermissionsConstants.VerbRead, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: [root, target],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [denyDelete, allowOverrideDelete, denyRead]);
+
+        var deleteResult = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+        var readResult = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbRead);
+
+        Assert.True(deleteResult.IsAllowed);
+        Assert.False(readResult.IsAllowed);
+    }
+
+    /// <summary>
+    /// Priority override is per-node. A flagged entry on target node N must not affect
+    /// resolution at a sibling node S, even when both share the same role and verb.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverride_OnOneNode_DoesNotAffectSiblingNode()
+    {
+        var root = Guid.NewGuid();
+        var nodeN = Guid.NewGuid();
+        var nodeS = Guid.NewGuid();
+        // groupA Deny ThisNodeAndDescendants at root (inherited by both N and S)
+        var rootDeny = Entry(root, "groupA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants);
+        // groupB Allow with override only on N
+        var allowOverrideOnN = Entry(nodeN, "groupB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly) with { IsPriorityOverride = true };
+
+        var entries = new[] { rootDeny, allowOverrideOnN };
+
+        // At N — override wins → Allow
+        var ctxN = new PermissionResolutionContext(
+            TargetNodeKey: nodeN,
+            PathFromRoot: [root, nodeN],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: entries);
+        var resultN = _resolver.Resolve(ctxN, AdvancedPermissionsConstants.VerbDelete);
+
+        // At S — no override applies here → inherited Deny from root wins
+        var ctxS = new PermissionResolutionContext(
+            TargetNodeKey: nodeS,
+            PathFromRoot: [root, nodeS],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: entries);
+        var resultS = _resolver.Resolve(ctxS, AdvancedPermissionsConstants.VerbDelete);
+
+        Assert.True(resultN.IsAllowed);
+        Assert.False(resultS.IsAllowed);
+    }
+
+    /// <summary>
+    /// A priority override entry with scope DescendantsOnly never applies at depth 0,
+    /// so the flag cannot activate at the storing node. Regression check for the depth-0
+    /// requirement.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverride_WithDescendantsOnlyScope_DoesNotActivateAtStoringNode()
+    {
+        var root = Guid.NewGuid();
+        var target = Guid.NewGuid();
+        var deny = Entry(target, "groupA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+        // DescendantsOnly + override on the target — flag must NOT activate because the entry
+        // doesn't apply at depth 0 on the target itself
+        var allowOverrideDescOnly = Entry(target, "groupB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly) with { IsPriorityOverride = true };
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: [root, target],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [deny, allowOverrideDescOnly]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        // Normal logic — groupA's Explicit Deny wins.
+        Assert.False(result.IsAllowed);
+        Assert.True(result.IsExplicit);
+    }
+
+    /// <summary>
+    /// Example C — a flagged rule beats a non-flagged rule WITHIN the implicit tier.
+    /// When the target node has no explicit entries of its own, the active tier is implicit
+    /// (inherited rules). If one inherited rule carries the override flag, it takes precedence
+    /// over the other (non-flagged) inherited rules — flipping the normal implicit-deny-wins outcome.
+    /// This is what makes the descendant-scoped override checkbox meaningful.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverride_FlaggedImplicit_BeatsNonFlaggedImplicit_WhenNoExplicit()
+    {
+        var root = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var child = Guid.NewGuid();
+        // groupA: Deny for descendants (no flag) — inherited/implicit at the child.
+        var denyDesc = Entry(parent, "groupA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.DescendantsOnly);
+        // groupB: Allow for descendants WITH override — also inherited/implicit at the child.
+        var allowOverrideDesc = Entry(parent, "groupB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly) with { IsPriorityOverride = true };
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: child,
+            PathFromRoot: [root, parent, child],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [denyDesc, allowOverrideDesc]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        // No explicit entries at the child → implicit tier active. groupB is flagged → Allow wins.
+        // Without the flag, implicit Deny would have won.
+        Assert.True(result.IsAllowed);
+        Assert.False(result.IsExplicit);
+        Assert.True(result.WasPriorityOverrideActive);
+    }
+
+    /// <summary>
+    /// Example B — an explicit (on-target) rule always beats an inherited rule, even a flagged one.
+    /// A flagged inherited Allow does NOT survive against a plain explicit Deny on the same node,
+    /// because the explicit tier is selected first and the implicit flagged rule never enters it.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverride_FlaggedImplicit_LosesToNonFlaggedExplicit()
+    {
+        var root = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var child = Guid.NewGuid();
+        // groupA: Allow for descendants WITH override — inherited/implicit at the child.
+        var allowOverrideDesc = Entry(parent, "groupA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly) with { IsPriorityOverride = true };
+        // groupB: plain explicit Deny on the child.
+        var denyOnChild = Entry(child, "groupB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: child,
+            PathFromRoot: [root, parent, child],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [allowOverrideDesc, denyOnChild]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        // Explicit tier (groupB Deny) is active; groupA's flagged Allow is implicit and excluded.
+        Assert.False(result.IsAllowed);
+        Assert.True(result.IsExplicit);
+        Assert.False(result.WasPriorityOverrideActive);
+    }
+
+    /// <summary>
+    /// When the override path fires, candidates from non-overriding roles must be excluded
+    /// from the resolution entirely — even Explicit Deny entries on the same target node from
+    /// roles that did not carry the flag.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverride_Suppresses_ExplicitDeny_FromNonOverrideRole_AtSameNode()
+    {
+        var root = Guid.NewGuid();
+        var target = Guid.NewGuid();
+        // groupA: Explicit Deny on target, no override
+        var denyA = Entry(target, "groupA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+        // groupB: Explicit Allow on target WITH override
+        var allowOverrideB = Entry(target, "groupB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly) with { IsPriorityOverride = true };
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: [root, target],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [denyA, allowOverrideB]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        Assert.True(result.IsAllowed);
+        // The reasoning chain should contain ONLY groupB (suppressed roles do not contribute).
+        Assert.Single(result.Reasoning);
+        Assert.Equal("groupB", result.Reasoning[0].ContributingRole);
+    }
+
+    /// <summary>
+    /// Re-asserts that when no entry carries the priority-override flag, behavior is unchanged
+    /// from the existing matrix.
+    /// </summary>
+    [Fact]
+    public void Resolve_NoPriorityOverrideEntries_BehaviourUnchanged()
+    {
+        var root = Guid.NewGuid();
+        var target = Guid.NewGuid();
+        var deny = Entry(target, "groupA", AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly);
+        var allow = Entry(target, "groupB", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly);
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: [root, target],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [deny, allow]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        // Existing rule: Explicit Deny beats Explicit Allow.
+        Assert.False(result.IsAllowed);
+    }
+
+    /// <summary>
+    /// Single-user-group case: an override flag has no observable effect — there are no other
+    /// roles' entries to suppress. The flagged Allow entry simply behaves as a regular Explicit
+    /// Allow.
+    /// </summary>
+    [Fact]
+    public void Resolve_PriorityOverride_WithSingleRole_BehavesAsRegularExplicitAllow()
+    {
+        var root = Guid.NewGuid();
+        var target = Guid.NewGuid();
+        var allowOverride = Entry(target, "$everyone", AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly) with { IsPriorityOverride = true };
+
+        var ctx = new PermissionResolutionContext(
+            TargetNodeKey: target,
+            PathFromRoot: [root, target],
+            RoleAliases: [AdvancedPermissionsConstants.EveryoneRoleAlias],
+            StoredEntries: [allowOverride]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbDelete);
+
+        Assert.True(result.IsAllowed);
+        Assert.True(result.IsExplicit);
+    }
 }

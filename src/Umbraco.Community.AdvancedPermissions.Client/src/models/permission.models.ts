@@ -18,6 +18,14 @@ export interface PermissionEntry {
   verb: string;
   state: PermissionState;
   scope: PermissionScope;
+  /**
+   * Priority-override flag. When true on an entry that applies at the node being resolved
+   * (depth 0), the resolver considers only flagged entries on that node when aggregating
+   * across the user's user groups — a CSS `!important`-style escape hatch for cross-role
+   * Explicit Deny. Node-local, verb-local: does NOT inherit and has NO effect on other
+   * verbs or other nodes.
+   */
+  isPriorityOverride: boolean;
 }
 
 /** A content tree node with stored permission entries for a given role. */
@@ -44,6 +52,8 @@ export interface ReasoningStep {
   sourceNodeKey: string;
   sourceScope: string | null;
   isFromGroupDefault: boolean;
+  /** True if this contribution came from an entry flagged with priority override. */
+  isPriorityOverride: boolean;
 }
 
 /** Fully resolved permission for a single verb at a node, with reasoning. */
@@ -52,6 +62,17 @@ export interface EffectivePermission {
   isAllowed: boolean;
   isExplicit: boolean;
   reasoning: ReasoningStep[];
+  /**
+   * True when the priority-override shortcircuit fired — at least one applicable entry on
+   * the resolved node carried the override flag and the resolver considered only flagged
+   * entries when aggregating across the user's user groups.
+   */
+  wasPriorityOverrideActive?: boolean;
+  /**
+   * Reasoning entries that would have applied under normal resolution but were suppressed
+   * by the priority override path. Empty/undefined when no override fired.
+   */
+  suppressedReasoning?: ReasoningStep[];
 }
 
 /** Collection of effective permissions for all verbs at a specific node. */
@@ -96,5 +117,5 @@ export interface PathEntriesResponse {
 /** A pending verb-level change for a node in the Security Editor. */
 export interface PendingVerbChange {
   /** Entries to set for this verb. Empty array means "clear/inherit". */
-  entries: Array<{ state: PermissionState; scope: PermissionScope }>;
+  entries: Array<{ state: PermissionState; scope: PermissionScope; isPriorityOverride: boolean }>;
 }

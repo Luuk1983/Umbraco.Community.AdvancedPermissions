@@ -1,4 +1,4 @@
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
@@ -63,8 +63,8 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role,
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
         var results = await _repository.GetByNodeAndRoleAsync(nodeKey, role);
@@ -91,14 +91,14 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role,
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
-        // Second save with only one entry — should remove the delete entry
+        // Second save with only one entry â€” should remove the delete entry
         await _repository.SaveAsync(nodeKey, role,
         [
-            (AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.DescendantsOnly),
+            (AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.DescendantsOnly, false),
         ]);
 
         var results = await _repository.GetByNodeAndRoleAsync(nodeKey, role);
@@ -118,7 +118,7 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role,
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeKey, role, []);
@@ -137,15 +137,15 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, "editors",
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeKey, "writers",
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
-        // Overwrite editors only — writers should remain untouched
+        // Overwrite editors only â€” writers should remain untouched
         await _repository.SaveAsync(nodeKey, "editors", []);
 
         var editorsResults = await _repository.GetByNodeAndRoleAsync(nodeKey, "editors");
@@ -167,8 +167,8 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role,
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly, false),
         ]);
 
         var results = await _repository.GetByNodeAndRoleAsync(nodeKey, role);
@@ -198,18 +198,18 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, "editors",
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeKey, "writers",
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
-        // Entry for a different node — should NOT appear
+        // Entry for a different node â€” should NOT appear
         await _repository.SaveAsync(Guid.NewGuid(), "editors",
         [
-            (AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         var results = await _repository.GetByNodeAsync(nodeKey);
@@ -228,12 +228,12 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
     {
         await _repository.SaveAsync(AdvancedPermissionsConstants.VirtualRootNodeKey, AdvancedPermissionsConstants.EveryoneRoleAlias,
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(Guid.NewGuid(), "editors",
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
         var results = await _repository.GetByNodeAsync(AdvancedPermissionsConstants.VirtualRootNodeKey);
@@ -267,18 +267,18 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(node1, "editors",
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(node2, "editors",
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
-        // Different role — should NOT appear
+        // Different role â€” should NOT appear
         await _repository.SaveAsync(node1, "writers",
         [
-            (AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         var results = await _repository.GetByRoleAsync("editors");
@@ -315,18 +315,18 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(node1, "editors",
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(node2, "writers",
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
-        // Editors at node3 — excluded because node3 is not in the filter
+        // Editors at node3 â€” excluded because node3 is not in the filter
         await _repository.SaveAsync(node3, "editors",
         [
-            (AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreate, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         // Query for editors at node1 and node2 only
@@ -347,12 +347,12 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(AdvancedPermissionsConstants.VirtualRootNodeKey, "editors",
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(node1, "editors",
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
         var results = await _repository.GetByRolesAndNodesAsync(["editors"], [AdvancedPermissionsConstants.VirtualRootNodeKey, node1]);
@@ -375,8 +375,8 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role,
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
         await _repository.DeleteAsync(nodeKey, role, AdvancedPermissionsConstants.VerbDelete);
@@ -408,8 +408,8 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role,
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.DescendantsOnly, false),
         ]);
 
         await _repository.DeleteAsync(nodeKey, role, AdvancedPermissionsConstants.VerbDelete);
@@ -432,12 +432,12 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, "editors",
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeKey, "writers",
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
         await _repository.DeleteAllForNodeAsync(nodeKey);
@@ -457,12 +457,12 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeToDelete, "editors",
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeToKeep, "editors",
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
         await _repository.DeleteAllForNodeAsync(nodeToDelete);
@@ -496,17 +496,17 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey1, "editors",
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeKey2, "editors",
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
         await _repository.SaveAsync(nodeKey1, "writers",
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.DeleteAllForRoleAsync("editors");
@@ -528,12 +528,12 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, "editors",
         [
-            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeKey, "writers",
         [
-            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         ]);
 
         await _repository.DeleteAllForRoleAsync("editors");
@@ -567,7 +567,7 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role,
         [
-            (AdvancedPermissionsConstants.VerbPublish, PermissionState.Deny, PermissionScope.DescendantsOnly),
+            (AdvancedPermissionsConstants.VerbPublish, PermissionState.Deny, PermissionScope.DescendantsOnly, false),
         ]);
 
         var results = await _repository.GetByNodeAndRoleAsync(nodeKey, role);
@@ -580,6 +580,61 @@ public sealed class AdvancedPermissionRepositoryTests : IAsyncLifetime
         Assert.Equal(AdvancedPermissionsConstants.VerbPublish, entry.Verb);
         Assert.Equal(PermissionState.Deny, entry.State);
         Assert.Equal(PermissionScope.DescendantsOnly, entry.Scope);
+    }
+
+    // -------------------------------------------------------------------------
+    // Priority override â€” round-trip the new IsPriorityOverride flag
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that the IsPriorityOverride flag is persisted and read back correctly.
+    /// </summary>
+    [Fact]
+    public async Task SaveAsync_PersistsIsPriorityOverrideFlag()
+    {
+        var nodeKey = Guid.NewGuid();
+        const string role = "editors";
+
+        await _repository.SaveAsync(nodeKey, role,
+        [
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, true),
+            (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
+        ]);
+
+        var results = await _repository.GetByNodeAndRoleAsync(nodeKey, role);
+
+        Assert.Equal(2, results.Count);
+        Assert.Contains(results, r =>
+            r.Verb == AdvancedPermissionsConstants.VerbRead && r.IsPriorityOverride);
+        Assert.Contains(results, r =>
+            r.Verb == AdvancedPermissionsConstants.VerbDelete && !r.IsPriorityOverride);
+    }
+
+    /// <summary>
+    /// Verifies that saving an entry without the flag replaces an existing entry that had the flag
+    /// (the bulk-replace semantics are agnostic to the flag).
+    /// </summary>
+    [Fact]
+    public async Task SaveAsync_FlagDoesNotParticipateInUniqueKey_ReplacesAcrossFlagBoundary()
+    {
+        var nodeKey = Guid.NewGuid();
+        const string role = "editors";
+
+        await _repository.SaveAsync(nodeKey, role,
+        [
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, true),
+        ]);
+
+        // Second save with same (verb, scope) but flag flipped â€” must replace, not duplicate.
+        await _repository.SaveAsync(nodeKey, role,
+        [
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
+        ]);
+
+        var results = await _repository.GetByNodeAndRoleAsync(nodeKey, role);
+
+        Assert.Single(results);
+        Assert.False(results[0].IsPriorityOverride);
     }
 }
 

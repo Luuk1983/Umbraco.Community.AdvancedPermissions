@@ -13,6 +13,10 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers.Models;
 /// <param name="Verb">The verb (v1: only <c>Umb.Document.CreateOfType</c>).</param>
 /// <param name="State">The state, as a string: <c>Allow</c> or <c>Deny</c>.</param>
 /// <param name="Scope">The scope, as a string.</param>
+/// <param name="IsPriorityOverride">
+/// Whether this entry is flagged as a priority override (CSS <c>!important</c>-style escape hatch
+/// for cross-role Explicit Deny at the entry's storing node).
+/// </param>
 public sealed record DocTypePermissionEntryResponseModel(
     Guid Id,
     Guid NodeKey,
@@ -20,7 +24,8 @@ public sealed record DocTypePermissionEntryResponseModel(
     string RoleAlias,
     string Verb,
     string State,
-    string Scope);
+    string Scope,
+    bool IsPriorityOverride);
 
 /// <summary>
 /// Request body for saving a (node, role, content-type) triple's entries.
@@ -64,7 +69,9 @@ public sealed record DocTypeAuditForNodeRowResponseModel(
     bool IsAllowed,
     bool IsExplicit,
     bool IsInAllowedChildren,
-    IReadOnlyList<ReasoningItem> Reasoning);
+    IReadOnlyList<ReasoningItem> Reasoning,
+    bool WasPriorityOverrideActive = false,
+    IReadOnlyList<ReasoningItem>? SuppressedReasoning = null);
 
 /// <summary>
 /// Top-level response of <c>GET /doc-type-permissions/audit-for-node</c>: the audited node
@@ -86,7 +93,8 @@ public sealed record DocTypePathEntryResponseModel(
     string RoleAlias,
     string Verb,
     string State,
-    string Scope);
+    string Scope,
+    bool IsPriorityOverride);
 
 /// <summary>
 /// Response for <c>GET /doc-type-permissions/path-entries</c>: the inheritance path plus all

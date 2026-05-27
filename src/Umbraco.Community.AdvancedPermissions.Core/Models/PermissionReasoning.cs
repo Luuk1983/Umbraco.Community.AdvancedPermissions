@@ -21,10 +21,15 @@ namespace Umbraco.Community.AdvancedPermissions.Core.Models;
 /// <see langword="true"/> if this permission comes from the Umbraco group's default permissions
 /// rather than an explicit advanced security entry.
 /// </param>
+/// <param name="IsPriorityOverride">
+/// <see langword="true"/> if the contributing entry carried the priority-override flag. Reported
+/// per-reasoning-line so the Access Viewer can surface which entries used the override path.
+/// </param>
 public sealed record PermissionReasoning(
     string ContributingRole,
     PermissionState State,
     bool IsExplicit,
     Guid SourceNodeKey,
     PermissionScope? SourceScope,
-    bool IsFromGroupDefault);
+    bool IsFromGroupDefault,
+    bool IsPriorityOverride = false);

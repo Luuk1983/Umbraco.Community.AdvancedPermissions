@@ -55,6 +55,8 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
   // ── Permission dialog ───────────────────────────────────────────────────
   @state() private _pickerNode: TreeNodeState | null = null;
   @state() private _pickerVerb: string | null = null;
+  @state() private _pickerNodeIsPriorityOverride = false;
+  @state() private _pickerDescIsPriorityOverride = false;
   @state() private _pickerIsVirtualRoot = false;
   @state() private _pickerNodeState: 'inherit' | 'allow' | 'deny' = 'inherit';
   @state() private _pickerDescState: 'inherit' | 'allow' | 'deny' = 'inherit';
@@ -316,11 +318,15 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       this._pickerNodeState = first ? (first.state === 'Allow' ? 'allow' : 'deny') : 'inherit';
       this._pickerDescState = 'inherit';
       this._pickerSameAsNode = true;
+      this._pickerNodeIsPriorityOverride = first?.isPriorityOverride === true;
+      this._pickerDescIsPriorityOverride = false;
     } else {
       const decomposed = decomposeEntries(entries);
       this._pickerNodeState = decomposed.nodeState;
       this._pickerDescState = decomposed.descState;
       this._pickerSameAsNode = decomposed.sameAsNode;
+      this._pickerNodeIsPriorityOverride = decomposed.nodeIsPriorityOverride;
+      this._pickerDescIsPriorityOverride = decomposed.descIsPriorityOverride;
     }
 
     void this.updateComplete.then(() => this._scopeDialog.open());
@@ -350,17 +356,22 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
         if (!node) continue;
 
         // Build the complete new entry list: start from stored, apply pending verb changes
-        const byVerb = new Map<string, Array<{ verb: string; state: PermissionState; scope: PermissionScope }>>();
+        const byVerb = new Map<string, Array<{ verb: string; state: PermissionState; scope: PermissionScope; isPriorityOverride: boolean }>>();
         for (const e of node.entries) {
           const list = byVerb.get(e.verb) ?? [];
-          list.push({ verb: e.verb, state: e.state, scope: e.scope });
+          list.push({ verb: e.verb, state: e.state, scope: e.scope, isPriorityOverride: e.isPriorityOverride });
           byVerb.set(e.verb, list);
         }
         for (const [verb, pending] of verbChanges) {
           if (pending.length === 0) {
             byVerb.delete(verb);
           } else {
-            byVerb.set(verb, pending.map((pe) => ({ verb, state: pe.state, scope: pe.scope })));
+            byVerb.set(verb, pending.map((pe) => ({
+              verb,
+              state: pe.state,
+              scope: pe.scope,
+              isPriorityOverride: pe.isPriorityOverride,
+            })));
           }
         }
 
@@ -375,6 +386,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
           verb: e.verb,
           state: e.state,
           scope: e.scope,
+          isPriorityOverride: e.isPriorityOverride,
         }));
         this.#updateNode(nodeKey, { entries: saved });
       }
@@ -436,11 +448,16 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
   #renderCell(node: TreeNodeState, verb: string) {
     const entries = this.#getCellEntries(node, verb);
     const isPending = this._pendingChanges.get(node.key)?.has(verb) ?? false;
+    // getCellInfo carries per-side priority-override flags, so the gold theme is applied
+    // automatically by uap-perm-block (per half in split cells).
     const info = getCellInfo(entries);
 
     return html`
       <td class="perm-td" title=${verb} @click=${() => this.#openPicker(node, verb)}>
-        <uap-perm-block .info=${info} ?pending=${isPending}></uap-perm-block>
+        <uap-perm-block
+          .info=${info}
+          ?pending=${isPending}
+          priority-override-title=${this.#localize.term('uap_priorityOverrideBadgeTitle')}></uap-perm-block>
       </td>
     `;
   }
@@ -464,6 +481,8 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
         .initialNodeState=${this._pickerNodeState}
         .initialDescState=${this._pickerDescState}
         .initialSameAsNode=${this._pickerSameAsNode}
+        .initialNodeIsPriorityOverride=${this._pickerNodeIsPriorityOverride}
+        .initialDescIsPriorityOverride=${this._pickerDescIsPriorityOverride}
         @uap-scope-apply=${(e: CustomEvent<{ entries: PendingVerbEntries }>) => this.#handleScopeApply(e)}>
       </uap-permission-scope-dialog>
     `;

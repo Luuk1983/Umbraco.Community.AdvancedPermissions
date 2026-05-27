@@ -63,6 +63,8 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
   @state() private _pickerNodeState: 'inherit' | 'allow' | 'deny' = 'inherit';
   @state() private _pickerDescState: 'inherit' | 'allow' | 'deny' = 'inherit';
   @state() private _pickerSameAsNode = true;
+  @state() private _pickerNodeIsPriorityOverride = false;
+  @state() private _pickerDescIsPriorityOverride = false;
 
   @query('uap-permission-scope-dialog') private _scopeDialog!: UapPermissionScopeDialogElement;
 
@@ -230,6 +232,7 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
         verb: e.verb,
         state: e.state,
         scope: e.scope,
+        isPriorityOverride: e.isPriorityOverride,
       });
       map.set(e.nodeKey, list);
     }
@@ -301,11 +304,15 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
       this._pickerNodeState = first ? (first.state === 'Allow' ? 'allow' : 'deny') : 'inherit';
       this._pickerDescState = 'inherit';
       this._pickerSameAsNode = true;
+      this._pickerNodeIsPriorityOverride = first?.isPriorityOverride === true;
+      this._pickerDescIsPriorityOverride = false;
     } else {
       const decomposed = decomposeEntries(entries);
       this._pickerNodeState = decomposed.nodeState;
       this._pickerDescState = decomposed.descState;
       this._pickerSameAsNode = decomposed.sameAsNode;
+      this._pickerNodeIsPriorityOverride = decomposed.nodeIsPriorityOverride;
+      this._pickerDescIsPriorityOverride = decomposed.descIsPriorityOverride;
     }
 
     void this.updateComplete.then(() => this._scopeDialog.open());
@@ -330,7 +337,12 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
     try {
       for (const [nodeKey, pending] of this._pendingChanges) {
         const apiKey = nodeKey === VIRTUAL_ROOT_LOCAL_KEY ? VIRTUAL_ROOT_NODE_KEY : nodeKey;
-        const entriesToSave = pending.map((p) => ({ verb: VERB, state: p.state, scope: p.scope }));
+        const entriesToSave = pending.map((p) => ({
+          verb: VERB,
+          state: p.state,
+          scope: p.scope,
+          isPriorityOverride: p.isPriorityOverride,
+        }));
         await saveDocTypePermissions(apiKey, role, ctKey, entriesToSave);
 
         const saved: PermissionEntry[] = entriesToSave.map((e, idx) => ({
@@ -340,6 +352,7 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
           verb: e.verb,
           state: e.state,
           scope: e.scope,
+          isPriorityOverride: e.isPriorityOverride,
         }));
         this.#updateNode(nodeKey, { entries: saved });
       }
@@ -409,7 +422,10 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
           </div>
         </td>
         <td class="perm-td" @click=${() => this.#openPicker(node)}>
-          <uap-perm-block .info=${info} ?pending=${isPending}></uap-perm-block>
+          <uap-perm-block
+            .info=${info}
+            ?pending=${isPending}
+            priority-override-title=${this.#localize.term('uap_priorityOverrideBadgeTitle')}></uap-perm-block>
         </td>
       </tr>
     `;
@@ -489,6 +505,8 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
         .initialNodeState=${this._pickerNodeState}
         .initialDescState=${this._pickerDescState}
         .initialSameAsNode=${this._pickerSameAsNode}
+        .initialNodeIsPriorityOverride=${this._pickerNodeIsPriorityOverride}
+        .initialDescIsPriorityOverride=${this._pickerDescIsPriorityOverride}
         @uap-scope-apply=${(e: CustomEvent<{ entries: PendingVerbEntries }>) => this.#handleScopeApply(e)}>
       </uap-permission-scope-dialog>
     `;

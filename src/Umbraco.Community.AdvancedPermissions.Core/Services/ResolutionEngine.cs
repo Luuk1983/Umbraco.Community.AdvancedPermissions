@@ -34,6 +34,17 @@ namespace Umbraco.Community.AdvancedPermissions.Core.Services;
 ///   <item>No opinion from any role → the supplied <c>defaultState</c></item>
 /// </list>
 /// </para>
+/// <para>
+/// <b>Priority override.</b> The walk, scope handling, and the explicit-beats-implicit priority
+/// above are unchanged by the override. The override is purely a cross-role tie-breaker applied
+/// <em>within the tier that already decides the outcome</em>: once the active tier is selected
+/// (explicit if any role has an explicit entry, otherwise implicit), if any candidate in that
+/// tier carries <see cref="ResolutionEntry.IsPriorityOverride"/>, only the flagged candidates in
+/// that tier are considered. Because an explicit entry on a node always outranks anything
+/// inherited, a flagged inherited rule can never beat a non-flagged explicit rule on a descendant
+/// — the override is the escape hatch for the otherwise-unbeatable cross-role Explicit Deny, and
+/// it respects each rule's scope rather than introducing any new inheritance.
+/// </para>
 /// </remarks>
 public static class ResolutionEngine
 {
@@ -56,7 +67,7 @@ public static class ResolutionEngine
     /// <see cref="PermissionState.Allow"/>.
     /// </param>
     /// <returns>
-    /// The effective permission together with the full reasoning chain for the Access Viewer.
+    /// The effective permission together with the reasoning chain for the Access Viewer.
     /// </returns>
     public static EffectivePermission Resolve(
         IReadOnlyList<Guid> pathFromRoot,
@@ -123,7 +134,8 @@ public static class ResolutionEngine
                     State: entry.State,
                     IsExplicit: depth == 0,
                     SourceNodeKey: nodeKey,
-                    SourceScope: entry.Scope);
+                    SourceScope: entry.Scope,
+                    IsPriorityOverride: entry.IsPriorityOverride);
             }
         }
 
@@ -145,7 +157,8 @@ public static class ResolutionEngine
                 State: entry.State,
                 IsExplicit: false,
                 SourceNodeKey: AdvancedPermissionsConstants.VirtualRootNodeKey,
-                SourceScope: entry.Scope);
+                SourceScope: entry.Scope,
+                IsPriorityOverride: entry.IsPriorityOverride);
         }
 
         return null;
@@ -167,10 +180,14 @@ public static class ResolutionEngine
         };
 
     /// <summary>
-    /// Builds the final <see cref="EffectivePermission"/> from the collected role results
-    /// by applying the priority order. Falls back to <paramref name="defaultState"/> when no role
-    /// expressed an opinion.
+    /// Builds the final <see cref="EffectivePermission"/> from the collected role results.
     /// </summary>
+    /// <remarks>
+    /// Selects the active tier (explicit if any role has an explicit entry on the target node,
+    /// otherwise implicit), then applies the priority-override tie-breaker <em>within</em> that
+    /// tier: if any candidate in the active tier is flagged, only flagged candidates count.
+    /// Finally Deny beats Allow among the surviving candidates.
+    /// </remarks>
     /// <param name="verb">The permission verb (label only).</param>
     /// <param name="roleResults">Per-role results collected during resolution.</param>
     /// <param name="defaultState">Default state when no role has any opinion.</param>
@@ -180,83 +197,68 @@ public static class ResolutionEngine
         IReadOnlyList<RolePermissionResult> roleResults,
         PermissionState defaultState)
     {
-        var explicitDenies = roleResults.Where(r => r.State == PermissionState.Deny && r.IsExplicit).ToList();
-        var explicitAllows = roleResults.Where(r => r.State == PermissionState.Allow && r.IsExplicit).ToList();
-        var implicitDenies = roleResults.Where(r => r.State == PermissionState.Deny && !r.IsExplicit).ToList();
-        var implicitAllows = roleResults.Where(r => r.State == PermissionState.Allow && !r.IsExplicit).ToList();
+        var explicitCandidates = roleResults.Where(r => r.IsExplicit).ToList();
+        var implicitCandidates = roleResults.Where(r => !r.IsExplicit).ToList();
 
-        if (explicitDenies.Count > 0)
+        // Active tier: explicit beats implicit (unchanged from the base algorithm).
+        var isExplicitTier = explicitCandidates.Count > 0;
+        var activeTier = isExplicitTier ? explicitCandidates : implicitCandidates;
+
+        if (activeTier.Count == 0)
         {
+            // No role had an opinion — use caller's default.
             return new EffectivePermission(
                 Verb: verb,
-                IsAllowed: false,
-                IsExplicit: true,
-                Reasoning: BuildReasoning(explicitDenies, explicitAllows, implicitDenies, implicitAllows));
-        }
-
-        if (explicitAllows.Count > 0)
-        {
-            return new EffectivePermission(
-                Verb: verb,
-                IsAllowed: true,
-                IsExplicit: true,
-                Reasoning: BuildReasoning(explicitDenies, explicitAllows, implicitDenies, implicitAllows));
-        }
-
-        if (implicitDenies.Count > 0)
-        {
-            return new EffectivePermission(
-                Verb: verb,
-                IsAllowed: false,
+                IsAllowed: defaultState == PermissionState.Allow,
                 IsExplicit: false,
-                Reasoning: BuildReasoning(explicitDenies, explicitAllows, implicitDenies, implicitAllows));
+                Reasoning: []);
         }
 
-        if (implicitAllows.Count > 0)
+        // Priority override: within the active tier, flagged entries take precedence.
+        var flaggedInTier = activeTier.Where(r => r.IsPriorityOverride).ToList();
+        var overrideActive = flaggedInTier.Count > 0;
+        var effectiveTier = overrideActive ? flaggedInTier : activeTier;
+
+        // Deny beats Allow among the surviving candidates.
+        var denies = effectiveTier.Where(r => r.State == PermissionState.Deny).ToList();
+        var allows = effectiveTier.Where(r => r.State == PermissionState.Allow).ToList();
+        var isAllowed = denies.Count == 0;
+
+        // Reasoning lists the winner(s) first: denies (if they won) then allows.
+        var reasoning = denies.Concat(allows).Select(MapToReasoning).ToList();
+
+        // Suppressed: the active-tier candidates dropped because the override fired.
+        IReadOnlyList<PermissionReasoning>? suppressedReasoning = null;
+        if (overrideActive)
         {
-            return new EffectivePermission(
-                Verb: verb,
-                IsAllowed: true,
-                IsExplicit: false,
-                Reasoning: BuildReasoning(explicitDenies, explicitAllows, implicitDenies, implicitAllows));
+            var dropped = activeTier.Where(r => !r.IsPriorityOverride).ToList();
+            if (dropped.Count > 0)
+            {
+                suppressedReasoning = dropped.Select(MapToReasoning).ToList();
+            }
         }
 
-        // No role had an opinion — use caller's default.
         return new EffectivePermission(
             Verb: verb,
-            IsAllowed: defaultState == PermissionState.Allow,
-            IsExplicit: false,
-            Reasoning: []);
+            IsAllowed: isAllowed,
+            IsExplicit: isExplicitTier,
+            Reasoning: reasoning,
+            WasPriorityOverrideActive: overrideActive,
+            SuppressedReasoning: suppressedReasoning);
     }
 
     /// <summary>
-    /// Builds the reasoning list from all collected role results, ordered by priority:
-    /// explicit denies → explicit allows → implicit denies → implicit allows.
+    /// Maps a <see cref="RolePermissionResult"/> to a <see cref="PermissionReasoning"/> entry.
     /// </summary>
-    /// <param name="explicitDenies">Roles with an explicit deny on the target node.</param>
-    /// <param name="explicitAllows">Roles with an explicit allow on the target node.</param>
-    /// <param name="implicitDenies">Roles with an inherited deny.</param>
-    /// <param name="implicitAllows">Roles with an inherited allow.</param>
-    /// <returns>An ordered list of reasoning entries for the Access Viewer.</returns>
-    private static IReadOnlyList<PermissionReasoning> BuildReasoning(
-        IEnumerable<RolePermissionResult> explicitDenies,
-        IEnumerable<RolePermissionResult> explicitAllows,
-        IEnumerable<RolePermissionResult> implicitDenies,
-        IEnumerable<RolePermissionResult> implicitAllows)
-    {
-        var ordered = explicitDenies
-            .Concat(explicitAllows)
-            .Concat(implicitDenies)
-            .Concat(implicitAllows);
-
-        return ordered
-            .Select(r => new PermissionReasoning(
-                ContributingRole: r.RoleAlias,
-                State: r.State,
-                IsExplicit: r.IsExplicit,
-                SourceNodeKey: r.SourceNodeKey,
-                SourceScope: r.SourceScope,
-                IsFromGroupDefault: r.SourceNodeKey == AdvancedPermissionsConstants.VirtualRootNodeKey))
-            .ToList();
-    }
+    /// <param name="r">The result to convert.</param>
+    /// <returns>The corresponding reasoning entry.</returns>
+    private static PermissionReasoning MapToReasoning(RolePermissionResult r) =>
+        new(
+            ContributingRole: r.RoleAlias,
+            State: r.State,
+            IsExplicit: r.IsExplicit,
+            SourceNodeKey: r.SourceNodeKey,
+            SourceScope: r.SourceScope,
+            IsFromGroupDefault: r.SourceNodeKey == AdvancedPermissionsConstants.VirtualRootNodeKey,
+            IsPriorityOverride: r.IsPriorityOverride);
 }

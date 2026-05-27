@@ -121,7 +121,7 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
     public async Task SaveAsync(
         Guid nodeKey,
         string roleAlias,
-        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope)> entries,
+        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
         CancellationToken cancellationToken = default)
     {
         var newEntries = entries.ToList();
@@ -136,7 +136,7 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
         // Add the new entries
         if (newEntries.Count > 0)
         {
-            foreach (var (verb, state, scope) in newEntries)
+            foreach (var (verb, state, scope, isPriorityOverride) in newEntries)
             {
                 db.Permissions.Add(new AdvancedPermissionEntity
                 {
@@ -146,6 +146,7 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
                     Verb = verb,
                     State = state,
                     Scope = scope,
+                    IsPriorityOverride = isPriorityOverride,
                 });
             }
 
@@ -199,5 +200,5 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
     /// <param name="entity">The entity to map.</param>
     /// <returns>The corresponding domain model.</returns>
     private static AdvancedPermissionEntry MapToDomain(AdvancedPermissionEntity entity) =>
-        new(entity.Id, entity.NodeKey, entity.RoleAlias, entity.Verb, entity.State, entity.Scope);
+        new(entity.Id, entity.NodeKey, entity.RoleAlias, entity.Verb, entity.State, entity.Scope, entity.IsPriorityOverride);
 }

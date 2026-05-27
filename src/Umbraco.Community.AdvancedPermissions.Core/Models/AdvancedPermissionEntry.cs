@@ -16,10 +16,19 @@ namespace Umbraco.Community.AdvancedPermissions.Core.Models;
 /// <param name="Verb">The permission verb, e.g. <c>Umb.Document.Read</c>.</param>
 /// <param name="State">Whether this entry allows or denies the permission.</param>
 /// <param name="Scope">The scope at which this entry takes effect within the tree.</param>
+/// <param name="IsPriorityOverride">
+/// When <see langword="true"/> on an entry that applies at the target node itself (depth 0),
+/// the resolver switches into a "consider only priority-override entries on this node, for this
+/// verb" mode — modelled after CSS <c>!important</c>. The flag has node-local, verb-local effect
+/// only: it does not propagate through inheritance, and it has no effect at any other node or for
+/// any other verb. Its purpose is to provide an escape hatch for the otherwise-unoverridable
+/// cross-role Explicit Deny when a user belongs to multiple user groups.
+/// </param>
 public sealed record AdvancedPermissionEntry(
     Guid Id,
     Guid NodeKey,
     string RoleAlias,
     string Verb,
     PermissionState State,
-    PermissionScope Scope);
+    PermissionScope Scope,
+    bool IsPriorityOverride = false);

@@ -354,6 +354,10 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
           for (const step of row.reasoning) {
             relevantRoles.add(step.contributingRole);
           }
+          // Include roles suppressed by a priority override so they still appear in the chain.
+          for (const step of row.suppressedReasoning ?? []) {
+            relevantRoles.add(step.contributingRole);
+          }
         }
       }
 
@@ -376,6 +380,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
           verb: entry.verb,
           state: entry.state,
           scope: entry.scope,
+          isPriorityOverride: entry.isPriorityOverride,
         });
         roleMap.set(entry.roleAlias, list);
         byNode.set(entry.nodeKey, roleMap);
@@ -478,12 +483,15 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     }
 
     const cls: 'allow' | 'deny' = row.isAllowed ? 'allow' : 'deny';
-    const info: CellInfo = { split: false, nodeClass: cls, descClass: cls };
+    const wasOverride = row.wasPriorityOverrideActive === true;
+    const info: CellInfo = { split: false, nodeClass: cls, descClass: cls, nodeOverride: wasOverride, descOverride: wasOverride };
     return html`
       <td class="perm-td"
         title=${this.#localize.term('uap_clickForReasoning', row.isAllowed ? this.#localize.term('uap_allow') : this.#localize.term('uap_deny'))}
         @click=${() => void this.#openReasoning(node, ctKey)}>
-        <uap-perm-block .info=${info}></uap-perm-block>
+        <uap-perm-block
+          .info=${info}
+          priority-override-title=${this.#localize.term('uap_priorityOverrideWonTitle')}></uap-perm-block>
       </td>
     `;
   }
@@ -498,6 +506,8 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
       isAllowed: row.isAllowed,
       isExplicit: row.isExplicit,
       reasoning: row.reasoning,
+      wasPriorityOverrideActive: row.wasPriorityOverrideActive,
+      suppressedReasoning: row.suppressedReasoning,
     };
   }
 

@@ -46,4 +46,11 @@ public sealed class DocTypePermissionEntity
     /// Gets or sets the scope at which this entry applies within the content tree.
     /// </summary>
     public PermissionScope Scope { get; set; }
+
+    /// <summary>
+    /// Gets or sets the priority-override flag. Same semantics as on
+    /// <see cref="AdvancedPermissionEntity"/> — node-local, verb-local escape hatch for the
+    /// cross-role Explicit Deny. Default <see langword="false"/>.
+    /// </summary>
+    public bool IsPriorityOverride { get; set; }
 }

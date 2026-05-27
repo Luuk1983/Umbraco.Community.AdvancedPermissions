@@ -34,6 +34,11 @@ export class UapPermBlockElement extends LitElement {
   /** When true, applies the dashed-border "unsaved" highlight. */
   @property({ type: Boolean }) pending = false;
 
+  /**
+   * Optional tooltip text shown on hover of an override-themed cell/half. Purely informational.
+   */
+  @property({ attribute: 'priority-override-title' }) priorityOverrideTitle = '';
+
   override render(): TemplateResult {
     if (this.loading) {
       return html`<div class="perm-block loading">${nothing}…</div>`;
@@ -44,13 +49,20 @@ export class UapPermBlockElement extends LitElement {
     }
     const info = this.info ?? { split: false, nodeClass: 'inherit' as const, descClass: 'inherit' as const };
     const pendingCls = this.pending ? ' pending' : '';
+    // Priority-override sides are themed gold: the allow/deny colour is replaced, but the ✓/✗
+    // icon still conveys the underlying state. This trades the colour cue for a clear
+    // "this is an override" signal — acceptable because overrides are expected to be rare.
+    const nodeOverride = info.nodeOverride === true && info.nodeClass !== 'inherit';
+    const descOverride = info.descOverride === true && info.descClass !== 'inherit';
     if (!info.split) {
-      return html`<div class="perm-block uniform ${info.nodeClass}${pendingCls}">${stateIcon(info.nodeClass)}</div>`;
+      const overrideCls = nodeOverride ? ' override' : '';
+      const title = nodeOverride ? this.priorityOverrideTitle : '';
+      return html`<div class="perm-block uniform ${info.nodeClass}${overrideCls}${pendingCls}" title=${title}>${stateIcon(info.nodeClass)}</div>`;
     }
     return html`
       <div class="perm-block split${pendingCls}">
-        <span class="half ${info.nodeClass}">${stateIcon(info.nodeClass)}</span>
-        <span class="half ${info.descClass}">${stateIcon(info.descClass)}</span>
+        <span class="half ${info.nodeClass}${nodeOverride ? ' override' : ''}" title=${nodeOverride ? this.priorityOverrideTitle : ''}>${stateIcon(info.nodeClass)}</span>
+        <span class="half ${info.descClass}${descOverride ? ' override' : ''}" title=${descOverride ? this.priorityOverrideTitle : ''}>${stateIcon(info.descClass)}</span>
       </div>
     `;
   }
@@ -62,6 +74,7 @@ export class UapPermBlockElement extends LitElement {
     }
 
     .perm-block {
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -71,6 +84,14 @@ export class UapPermBlockElement extends LitElement {
       user-select: none;
       overflow: hidden;
       cursor: pointer;
+    }
+
+    /* ── Priority-override gold theme (uniform block) ─────────────
+       Replaces the allow/deny fill with gold. The ✓/✗ icon still conveys allow vs deny. */
+    .perm-block.uniform.override {
+      background: #f4e6bd;
+      color: #7a5c12;
+      border-color: #c8a23a;
     }
 
     .perm-block:hover {
@@ -154,6 +175,12 @@ export class UapPermBlockElement extends LitElement {
     .half.deny {
       background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
       color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
+    }
+
+    /* Gold theme per half — overrides the allow/deny half colours. */
+    .half.override {
+      background: #f4e6bd;
+      color: #7a5c12;
     }
   `;
 }

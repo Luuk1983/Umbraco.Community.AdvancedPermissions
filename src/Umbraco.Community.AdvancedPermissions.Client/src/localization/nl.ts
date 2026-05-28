@@ -71,6 +71,7 @@ export default {
     legendAllow: 'Toestaan',
     legendDeny: 'Weigeren',
     clickForReasoning: (label: string) => `${label} \u2014 klik voor onderbouwing`,
+    subjectOr: 'of',
 
     // ── Rolkiezerdialoog ──────────────────────────────────────────────────
     rolePickerHeadline: 'Selecteer een gebruikersgroep',
@@ -94,6 +95,8 @@ export default {
     defaultPermissions: 'Standaardmachtigingen',
     determiningEntry: 'Deze vermelding heeft voorrang',
     noReasoningData: 'Geen machtigingsgegevens beschikbaar voor dit recht.',
+    defaultAllowNote: 'Er zijn geen machtigingen ingesteld, dit is standaard toegestaan.',
+    defaultDenyNote: 'Er zijn geen machtigingen ingesteld, dit wordt standaard geweigerd.',
 
     // ── Omleidingsbericht granulaire machtigingen ─────────────────────────
     redirectMessage:
@@ -119,6 +122,10 @@ export default {
     docTypePermissions_allDocTypes: 'Alle documenttypes',
     docTypePermissions_verbInsert: 'Invoegen',
     docTypePermissions_documentType: 'Documenttype',
+    chooseDocType: 'Kies documenttype',
+    notAnInsertOption: 'Dit documenttype is momenteel geen invoegoptie op deze pagina.',
+    notAnInsertOptionAllowedNote: 'Dit documenttype is geen invoegoptie op deze pagina, maar zou anders worden toegestaan.',
+    notAnInsertOptionDeniedNote: 'Dit documenttype is geen invoegoptie op deze pagina, maar zou anders worden geweigerd.',
     docTypePermissions_pickDocType: '— Selecteer een documenttype —',
     docTypePermissions_pickToStart: 'Kies een gebruikersgroep en documenttype om te beginnen.',
     docTypePermissions_defaultRowLabel: 'Standaard (geldt overal)',
@@ -132,6 +139,5 @@ export default {
     docTypePermissions_reasoning: 'Onderbouwing',
     docTypePermissions_defaultAllow: 'Standaard toegestaan',
     docTypePermissions_viaDefault: 'via standaardregel',
-    docTypePermissions_notInAllowedChildren: 'Niet in de lijst met toegestane onderliggende types',
   },
 } satisfies UmbLocalizationDictionary;

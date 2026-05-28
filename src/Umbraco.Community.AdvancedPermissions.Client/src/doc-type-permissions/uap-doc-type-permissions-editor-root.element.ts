@@ -18,6 +18,7 @@ import { type PendingVerbEntries } from '../utils/compose-entries.js';
 import { getCellInfo, type CellInfo } from '../utils/cell-info.js';
 import { updateNode } from '../utils/tree-ops.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
+import { UMB_DOCUMENT_TYPE_PICKER_MODAL } from '@umbraco-cms/backoffice/document-type';
 import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-permission-scope-dialog.element.js';
@@ -122,11 +123,30 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
     }
   }
 
-  #selectDocType(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const key = select.value;
+  /**
+   * Opens Umbraco's built-in document-type tree picker, excluding element types and folders.
+   * The picked GUID is mapped back to a `DocTypeListItem` (for its name/icon) via the already
+   * loaded `_docTypes` list, then the existing reload/load flow runs.
+   */
+  async #openDocTypePicker(): Promise<void> {
+    if (!this.#modalManager) return;
+    const modal = this.#modalManager.open(this, UMB_DOCUMENT_TYPE_PICKER_MODAL, {
+      data: {
+        hideTreeRoot: true,
+        pickableFilter: (item) => !item.isFolder && item.isElement === false,
+      },
+      value: { selection: this._selectedDocType ? [this._selectedDocType.key] : [] },
+    });
+    const value = await modal.onSubmit().catch(() => undefined);
+    if (!value) return;
+
+    const key = value.selection?.[0];
+    const picked = key
+      ? (this._docTypes.find((dt) => dt.key.toLowerCase() === key.toLowerCase()) ?? null)
+      : null;
+
     const hadTree = this._treeNodes.length > 0 && this._selectedRole !== null && this._selectedDocType !== null;
-    this._selectedDocType = this._docTypes.find((dt) => dt.key === key) ?? null;
+    this._selectedDocType = picked;
     this._pendingChanges = new Map();
     if (!this._selectedDocType) {
       this._treeNodes = [];
@@ -450,15 +470,12 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
             @click=${() => void this.#openRolePicker()}>
           </uap-picker-button>
 
-          <label class="doctype-picker">
-            <span>${this.#localize.term('uap_docTypePermissions_documentType')}:</span>
-            <select @change=${(e: Event) => this.#selectDocType(e)} .value=${this._selectedDocType?.key ?? ''}>
-              <option value="">${this.#localize.term('uap_docTypePermissions_pickDocType')}</option>
-              ${this._docTypes.map((dt) => html`
-                <option value=${dt.key} ?selected=${dt.key === this._selectedDocType?.key}>${dt.name}</option>
-              `)}
-            </select>
-          </label>
+          <uap-picker-button
+            label=${this.#localize.term('uap_chooseDocType')}
+            .selectedName=${this._selectedDocType?.name ?? ''}
+            icon=${this._selectedDocType?.icon ?? 'icon-document'}
+            @click=${() => void this.#openDocTypePicker()}>
+          </uap-picker-button>
 
           ${hasPending
             ? html`
@@ -523,20 +540,6 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
       background: var(--uui-color-surface, #fff);
       border-bottom: 1px solid var(--uui-color-border, #e0e0e0);
       flex-wrap: wrap;
-    }
-
-    .doctype-picker {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-    }
-    .doctype-picker select {
-      padding: 4px 8px;
-      border: 1px solid var(--uui-color-border, #ddd);
-      border-radius: 4px;
-      background: var(--uui-color-surface, #fff);
-      min-width: 220px;
     }
 
     .loading { display: flex; justify-content: center; padding: 32px; }

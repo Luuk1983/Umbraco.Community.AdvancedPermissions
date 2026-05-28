@@ -24,6 +24,7 @@ import { updateNode } from '../utils/tree-ops.js';
 import type { CellInfo } from '../utils/cell-info.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
 import { UAP_USER_PICKER_MODAL } from '../access-viewer/user-picker-modal.token.js';
+import { UMB_DOCUMENT_TYPE_PICKER_MODAL } from '@umbraco-cms/backoffice/document-type';
 import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
@@ -474,23 +475,29 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     }
 
     const row = node.auditResults.get(ctKey);
-    if (!row || !row.isInAllowedChildren) {
-      return html`
-        <td class="perm-td" title=${this.#localize.term('uap_docTypePermissions_notInAllowedChildren')}>
-          <uap-perm-block na></uap-perm-block>
-        </td>
-      `;
+    // Genuine fallback only: every non-element doc type should have a row, so a missing row is
+    // an unexpected edge case (e.g. a stale doc-type list) — keep the striped N/A for it.
+    if (!row) {
+      return html`<td class="perm-td"><uap-perm-block na></uap-perm-block></td>`;
     }
 
     const cls: 'allow' | 'deny' = row.isAllowed ? 'allow' : 'deny';
     const wasOverride = row.wasPriorityOverrideActive === true;
     const info: CellInfo = { split: false, nodeClass: cls, descClass: cls, nodeOverride: wasOverride, descOverride: wasOverride };
+    // When the doc type isn't currently an insert option on this node we still show its real
+    // allow/deny (dimmed + dashed) and keep it clickable — the resolution is informative even
+    // though Umbraco wouldn't currently offer it here.
+    const outside = !row.isInAllowedChildren;
+    const title = outside
+      ? this.#localize.term('uap_notAnInsertOption')
+      : this.#localize.term('uap_clickForReasoning', row.isAllowed ? this.#localize.term('uap_allow') : this.#localize.term('uap_deny'));
     return html`
       <td class="perm-td"
-        title=${this.#localize.term('uap_clickForReasoning', row.isAllowed ? this.#localize.term('uap_allow') : this.#localize.term('uap_deny'))}
+        title=${title}
         @click=${() => void this.#openReasoning(node, ctKey)}>
         <uap-perm-block
           .info=${info}
+          ?outside-allowed=${outside}
           priority-override-title=${this.#localize.term('uap_priorityOverrideWonTitle')}></uap-perm-block>
       </td>
     `;
@@ -511,6 +518,13 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     };
   }
 
+  /** True when the reasoning dialog's doc type isn't an insert option on the target node. */
+  #currentOutsideAllowed(): boolean {
+    if (!this._reasoningNode || !this._reasoningContentTypeKey) return false;
+    const row = this._reasoningNode.auditResults?.get(this._reasoningContentTypeKey);
+    return row ? !row.isInAllowedChildren : false;
+  }
+
   #currentSubjectName(): string {
     if (this._activeSubject === 'role') return this._selectedRole?.name ?? '';
     if (this._activeSubject === 'user') return this._selectedUser?.name ?? '';
@@ -526,14 +540,26 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   }
 
   /**
-   * Reacts to the doc-type dropdown changing. Empty value clears the selection so the audit
-   * table hides; selecting a specific doc-type shows the verb columns for it.
+   * Opens Umbraco's built-in document-type tree picker, excluding element types and folders.
+   * The picked GUID is mapped back to a `DocTypeListItem` (for its name/icon) via the already
+   * loaded `_docTypes` list. The audit table re-renders off `_selectedDocType` — no tree reload
+   * is needed here since the columns are doc-type-driven, not subject-driven.
    */
-  #onDocTypeChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const key = select.value;
+  async #openDocTypePicker(): Promise<void> {
+    if (!this.#modalManager) return;
+    const modal = this.#modalManager.open(this, UMB_DOCUMENT_TYPE_PICKER_MODAL, {
+      data: {
+        hideTreeRoot: true,
+        pickableFilter: (item) => !item.isFolder && item.isElement === false,
+      },
+      value: { selection: this._selectedDocType ? [this._selectedDocType.key] : [] },
+    });
+    const value = await modal.onSubmit().catch(() => undefined);
+    if (!value) return;
+
+    const key = value.selection?.[0];
     this._selectedDocType = key
-      ? (this._docTypes.find((d) => d.key === key) ?? null)
+      ? (this._docTypes.find((d) => d.key.toLowerCase() === key.toLowerCase()) ?? null)
       : null;
   }
 
@@ -549,6 +575,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
             icon="icon-users"
             @click=${() => void this.#openRolePicker()}>
           </uap-picker-button>
+          <span class="picker-or">${this.#localize.term('uap_subjectOr')}</span>
           <uap-picker-button
             label=${this.#localize.term('uap_chooseUser')}
             .selectedName=${this._selectedUser?.name ?? ''}
@@ -556,17 +583,14 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
             @click=${() => void this.#openUserPicker()}>
           </uap-picker-button>
 
-          <label class="doctype-filter">
-            <span>${this.#localize.term('uap_docTypePermissions_documentType')}:</span>
-            <select
-              @change=${(e: Event) => this.#onDocTypeChange(e)}
-              .value=${this._selectedDocType?.key ?? ''}>
-              <option value="">${this.#localize.term('uap_docTypePermissions_pickDocType')}</option>
-              ${this._docTypes.map((dt) => html`
-                <option value=${dt.key} ?selected=${dt.key === this._selectedDocType?.key}>${dt.name}</option>
-              `)}
-            </select>
-          </label>
+          <span class="toolbar-divider"></span>
+
+          <uap-picker-button
+            label=${this.#localize.term('uap_chooseDocType')}
+            .selectedName=${this._selectedDocType?.name ?? ''}
+            icon=${this._selectedDocType?.icon ?? 'icon-document'}
+            @click=${() => void this.#openDocTypePicker()}>
+          </uap-picker-button>
         </div>
 
         ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
@@ -607,6 +631,8 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
         .verbLabel=${this.#currentVerbLabel()}
         .nodeName=${this._reasoningNode?.name ?? ''}
         .loading=${this._dialogLoading}
+        .defaultState=${'allow'}
+        .outsideAllowed=${this.#currentOutsideAllowed()}
         .roleNameLookup=${this.#roleName}
         @uap-reasoning-close=${this.#onReasoningClose}>
       </uap-reasoning-dialog>
@@ -626,18 +652,20 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
       flex-wrap: wrap;
     }
 
-    .doctype-filter {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
+    .picker-or {
+      font-size: 12px;
+      color: var(--uui-color-text-alt, #888);
+      text-align: center;
+      align-self: center;
     }
-    .doctype-filter select {
-      padding: 4px 8px;
-      border: 1px solid var(--uui-color-border, #ddd);
-      border-radius: 4px;
-      background: var(--uui-color-surface, #fff);
-      min-width: 200px;
+
+    /* Vertical rule splitting the [user group · or · user] subject group from the
+       Document Type "and" section, like sections of a toolbar. */
+    .toolbar-divider {
+      width: 1px;
+      align-self: stretch;
+      margin: 4px 4px;
+      background: var(--uui-color-border, #e0e0e0);
     }
 
     .loading { display: flex; justify-content: center; padding: 32px; }

@@ -88,7 +88,7 @@ public sealed class DocTypePermissionsController(
         [FromBody] SaveDocTypePermissionsRequestModel request,
         CancellationToken cancellationToken)
     {
-        var mapped = new List<(string Verb, PermissionState State, PermissionScope Scope)>();
+        var mapped = new List<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>();
 
         foreach (var entry in request.Entries)
         {
@@ -122,7 +122,7 @@ public sealed class DocTypePermissionsController(
                 });
             }
 
-            mapped.Add((entry.Verb, state, scope));
+            mapped.Add((entry.Verb, state, scope, entry.IsPriorityOverride));
         }
 
         await docTypeService.SaveEditorEntriesAsync(
@@ -231,13 +231,9 @@ public sealed class DocTypePermissionsController(
                 IsAllowed: effective.IsAllowed,
                 IsExplicit: effective.IsExplicit,
                 IsInAllowedChildren: allowedChildren.Contains(ct.Key),
-                Reasoning: effective.Reasoning.Select(r => new ReasoningItem(
-                    r.ContributingRole,
-                    r.State.ToString(),
-                    r.IsExplicit,
-                    r.SourceNodeKey,
-                    r.SourceScope?.ToString(),
-                    r.IsFromGroupDefault)).ToList()));
+                Reasoning: effective.Reasoning.Select(MapReasoningItem).ToList(),
+                WasPriorityOverrideActive: effective.WasPriorityOverrideActive,
+                SuppressedReasoning: (effective.SuppressedReasoning ?? []).Select(MapReasoningItem).ToList()));
         }
 
         return Ok(new DocTypeAuditForNodeResponseModel(nodeKey, rows));
@@ -300,7 +296,8 @@ public sealed class DocTypePermissionsController(
                 e.RoleAlias,
                 e.Verb,
                 e.State.ToString(),
-                e.Scope.ToString()))
+                e.Scope.ToString(),
+                e.IsPriorityOverride))
             .ToList();
 
         return Ok(new DocTypePathEntriesResponseModel(pathNodes, mapped));
@@ -361,5 +358,22 @@ public sealed class DocTypePermissionsController(
             entry.RoleAlias,
             entry.Verb,
             entry.State.ToString(),
-            entry.Scope.ToString());
+            entry.Scope.ToString(),
+            entry.IsPriorityOverride);
+
+    /// <summary>
+    /// Maps a domain reasoning entry to the API <see cref="ReasoningItem"/> shape, threading
+    /// the priority-override flag through to the response.
+    /// </summary>
+    /// <param name="r">The domain reasoning entry.</param>
+    /// <returns>The mapped API item.</returns>
+    private static ReasoningItem MapReasoningItem(PermissionReasoning r) =>
+        new(
+            r.ContributingRole,
+            r.State.ToString(),
+            r.IsExplicit,
+            r.SourceNodeKey,
+            r.SourceScope?.ToString(),
+            r.IsFromGroupDefault,
+            r.IsPriorityOverride);
 }

@@ -102,6 +102,7 @@ export class UapReasoningDialogElement extends UmbLitElement {
                       </tbody>
                     </table>
                   </div>
+                  ${this.#renderSuppressedSection()}
                 `
               : html`<p class="no-reasoning">${this.#localize.term('uap_noReasoningData')}</p>`}
 
@@ -189,19 +190,34 @@ export class UapReasoningDialogElement extends UmbLitElement {
       `;
     }
 
+    // The determining entry is reasoning[0] — the resolver returns the actual winner first,
+    // including when a priority override fired. Star the (role, node) that matches it rather
+    // than guessing via a deny-wins heuristic.
+    const winner = this.effectivePerm?.reasoning?.[0];
+
     return html`
       <td class="dialog-security-cell">
         ${roleEntries.map(({ role, entries }) => {
-          const roleHasDeny = entries.some((e) => e.state === 'Deny');
-          const roleHasAllow = entries.some((e) => e.state === 'Allow');
-          const showStar = this.showStars && roleHasDeny && !roleHasAllow;
           const state = entries[0]?.state === 'Allow'
             ? 'allow'
             : entries[0]?.state === 'Deny' ? 'deny' : 'inherit';
-          const info: CellInfo = { split: false, nodeClass: state, descClass: state };
+          const hasPriorityOverride = entries.some((e) => e.isPriorityOverride);
+          const info: CellInfo = {
+            split: false,
+            nodeClass: state,
+            descClass: state,
+            nodeOverride: hasPriorityOverride,
+            descOverride: hasPriorityOverride,
+          };
+          const isWinner = winner !== undefined
+            && winner.contributingRole === role
+            && winner.sourceNodeKey === nodeKey;
+          const showStar = this.showStars && isWinner;
           return html`
             <div class="security-entry">
-              <uap-perm-block .info=${info}></uap-perm-block>
+              <uap-perm-block
+                .info=${info}
+                priority-override-title=${this.#localize.term('uap_priorityOverrideBadgeTitle')}></uap-perm-block>
               <span class="security-role">${this.roleNameLookup(role)}</span>
               ${showStar
                 ? html`<span class="winner-star" title=${this.#localize.term('uap_determiningEntry')}>★</span>`
@@ -210,6 +226,36 @@ export class UapReasoningDialogElement extends UmbLitElement {
           `;
         })}
       </td>
+    `;
+  }
+
+  /**
+   * Renders the "Priority override changed the result" section — shown ONLY when the override
+   * was actually decisive. The override can only ever flip the outcome Deny → Allow (suppressing
+   * a Deny that would otherwise have won), so it mattered exactly when the result is Allow AND a
+   * suppressed entry is a Deny. That suppressed Deny is the rule that would have won without it.
+   * No extra resolve is needed — both facts are already in the resolved permission.
+   */
+  #renderSuppressedSection(): TemplateResult {
+    const ep = this.effectivePerm;
+    if (!ep?.wasPriorityOverrideActive || !ep.isAllowed) {
+      return html``;
+    }
+    const wouldHaveWon = (ep.suppressedReasoning ?? []).filter((r) => r.state === 'Deny');
+    if (wouldHaveWon.length === 0) {
+      return html``;
+    }
+    const denyLabel = this.#localize.term('uap_deny');
+    return html`
+      <div class="suppressed-section">
+        <h4 class="suppressed-header">${this.#localize.term('uap_priorityOverrideSuppressedHeader')}</h4>
+        <p class="suppressed-hint">${this.#localize.term('uap_priorityOverrideSuppressedHint')}</p>
+        <ul class="suppressed-list">
+          ${wouldHaveWon.map((r) => html`
+            <li><strong>${denyLabel}</strong> — ${this.roleNameLookup(r.contributingRole)}</li>
+          `)}
+        </ul>
+      </div>
     `;
   }
 
@@ -339,6 +385,37 @@ export class UapReasoningDialogElement extends UmbLitElement {
     .no-reasoning {
       color: var(--uui-color-text-alt, #888);
       font-size: 13px;
+    }
+
+    /* ── Suppressed by priority override section ──────────────────── */
+    .suppressed-section {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--uui-color-warning, #f5a524) 8%, transparent);
+      border-left: 3px solid color-mix(in srgb, var(--uui-color-warning, #f5a524) 70%, transparent);
+    }
+
+    .suppressed-header {
+      margin: 0 0 4px;
+      font-size: 13px;
+      font-weight: 600;
+      color: color-mix(in srgb, var(--uui-color-warning, #b87013) 85%, #000);
+    }
+
+    .suppressed-hint {
+      margin: 0 0 8px;
+      font-size: 12px;
+      color: var(--uui-color-text-alt, #666);
+      line-height: 1.4;
+    }
+
+    .suppressed-list {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 12px;
+      color: var(--uui-color-text, #333);
+      line-height: 1.6;
     }
   `;
 }

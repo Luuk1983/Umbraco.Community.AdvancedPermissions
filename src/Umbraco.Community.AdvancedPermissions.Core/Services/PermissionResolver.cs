@@ -66,7 +66,8 @@ public sealed class PermissionResolver : IPermissionResolver
                 NodeKey: entry.NodeKey,
                 RoleAlias: entry.RoleAlias,
                 State: entry.State,
-                Scope: entry.Scope));
+                Scope: entry.Scope,
+                IsPriorityOverride: entry.IsPriorityOverride));
         }
 
         return result;

@@ -99,7 +99,7 @@ public interface IAdvancedPermissionRepository
     Task SaveAsync(
         Guid nodeKey,
         string roleAlias,
-        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope)> entries,
+        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
         CancellationToken cancellationToken = default);
 
     /// <summary>

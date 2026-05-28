@@ -18,11 +18,22 @@ public sealed record EffectivePermissionsResponseModel(
 /// <param name="Reasoning">
 /// The per-role contributions that led to the final result, ordered from highest to lowest priority.
 /// </param>
+/// <param name="WasPriorityOverrideActive">
+/// True when the priority-override shortcircuit fired for this verb at this node — only the
+/// flagged entries on the node itself contributed to the aggregation. UI uses this flag to render
+/// a "this rule won via priority override" badge.
+/// </param>
+/// <param name="SuppressedReasoning">
+/// When <see cref="WasPriorityOverrideActive"/> is true, lists the contributions that would have
+/// applied under normal resolution but were suppressed by the override path. Empty otherwise.
+/// </param>
 public sealed record EffectivePermissionItem(
     string Verb,
     bool IsAllowed,
     bool IsExplicit,
-    IReadOnlyList<ReasoningItem> Reasoning);
+    IReadOnlyList<ReasoningItem> Reasoning,
+    bool WasPriorityOverrideActive,
+    IReadOnlyList<ReasoningItem> SuppressedReasoning);
 
 /// <summary>
 /// Describes a single role's contribution to a permission resolution result.
@@ -36,10 +47,15 @@ public sealed record EffectivePermissionItem(
 /// </param>
 /// <param name="SourceScope">The scope of the source entry, or <see langword="null"/> for group defaults.</param>
 /// <param name="IsFromGroupDefault">Whether this contribution comes from Umbraco group default permissions.</param>
+/// <param name="IsPriorityOverride">
+/// Whether the contributing entry was flagged with priority override. UI uses this to mark
+/// override-driven contributions visually.
+/// </param>
 public sealed record ReasoningItem(
     string ContributingRole,
     string State,
     bool IsExplicit,
     Guid SourceNodeKey,
     string? SourceScope,
-    bool IsFromGroupDefault);
+    bool IsFromGroupDefault,
+    bool IsPriorityOverride);

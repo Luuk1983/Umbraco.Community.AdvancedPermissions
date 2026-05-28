@@ -82,7 +82,7 @@ public sealed class AdvancedPermissionsPermissionController(
         [FromBody] SavePermissionsRequestModel request,
         CancellationToken cancellationToken)
     {
-        var mapped = new List<(string Verb, PermissionState State, PermissionScope Scope)>();
+        var mapped = new List<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>();
 
         foreach (var entry in request.Entries)
         {
@@ -116,7 +116,7 @@ public sealed class AdvancedPermissionsPermissionController(
                 });
             }
 
-            mapped.Add((entry.Verb, state, scope));
+            mapped.Add((entry.Verb, state, scope, entry.IsPriorityOverride));
         }
 
         await permissionService.SaveEntriesAsync(request.NodeKey, request.RoleAlias, mapped, cancellationToken);

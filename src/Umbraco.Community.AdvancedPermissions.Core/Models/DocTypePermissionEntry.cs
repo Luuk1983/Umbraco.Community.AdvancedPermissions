@@ -34,6 +34,12 @@ namespace Umbraco.Community.AdvancedPermissions.Core.Models;
 /// </param>
 /// <param name="State">Whether this entry allows or denies the verb for the matched type/role.</param>
 /// <param name="Scope">The scope at which this entry takes effect within the tree.</param>
+/// <param name="IsPriorityOverride">
+/// When <see langword="true"/> on an entry that applies at the target parent node itself (depth 0),
+/// the resolver switches into a "consider only priority-override entries on this parent, for this
+/// (verb, content-type)" mode. Same node-local semantics as <see cref="AdvancedPermissionEntry"/>'s
+/// flag — does not inherit, does not affect other nodes/verbs/content-types.
+/// </param>
 public sealed record DocTypePermissionEntry(
     Guid Id,
     Guid NodeKey,
@@ -41,4 +47,5 @@ public sealed record DocTypePermissionEntry(
     string RoleAlias,
     string Verb,
     PermissionState State,
-    PermissionScope Scope);
+    PermissionScope Scope,
+    bool IsPriorityOverride = false);

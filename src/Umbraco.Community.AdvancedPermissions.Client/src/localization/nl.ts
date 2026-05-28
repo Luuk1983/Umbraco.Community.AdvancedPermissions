@@ -35,8 +35,8 @@ export default {
 
     // ── Machtigingsdialoog ────────────────────────────────────────────────
     dialogHeadline: (verb: string, nodeName: string) => `${verb}-machtiging instellen voor \u2018${nodeName}\u2019`,
-    descendantsSection: 'Overschrijving onderliggende pagina\u2019s',
-    dialogInstructions: 'Stel de machtiging in voor deze pagina. Standaard geldt dit ook voor alle onderliggende pagina\u2019s. Gebruik de overschrijving om een andere machtiging in te stellen voor onderliggende pagina\u2019s.',
+    descendantsSection: 'Onderliggende pagina\u2019s (indien afwijkend)',
+    dialogInstructions: 'Stel de machtiging in voor deze pagina. Standaard geldt dit ook voor alle onderliggende pagina\u2019s. Gebruik \u201cOnderliggende pagina\u2019s (indien afwijkend)\u201d om een andere machtiging in te stellen voor onderliggende pagina\u2019s.',
     virtualRootInherit: 'Niet ingesteld (verwijder vermelding)',
     virtualRootAllow: 'Toestaan (alle content)',
     virtualRootDeny: 'Weigeren (alle content)',
@@ -48,6 +48,18 @@ export default {
     previewSplit: (nodeAction: string, descAction: string) => `${nodeAction} voor deze pagina. ${descAction} voor alle onderliggende pagina\u2019s.`,
     previewVirtualInherit: 'Geen standaardmachtiging ingesteld.',
     previewVirtualSet: (action: string) => `${action} standaard voor alle content.`,
+    previewPriorityNode: 'Prioriteitsoverschrijving staat aan voor deze pagina.',
+    previewPriorityDesc: 'Prioriteitsoverschrijving staat aan voor onderliggende pagina’s.',
+    previewPriorityBoth: 'Prioriteitsoverschrijving staat aan.',
+
+    // ── Prioriteitsoverschrijving ─────────────────────────────────────
+    priorityOverride: 'Prioriteitsoverschrijving',
+    priorityOverrideTooltip: (permission: string, nodeName: string) =>
+      `Een gebruiker kan tot meerdere gebruikersgroepen behoren. Normaal volgt de effectieve machtiging een vaste prioriteitsvolgorde. Door dit vakje aan te vinken wordt die volgorde overschreven, zodat de hier gekozen “${permission}”-instelling vrijwel altijd het resultaat voor “${nodeName}” wordt, ongeacht de andere groepen van de gebruiker. Spaarzaam gebruiken.`,
+    priorityOverrideBadgeTitle: 'Prioriteitsoverschrijving staat aan voor deze invoer',
+    priorityOverrideWonTitle: 'Opgelost via prioriteitsoverschrijving',
+    priorityOverrideSuppressedHeader: 'Prioriteitsoverschrijving heeft het resultaat gewijzigd',
+    priorityOverrideSuppressedHint: 'Zonder deze zou het resultaat zijn geweest:',
 
     // ── Toegangsweergave ──────────────────────────────────────────────────
     viewerHeadline: 'Toegangsweergave',

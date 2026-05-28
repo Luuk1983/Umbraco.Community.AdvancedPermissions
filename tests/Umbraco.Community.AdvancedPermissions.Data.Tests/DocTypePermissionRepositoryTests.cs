@@ -1,4 +1,4 @@
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
@@ -39,9 +39,9 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
         await _connection.DisposeAsync();
     }
 
-    // ───────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // SaveAsync + GetByRoleAsync round-trip
-    // ───────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
     /// Verifies that entries saved for a (node, role, content-type) triple can be retrieved.
@@ -55,7 +55,7 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role, contentTypeKey,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         var results = await _repository.GetByRoleAsync(role);
@@ -78,13 +78,13 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role, contentTypeKey,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         // Replace with Allow at a different scope
         await _repository.SaveAsync(nodeKey, role, contentTypeKey,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
         ]);
 
         var results = await _repository.GetByRoleAndContentTypeAsync(role, contentTypeKey);
@@ -106,7 +106,7 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role, contentTypeKey,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeKey, role, contentTypeKey, []);
@@ -128,12 +128,12 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role, typeA,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeKey, role, typeB,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeKey, role, typeA, []);
@@ -145,9 +145,9 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
         Assert.Single(typeBResults);
     }
 
-    // ───────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // GetByRoleAndContentTypeAsync filtering
-    // ───────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
     /// Verifies that GetByRoleAndContentTypeAsync returns only entries matching both filters.
@@ -162,24 +162,24 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(node1, "editors", newsType,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(node2, "editors", newsType,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
         ]);
 
-        // Different type — must not appear
+        // Different type â€” must not appear
         await _repository.SaveAsync(node1, "editors", faqType,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
-        // Different role — must not appear
+        // Different role â€” must not appear
         await _repository.SaveAsync(node1, "writers", newsType,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         var results = await _repository.GetByRoleAndContentTypeAsync("editors", newsType);
@@ -192,9 +192,9 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
         });
     }
 
-    // ───────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Cleanup operations
-    // ───────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
     /// Verifies that DeleteAllForNodeAsync removes entries scoped to that node only.
@@ -208,12 +208,12 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeToDelete, "editors", contentTypeKey,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeToKeep, "editors", contentTypeKey,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.DeleteAllForNodeAsync(nodeToDelete);
@@ -235,12 +235,12 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, "editors", typeToDelete,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeKey, "editors", typeToKeep,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.DeleteAllForContentTypeAsync(typeToDelete);
@@ -261,12 +261,12 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, "editors", contentTypeKey,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.SaveAsync(nodeKey, "writers", contentTypeKey,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         await _repository.DeleteAllForRoleAsync("editors");
@@ -289,13 +289,13 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
         await _repository.DeleteAllForRoleAsync("non-existent-role");
     }
 
-    // ───────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Field preservation
-    // ───────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    // ───────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // GetByContentTypeAndNodesAsync (audit reasoning path)
-    // ───────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
     /// Verifies GetByContentTypeAndNodesAsync returns entries matching both the content type
@@ -310,26 +310,26 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
         var newsType = Guid.NewGuid();
         var faqType = Guid.NewGuid();
 
-        // News entries on nodeA and nodeB across two roles — both should appear
+        // News entries on nodeA and nodeB across two roles â€” both should appear
         await _repository.SaveAsync(nodeA, "editors", newsType,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
         await _repository.SaveAsync(nodeB, "writers", newsType,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeOnly),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
         ]);
 
-        // News entry on nodeC — node not in filter, should not appear
+        // News entry on nodeC â€” node not in filter, should not appear
         await _repository.SaveAsync(nodeC, "editors", newsType,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
-        // FAQ entry on nodeA — different type, should not appear
+        // FAQ entry on nodeA â€” different type, should not appear
         await _repository.SaveAsync(nodeA, "editors", faqType,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         var results = await _repository.GetByContentTypeAndNodesAsync(newsType, [nodeA, nodeB]);
@@ -353,11 +353,11 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
         await _repository.SaveAsync(AdvancedPermissionsConstants.VirtualRootNodeKey,
             AdvancedPermissionsConstants.EveryoneRoleAlias, newsType,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, false),
         ]);
         await _repository.SaveAsync(page, "editors", newsType,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
         ]);
 
         var results = await _repository.GetByContentTypeAndNodesAsync(
@@ -389,7 +389,7 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
 
         await _repository.SaveAsync(nodeKey, role, contentTypeKey,
         [
-            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.DescendantsOnly),
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, PermissionScope.DescendantsOnly, false),
         ]);
 
         var results = await _repository.GetByRoleAndContentTypeAsync(role, contentTypeKey);
@@ -403,5 +403,58 @@ public sealed class DocTypePermissionRepositoryTests : IAsyncLifetime
         Assert.Equal(AdvancedPermissionsConstants.VerbCreateOfType, entry.Verb);
         Assert.Equal(PermissionState.Deny, entry.State);
         Assert.Equal(PermissionScope.DescendantsOnly, entry.Scope);
+    }
+
+    // -------------------------------------------------------------------------
+    // Priority override â€” round-trip the new IsPriorityOverride flag
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Verifies that the IsPriorityOverride flag is persisted and read back correctly
+    /// on doc-type entries.
+    /// </summary>
+    [Fact]
+    public async Task SaveAsync_PersistsIsPriorityOverrideFlag()
+    {
+        var nodeKey = Guid.NewGuid();
+        var contentTypeKey = Guid.NewGuid();
+        const string role = "editors";
+
+        await _repository.SaveAsync(nodeKey, role, contentTypeKey,
+        [
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeOnly, true),
+        ]);
+
+        var results = await _repository.GetByRoleAndContentTypeAsync(role, contentTypeKey);
+
+        Assert.Single(results);
+        Assert.True(results[0].IsPriorityOverride);
+    }
+
+    /// <summary>
+    /// The flag does not participate in the unique key; replacing an entry with a flipped flag
+    /// value must update in place rather than duplicate.
+    /// </summary>
+    [Fact]
+    public async Task SaveAsync_FlagDoesNotParticipateInUniqueKey_ReplacesAcrossFlagBoundary()
+    {
+        var nodeKey = Guid.NewGuid();
+        var contentTypeKey = Guid.NewGuid();
+        const string role = "editors";
+
+        await _repository.SaveAsync(nodeKey, role, contentTypeKey,
+        [
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeOnly, true),
+        ]);
+
+        await _repository.SaveAsync(nodeKey, role, contentTypeKey,
+        [
+            (AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
+        ]);
+
+        var results = await _repository.GetByRoleAndContentTypeAsync(role, contentTypeKey);
+
+        Assert.Single(results);
+        Assert.False(results[0].IsPriorityOverride);
     }
 }

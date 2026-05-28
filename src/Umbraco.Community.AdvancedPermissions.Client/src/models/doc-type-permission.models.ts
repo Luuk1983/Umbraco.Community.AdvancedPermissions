@@ -17,6 +17,8 @@ export interface DocTypePermissionEntry {
   verb: string;
   state: PermissionState;
   scope: PermissionScope;
+  /** Priority-override flag — same node-local semantics as `PermissionEntry.isPriorityOverride`. */
+  isPriorityOverride: boolean;
 }
 
 /** Tuple-style entry shape sent to PUT. */
@@ -24,6 +26,7 @@ export interface SaveDocTypePermissionItem {
   verb: string;
   state: PermissionState;
   scope: PermissionScope;
+  isPriorityOverride: boolean;
 }
 
 /** One row of the new tree-style per-node audit listing. Adds `isInAllowedChildren`. */
@@ -36,6 +39,10 @@ export interface DocTypeAuditForNodeRow {
   isExplicit: boolean;
   isInAllowedChildren: boolean;
   reasoning: ReasoningStep[];
+  /** True when the priority-override shortcircuit fired for this row's resolution. */
+  wasPriorityOverrideActive?: boolean;
+  /** Reasoning entries suppressed by the priority override path. */
+  suppressedReasoning?: ReasoningStep[];
 }
 
 /** Response of `audit-for-node`: a node key plus one row per non-element doc type. */
@@ -53,6 +60,8 @@ export interface DocTypePathEntry {
   verb: string;
   state: PermissionState;
   scope: PermissionScope;
+  /** Priority-override flag — surfaced so the reasoning dialog can badge override entries. */
+  isPriorityOverride: boolean;
 }
 
 /** Response of `path-entries`: inheritance path plus all doc-type entries along it. */

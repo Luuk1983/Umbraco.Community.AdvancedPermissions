@@ -67,7 +67,7 @@ export async function getTreeChildren(parentKey: string, roleAlias: string, sign
 export async function savePermissions(
   nodeKey: string,
   roleAlias: string,
-  entries: Array<{ verb: string; state: PermissionState; scope: PermissionScope }>,
+  entries: Array<{ verb: string; state: PermissionState; scope: PermissionScope; isPriorityOverride: boolean }>,
 ): Promise<void> {
   await AdvancedPermissionsService.savePermissions({
     throwOnError: true,

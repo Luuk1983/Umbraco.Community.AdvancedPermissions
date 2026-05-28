@@ -653,6 +653,8 @@ export type DocTypeAuditForNodeRowResponseModel = {
     isExplicit: boolean;
     isInAllowedChildren: boolean;
     reasoning: Array<ReasoningItemModel>;
+    wasPriorityOverrideActive?: boolean;
+    suppressedReasoning?: Array<ReasoningItemModel> | null;
 };
 
 export type DocTypeListItemModel = {
@@ -675,6 +677,7 @@ export type DocTypePathEntryResponseModel = {
     verb: string;
     state: string;
     scope: string;
+    isPriorityOverride: boolean;
 };
 
 export type DocTypePermissionEntryResponseModel = {
@@ -685,6 +688,7 @@ export type DocTypePermissionEntryResponseModel = {
     verb: string;
     state: string;
     scope: string;
+    isPriorityOverride: boolean;
 };
 
 export type DocumentBlueprintItemResponseModel = {
@@ -1066,6 +1070,8 @@ export type EffectivePermissionItemModel = {
     isAllowed: boolean;
     isExplicit: boolean;
     reasoning: Array<ReasoningItemModel>;
+    wasPriorityOverrideActive: boolean;
+    suppressedReasoning: Array<ReasoningItemModel>;
 };
 
 export type EffectivePermissionsResponseModel = {
@@ -2233,6 +2239,7 @@ export type PermissionEntryResponseModel = {
     verb: string;
     state: string;
     scope: string;
+    isPriorityOverride: boolean;
 };
 
 export type ProblemDetails = {
@@ -2313,6 +2320,7 @@ export type ReasoningItemModel = {
     sourceNodeKey: string;
     sourceScope?: string | null;
     isFromGroupDefault: boolean;
+    isPriorityOverride: boolean;
 };
 
 export type RebuildStatusModel = {
@@ -2437,6 +2445,7 @@ export type SavePermissionEntryItemModel = {
     verb: string;
     state: string;
     scope: string;
+    isPriorityOverride?: boolean;
 };
 
 export type SavePermissionsRequestModel = {

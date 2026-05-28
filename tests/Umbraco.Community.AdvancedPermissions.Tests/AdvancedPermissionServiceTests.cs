@@ -759,8 +759,8 @@ public sealed class AdvancedPermissionServiceTests
         const string role = "editors";
         var entries = new[]
         {
-            (VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants),
-            (VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            (VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false),
+            (VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
         };
 
         await _sut.SaveEntriesAsync(nodeKey, role, entries);

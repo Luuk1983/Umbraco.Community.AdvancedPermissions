@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Umbraco.Community.AdvancedPermissions.Data.Context;
 
@@ -11,9 +12,11 @@ using Umbraco.Community.AdvancedPermissions.Data.Context;
 namespace Umbraco.Community.AdvancedPermissions.Data.Migrations.SqlServer
 {
     [DbContext(typeof(AdvancedPermissionsDbContextSqlServer))]
-    partial class AdvancedPermissionsDbContextSqlServerModelSnapshot : ModelSnapshot
+    [Migration("20260526093244_AddIsPriorityOverride")]
+    partial class AddIsPriorityOverride
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

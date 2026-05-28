@@ -35,8 +35,8 @@ export default {
 
     // ── Permission dialog ─────────────────────────────────────────────────
     dialogHeadline: (verb: string, nodeName: string) => `Set ${verb} permission for \u2018${nodeName}\u2019`,
-    descendantsSection: 'Descendant override',
-    dialogInstructions: 'Set the permission for this node. By default, this also applies to all descendants. Use the descendant override to set a different permission for descendant nodes.',
+    descendantsSection: 'Descendants (if different)',
+    dialogInstructions: 'Set the permission for this node. By default, this also applies to all descendants. Use “Descendants (if different)” to set a different permission for descendant nodes.',
     virtualRootInherit: 'Not set (remove entry)',
     virtualRootAllow: 'Allow (all content)',
     virtualRootDeny: 'Deny (all content)',
@@ -48,6 +48,18 @@ export default {
     previewSplit: (nodeAction: string, descAction: string) => `${nodeAction} on this node. ${descAction} on all descendants.`,
     previewVirtualInherit: 'No default permission set.',
     previewVirtualSet: (action: string) => `${action} by default for all content.`,
+    previewPriorityNode: 'Priority override is set on this node.',
+    previewPriorityDesc: 'Priority override is set on descendants.',
+    previewPriorityBoth: 'Priority override is set.',
+
+    // ── Priority override ─────────────────────────────────────────────────
+    priorityOverride: 'Priority override',
+    priorityOverrideTooltip: (permission: string, nodeName: string) =>
+      `A user can belong to several user groups. Normally, the effective permission follows a fixed priority order. Checking this box overrides that order, so the “${permission}” setting you choose here almost always becomes the result for “${nodeName}”, regardless of the user’s other groups. Use sparingly.`,
+    priorityOverrideBadgeTitle: 'Priority override is set on this entry',
+    priorityOverrideWonTitle: 'Resolved via priority override',
+    priorityOverrideSuppressedHeader: 'Priority override changed the result',
+    priorityOverrideSuppressedHint: 'Without it, the result would have been:',
 
     // ── Access Viewer ─────────────────────────────────────────────────────
     viewerHeadline: 'Access Viewer',

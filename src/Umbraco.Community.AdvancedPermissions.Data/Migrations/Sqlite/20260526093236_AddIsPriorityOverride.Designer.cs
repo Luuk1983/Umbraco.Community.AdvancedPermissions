@@ -2,60 +2,58 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Umbraco.Community.AdvancedPermissions.Data.Context;
 
 #nullable disable
 
-namespace Umbraco.Community.AdvancedPermissions.Data.Migrations.SqlServer
+namespace Umbraco.Community.AdvancedPermissions.Data.Migrations.Sqlite
 {
-    [DbContext(typeof(AdvancedPermissionsDbContextSqlServer))]
-    partial class AdvancedPermissionsDbContextSqlServerModelSnapshot : ModelSnapshot
+    [DbContext(typeof(AdvancedPermissionsDbContextSqlite))]
+    [Migration("20260526093236_AddIsPriorityOverride")]
+    partial class AddIsPriorityOverride
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.4")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
-
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.4");
 
             modelBuilder.Entity("Umbraco.Community.AdvancedPermissions.Data.Entities.AdvancedPermissionEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("TEXT")
                         .HasColumnName("Id");
 
                     b.Property<bool>("IsPriorityOverride")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(false)
                         .HasColumnName("IsPriorityOverride");
 
                     b.Property<Guid>("NodeKey")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("TEXT")
                         .HasColumnName("NodeKey");
 
                     b.Property<string>("RoleAlias")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("RoleAlias");
 
                     b.Property<int>("Scope")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("Scope");
 
                     b.Property<int>("State")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("State");
 
                     b.Property<string>("Verb")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("Verb");
 
                     b.HasKey("Id");
@@ -79,41 +77,41 @@ namespace Umbraco.Community.AdvancedPermissions.Data.Migrations.SqlServer
             modelBuilder.Entity("Umbraco.Community.AdvancedPermissions.Data.Entities.DocTypePermissionEntity", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("TEXT")
                         .HasColumnName("Id");
 
                     b.Property<Guid>("ContentTypeKey")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("TEXT")
                         .HasColumnName("ContentTypeKey");
 
                     b.Property<bool>("IsPriorityOverride")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(false)
                         .HasColumnName("IsPriorityOverride");
 
                     b.Property<Guid>("NodeKey")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("TEXT")
                         .HasColumnName("NodeKey");
 
                     b.Property<string>("RoleAlias")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("RoleAlias");
 
                     b.Property<int>("Scope")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("Scope");
 
                     b.Property<int>("State")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("State");
 
                     b.Property<string>("Verb")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("Verb");
 
                     b.HasKey("Id");

@@ -23,6 +23,12 @@ namespace Umbraco.Community.AdvancedPermissions.Data.Migrations.Sqlite
                         .HasColumnType("TEXT")
                         .HasColumnName("Id");
 
+                    b.Property<bool>("IsPriorityOverride")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsPriorityOverride");
+
                     b.Property<Guid>("NodeKey")
                         .HasColumnType("TEXT")
                         .HasColumnName("NodeKey");
@@ -74,6 +80,12 @@ namespace Umbraco.Community.AdvancedPermissions.Data.Migrations.Sqlite
                     b.Property<Guid>("ContentTypeKey")
                         .HasColumnType("TEXT")
                         .HasColumnName("ContentTypeKey");
+
+                    b.Property<bool>("IsPriorityOverride")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsPriorityOverride");
 
                     b.Property<Guid>("NodeKey")
                         .HasColumnType("TEXT")

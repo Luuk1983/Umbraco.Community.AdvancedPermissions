@@ -40,4 +40,12 @@ public sealed class AdvancedPermissionEntity
     /// Gets or sets the scope at which this entry applies within the content tree.
     /// </summary>
     public PermissionScope Scope { get; set; }
+
+    /// <summary>
+    /// Gets or sets the priority-override flag. When <see langword="true"/> on an entry that
+    /// applies at the target node itself, the resolver considers only flagged entries on that
+    /// node when aggregating across the user's roles — a CSS <c>!important</c>-style escape
+    /// hatch for the otherwise-unoverridable cross-role Explicit Deny. Default <see langword="false"/>.
+    /// </summary>
+    public bool IsPriorityOverride { get; set; }
 }

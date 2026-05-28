@@ -16,8 +16,21 @@ namespace Umbraco.Community.AdvancedPermissions.Core.Models;
 /// The list of role contributions that led to this result, ordered from highest to lowest priority.
 /// Used by the Access Viewer to explain why this permission was resolved as it was.
 /// </param>
+/// <param name="WasPriorityOverrideActive">
+/// <see langword="true"/> when the priority-override shortcircuit fired for this resolution —
+/// i.e. at least one applicable entry on the target node carried <c>IsPriorityOverride=true</c>
+/// and the resolver considered only flagged entries when aggregating across roles. UI uses this
+/// to render a "this rule won via priority override" badge.
+/// </param>
+/// <param name="SuppressedReasoning">
+/// When <see cref="WasPriorityOverrideActive"/> is true, lists the contributions that would
+/// have applied under normal resolution but were suppressed by the override path. Essential for
+/// admins debugging "why isn't my Deny taking effect?". Empty otherwise.
+/// </param>
 public sealed record EffectivePermission(
     string Verb,
     bool IsAllowed,
     bool IsExplicit,
-    IReadOnlyList<PermissionReasoning> Reasoning);
+    IReadOnlyList<PermissionReasoning> Reasoning,
+    bool WasPriorityOverrideActive = false,
+    IReadOnlyList<PermissionReasoning>? SuppressedReasoning = null);

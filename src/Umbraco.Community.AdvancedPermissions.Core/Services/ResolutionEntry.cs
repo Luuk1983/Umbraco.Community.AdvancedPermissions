@@ -18,8 +18,13 @@ namespace Umbraco.Community.AdvancedPermissions.Core.Services;
 /// <param name="RoleAlias">The role alias (user group alias or <c>$everyone</c>).</param>
 /// <param name="State">The permission state (Allow or Deny).</param>
 /// <param name="Scope">The scope at which this entry applies.</param>
+/// <param name="IsPriorityOverride">
+/// <see langword="true"/> if the source entry carried the priority-override flag.
+/// The engine uses this to detect the override-shortcircuit before its normal aggregation runs.
+/// </param>
 public sealed record ResolutionEntry(
     Guid NodeKey,
     string RoleAlias,
     PermissionState State,
-    PermissionScope Scope);
+    PermissionScope Scope,
+    bool IsPriorityOverride = false);

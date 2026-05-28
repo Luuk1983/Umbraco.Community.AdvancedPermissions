@@ -56,9 +56,19 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
   @property({ attribute: false }) initialDescState: TriState = 'inherit';
   @property({ attribute: false }) initialSameAsNode = true;
 
+  /**
+   * Initial values of the per-column priority-override checkboxes. Each side can be flagged
+   * independently. A side's checkbox is only enabled when that side actually has a rule
+   * (its tri-state isn't Inherit, and for the descendant side, only when it differs from the node).
+   */
+  @property({ attribute: false }) initialNodeIsPriorityOverride = false;
+  @property({ attribute: false }) initialDescIsPriorityOverride = false;
+
   @state() private _nodeState: TriState = 'inherit';
   @state() private _descState: TriState = 'inherit';
   @state() private _sameAsNode = true;
+  @state() private _nodeIsPriorityOverride = false;
+  @state() private _descIsPriorityOverride = false;
 
   @query('dialog') private _dialog!: HTMLDialogElement;
 
@@ -80,6 +90,12 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
     if (changed.has('initialSameAsNode')) {
       this._sameAsNode = this.initialSameAsNode;
     }
+    if (changed.has('initialNodeIsPriorityOverride')) {
+      this._nodeIsPriorityOverride = this.initialNodeIsPriorityOverride;
+    }
+    if (changed.has('initialDescIsPriorityOverride')) {
+      this._descIsPriorityOverride = this.initialDescIsPriorityOverride;
+    }
   }
 
   /**
@@ -88,6 +104,11 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
    * `composeEntries` logic.
    */
   #apply(): void {
+    // A side's flag is only meaningful when that side has a rule. Force false otherwise.
+    const nodeFlag = this._nodeState === 'inherit' ? false : this._nodeIsPriorityOverride;
+    const descEnabled = !this._sameAsNode && this._descState !== 'inherit';
+    const descFlag = descEnabled ? this._descIsPriorityOverride : false;
+
     let entries: PendingVerbEntries;
     if (this.isVirtualRoot) {
       if (this._nodeState === 'inherit') {
@@ -96,10 +117,11 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
         entries = [{
           state: this._nodeState === 'allow' ? 'Allow' : 'Deny',
           scope: 'ThisNodeAndDescendants',
+          isPriorityOverride: nodeFlag,
         }];
       }
     } else {
-      entries = composeEntries(this._nodeState, this._descState, this._sameAsNode);
+      entries = composeEntries(this._nodeState, this._descState, this._sameAsNode, nodeFlag, descFlag);
     }
 
     this.dispatchEvent(new CustomEvent('uap-scope-apply', {
@@ -114,29 +136,41 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
    * Computes the preview cell info from the current dialog state.
    */
   #previewInfo(): CellInfo {
+    const nodeOverride = this._nodeState !== 'inherit' && this._nodeIsPriorityOverride;
+    const descEnabled = !this._sameAsNode && this._descState !== 'inherit';
+    const descOverride = descEnabled && this._descIsPriorityOverride;
+
     if (this.isVirtualRoot) {
-      return { split: false, nodeClass: this._nodeState, descClass: this._nodeState };
+      return { split: false, nodeClass: this._nodeState, descClass: this._nodeState, nodeOverride, descOverride: nodeOverride };
     }
     const effectiveDesc = this._sameAsNode ? this._nodeState : this._descState;
-    if (this._nodeState === effectiveDesc) {
-      return { split: false, nodeClass: this._nodeState, descClass: this._nodeState };
+    const effectiveDescOverride = this._sameAsNode ? nodeOverride : descOverride;
+    // Uniform only when state AND override flag match; otherwise the two sides are distinct.
+    if (this._nodeState === effectiveDesc && nodeOverride === effectiveDescOverride) {
+      return { split: false, nodeClass: this._nodeState, descClass: this._nodeState, nodeOverride, descOverride: nodeOverride };
     }
-    return { split: true, nodeClass: this._nodeState, descClass: effectiveDesc };
+    return { split: true, nodeClass: this._nodeState, descClass: effectiveDesc, nodeOverride, descOverride: effectiveDescOverride };
   }
 
   /**
    * Builds the human-readable preview description for the current dialog state.
    */
   #previewDescription(): string {
+    const nodeOverride = this._nodeState !== 'inherit' && this._nodeIsPriorityOverride;
+
     if (this.isVirtualRoot) {
       if (this._nodeState === 'inherit') return this.#localize.term('uap_previewVirtualInherit');
       const action = this._nodeState === 'allow'
         ? this.#localize.term('uap_allow')
         : this.#localize.term('uap_deny');
-      return this.#localize.term('uap_previewVirtualSet', action);
+      const base = this.#localize.term('uap_previewVirtualSet', action);
+      return this.#appendOverrideNote(base, nodeOverride, nodeOverride);
     }
 
     const effectiveDesc = this._sameAsNode ? this._nodeState : this._descState;
+    const descEnabled = !this._sameAsNode && this._descState !== 'inherit';
+    const descOverride = descEnabled && this._descIsPriorityOverride;
+    const effectiveDescOverride = this._sameAsNode ? nodeOverride : descOverride;
 
     if (this._nodeState === 'inherit' && effectiveDesc === 'inherit') {
       return this.#localize.term('uap_previewBothInherit');
@@ -146,16 +180,30 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
       ? this.#localize.term('uap_allow')
       : this.#localize.term('uap_deny');
 
-    if (this._nodeState === effectiveDesc) {
-      return this.#localize.term('uap_previewUniform', stateLabel(this._nodeState));
+    let base: string;
+    if (this._nodeState === effectiveDesc && nodeOverride === effectiveDescOverride) {
+      base = this.#localize.term('uap_previewUniform', stateLabel(this._nodeState));
+    } else if (this._nodeState !== 'inherit' && effectiveDesc === 'inherit') {
+      base = this.#localize.term('uap_previewNodeOnly', stateLabel(this._nodeState));
+    } else if (this._nodeState === 'inherit' && effectiveDesc !== 'inherit') {
+      base = this.#localize.term('uap_previewDescOnly', stateLabel(effectiveDesc));
+    } else {
+      base = this.#localize.term('uap_previewSplit', stateLabel(this._nodeState), stateLabel(effectiveDesc));
     }
-    if (this._nodeState !== 'inherit' && effectiveDesc === 'inherit') {
-      return this.#localize.term('uap_previewNodeOnly', stateLabel(this._nodeState));
-    }
-    if (this._nodeState === 'inherit' && effectiveDesc !== 'inherit') {
-      return this.#localize.term('uap_previewDescOnly', stateLabel(effectiveDesc));
-    }
-    return this.#localize.term('uap_previewSplit', stateLabel(this._nodeState), stateLabel(effectiveDesc));
+
+    return this.#appendOverrideNote(base, nodeOverride, effectiveDescOverride);
+  }
+
+  /**
+   * Appends a priority-override clarification to the preview description, naming which side(s)
+   * carry the flag. Returns the base unchanged when neither side is flagged.
+   */
+  #appendOverrideNote(base: string, nodeOverride: boolean, descOverride: boolean): string {
+    let note = '';
+    if (nodeOverride && descOverride) note = this.#localize.term('uap_previewPriorityBoth');
+    else if (nodeOverride) note = this.#localize.term('uap_previewPriorityNode');
+    else if (descOverride) note = this.#localize.term('uap_previewPriorityDesc');
+    return note ? `${base} ${note}` : base;
   }
 
   /**
@@ -205,6 +253,7 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
             () => { this._nodeState = 'deny'; },
             this.#localize.term('uap_virtualRootDeny'))}
         </div>
+        ${this.#renderOverrideCheckbox('node')}
       </div>
       <div class="dialog-result">
         <h4>${this.#localize.term('uap_dialogResult')}</h4>
@@ -230,6 +279,7 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
             ${this.#renderTile('deny', this._nodeState === 'deny',
               () => { this._nodeState = 'deny'; })}
           </div>
+          ${this.#renderOverrideCheckbox('node')}
         </div>
         <div class="dialog-section">
           <h4>${this.#localize.term('uap_descendantsSection')}</h4>
@@ -247,6 +297,7 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
               else { this._sameAsNode = false; this._descState = 'deny'; }
             })}
           </div>
+          ${this.#renderOverrideCheckbox('desc')}
         </div>
       </div>
       <div class="dialog-result">
@@ -290,6 +341,36 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
           </div>
         </uui-dialog-layout>
       </dialog>
+    `;
+  }
+
+  /**
+   * Renders the per-side "Priority override" checkbox. Each side is independent:
+   * - 'node': enabled when the node tri-state isn't Inherit.
+   * - 'desc': enabled only when there's a distinct descendant rule (not "same as node" and not Inherit).
+   * A disabled checkbox is greyed because the flag has no rule to attach to on that side.
+   */
+  #renderOverrideCheckbox(side: 'node' | 'desc'): TemplateResult {
+    const disabled = side === 'node'
+      ? this._nodeState === 'inherit'
+      : (this._sameAsNode || this._descState === 'inherit');
+    const checked = !disabled && (side === 'node' ? this._nodeIsPriorityOverride : this._descIsPriorityOverride);
+    return html`
+      <div class="priority-override ${checked ? 'active' : ''}">
+        <label class="po-row ${disabled ? 'disabled' : ''}">
+          <input
+            type="checkbox"
+            .checked=${checked}
+            ?disabled=${disabled}
+            @change=${(e: Event) => {
+              const value = (e.target as HTMLInputElement).checked;
+              if (side === 'node') { this._nodeIsPriorityOverride = value; }
+              else { this._descIsPriorityOverride = value; }
+            }} />
+          <span class="po-label">${this.#localize.term('uap_priorityOverride')}</span>
+          <span class="po-help" title=${this.#localize.term('uap_priorityOverrideTooltip', this.verb, this.nodeName)}>?</span>
+        </label>
+      </div>
     `;
   }
 
@@ -443,6 +524,66 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
       margin: 0;
       font-size: 13px;
       color: var(--uui-color-text, #333);
+      line-height: 1.4;
+    }
+
+    /* ── Priority override checkbox ───────────────────────────── */
+    .priority-override {
+      margin-top: 16px;
+      padding: 10px 12px;
+      border-top: 1px solid var(--uui-color-border, #eee);
+      transition: background-color 0.15s;
+    }
+
+    .priority-override.active {
+      background: color-mix(in srgb, var(--uui-color-warning, #f5a524) 8%, transparent);
+      border-radius: 0 0 8px 8px;
+    }
+
+    .po-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--uui-color-text, #333);
+    }
+
+    .po-row.disabled {
+      cursor: not-allowed;
+      color: var(--uui-color-text-alt, #888);
+    }
+
+    .po-row input[type="checkbox"] {
+      margin: 0;
+      cursor: inherit;
+    }
+
+    .po-label {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .po-help {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--uui-color-surface-emphasis, #f0f0f0);
+      color: var(--uui-color-text-alt, #666);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: help;
+      user-select: none;
+    }
+
+    .po-warning {
+      margin: 6px 0 0;
+      padding-left: 22px;
+      font-size: 12px;
+      color: color-mix(in srgb, var(--uui-color-warning, #b87013) 85%, #000);
       line-height: 1.4;
     }
   `;

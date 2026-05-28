@@ -355,11 +355,17 @@ export class UapAccessViewerRootElement extends UmbLitElement {
         relevantRoles = new Set([this._selectedRole!.alias]);
       } else {
         // User mode: show only roles that actually contributed to the effective permission.
-        // These come from the reasoning steps already loaded for this node+verb.
+        // These come from the reasoning steps already loaded for this node+verb. Include both the
+        // winning reasoning AND the suppressed reasoning — when a priority override fires, the
+        // overridden role (e.g. an Administrators Deny that lost to an All Users override) lives in
+        // suppressedReasoning, and it must still appear in the chain so admins can see what was set.
         relevantRoles = new Set(['$everyone']);
         const ep = node.effectivePerms?.get(verb);
         if (ep) {
           for (const step of ep.reasoning) {
+            relevantRoles.add(step.contributingRole);
+          }
+          for (const step of ep.suppressedReasoning ?? []) {
             relevantRoles.add(step.contributingRole);
           }
         }
@@ -475,12 +481,15 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     const perm = node.effectivePerms.get(verb);
     const isAllowed = perm?.isAllowed ?? false;
     const cls: 'allow' | 'deny' = isAllowed ? 'allow' : 'deny';
-    const info: CellInfo = { split: false, nodeClass: cls, descClass: cls };
+    const wasOverride = perm?.wasPriorityOverrideActive === true;
+    const info: CellInfo = { split: false, nodeClass: cls, descClass: cls, nodeOverride: wasOverride, descOverride: wasOverride };
 
     return html`
       <td class="perm-td" title=${this.#localize.term('uap_clickForReasoning', isAllowed ? this.#localize.term('uap_allow') : this.#localize.term('uap_deny'))}
         @click=${() => this.#openReasoning(node, verb)}>
-        <uap-perm-block .info=${info}></uap-perm-block>
+        <uap-perm-block
+          .info=${info}
+          priority-override-title=${this.#localize.term('uap_priorityOverrideWonTitle')}></uap-perm-block>
       </td>
     `;
   }

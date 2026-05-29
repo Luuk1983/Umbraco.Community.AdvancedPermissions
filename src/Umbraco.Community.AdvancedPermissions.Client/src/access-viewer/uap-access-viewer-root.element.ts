@@ -505,6 +505,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
             icon="icon-users"
             @click=${() => void this.#openRolePicker()}>
           </uap-picker-button>
+          <span class="picker-or">${this.#localize.term('uap_subjectOr')}</span>
           <uap-picker-button
             label=${this.#localize.term('uap_chooseUser')}
             .selectedName=${this._selectedUser?.name ?? ''}
@@ -545,6 +546,7 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
         .verbLabel=${this._reasoningVerb?.split('.').pop() ?? ''}
         .nodeName=${this._reasoningNode?.name ?? ''}
         .loading=${this._dialogLoading}
+        .defaultState=${'deny'}
         .roleNameLookup=${(alias: string) => this.#roleName(alias)}
         @uap-reasoning-close=${this.#onReasoningClose}>
       </uap-reasoning-dialog>
@@ -588,6 +590,13 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
       background: var(--uui-color-surface, #fff);
       border-bottom: 1px solid var(--uui-color-border, #e0e0e0);
       flex-wrap: wrap;
+    }
+
+    .picker-or {
+      font-size: 12px;
+      color: var(--uui-color-text-alt, #888);
+      text-align: center;
+      align-self: center;
     }
 
 

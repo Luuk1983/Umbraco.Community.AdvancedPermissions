@@ -71,6 +71,7 @@ export default {
     legendAllow: 'Allow',
     legendDeny: 'Deny',
     clickForReasoning: (label: string) => `${label} \u2014 click for reasoning`,
+    subjectOr: 'or',
 
     // ── Role picker modal ─────────────────────────────────────────────────
     rolePickerHeadline: 'Select a user group',
@@ -94,6 +95,8 @@ export default {
     defaultPermissions: 'Default permissions',
     determiningEntry: 'This entry takes precedence',
     noReasoningData: 'No permission data available for this verb.',
+    defaultAllowNote: 'No permissions are set, this is allowed by default.',
+    defaultDenyNote: 'No permissions are set, this is denied by default.',
 
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:
@@ -119,6 +122,10 @@ export default {
     docTypePermissions_allDocTypes: 'All document types',
     docTypePermissions_verbInsert: 'Insert',
     docTypePermissions_documentType: 'Document Type',
+    chooseDocType: 'Choose document type',
+    notAnInsertOption: 'This document type is not currently an insert option on this node.',
+    notAnInsertOptionAllowedNote: 'This document type is not an insert option on this node, but it would otherwise be allowed.',
+    notAnInsertOptionDeniedNote: 'This document type is not an insert option on this node, but it would otherwise be denied.',
     docTypePermissions_pickDocType: '— Select a document type —',
     docTypePermissions_pickToStart: 'Pick a role and document type to start.',
     docTypePermissions_defaultRowLabel: 'Default (applies everywhere)',
@@ -132,6 +139,5 @@ export default {
     docTypePermissions_reasoning: 'Reasoning',
     docTypePermissions_defaultAllow: 'Allowed by default',
     docTypePermissions_viaDefault: 'from default row',
-    docTypePermissions_notInAllowedChildren: 'Not in this parent\'s allowed children list',
   },
 } satisfies UmbLocalizationDictionary;

@@ -35,6 +35,13 @@ export class UapPermBlockElement extends LitElement {
   @property({ type: Boolean }) pending = false;
 
   /**
+   * When true, dims the allow/deny block and applies a dashed muted border, flagging a doc type
+   * that resolves allow/deny but isn't currently an insert option on the node. Uniform path only;
+   * the allow/deny fill (and ✓/✗ icon) is retained so the underlying state still reads.
+   */
+  @property({ type: Boolean, attribute: 'outside-allowed' }) outsideAllowed = false;
+
+  /**
    * Optional tooltip text shown on hover of an override-themed cell/half. Purely informational.
    */
   @property({ attribute: 'priority-override-title' }) priorityOverrideTitle = '';
@@ -56,8 +63,9 @@ export class UapPermBlockElement extends LitElement {
     const descOverride = info.descOverride === true && info.descClass !== 'inherit';
     if (!info.split) {
       const overrideCls = nodeOverride ? ' override' : '';
+      const outsideCls = this.outsideAllowed ? ' outside-allowed' : '';
       const title = nodeOverride ? this.priorityOverrideTitle : '';
-      return html`<div class="perm-block uniform ${info.nodeClass}${overrideCls}${pendingCls}" title=${title}>${stateIcon(info.nodeClass)}</div>`;
+      return html`<div class="perm-block uniform ${info.nodeClass}${overrideCls}${outsideCls}${pendingCls}" title=${title}>${stateIcon(info.nodeClass)}</div>`;
     }
     return html`
       <div class="perm-block split${pendingCls}">
@@ -132,6 +140,23 @@ export class UapPermBlockElement extends LitElement {
       background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
       color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
       border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
+    }
+
+    /* ── Outside-allowed: resolves allow/deny but isn't an insert option on the node ──
+       Drops the fill entirely so it reads as a hollow, dashed outline — clearly distinct
+       from a normal (filled) allow/deny cell. The dashed border + ✓/✗ icon stay green/red
+       so the underlying permission is still legible. Declared after .allow/.deny so the
+       transparent background and stronger border colour win. */
+    .perm-block.outside-allowed {
+      background: transparent;
+      border-style: dashed;
+      border-width: 2px;
+    }
+    .perm-block.allow.outside-allowed {
+      border-color: color-mix(in srgb, var(--uui-color-positive, #34a853) 55%, transparent);
+    }
+    .perm-block.deny.outside-allowed {
+      border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 50%, transparent);
     }
 
     .perm-block.na {

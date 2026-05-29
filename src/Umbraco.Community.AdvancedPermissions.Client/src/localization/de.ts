@@ -71,6 +71,7 @@ export default {
     legendAllow: 'Erlauben',
     legendDeny: 'Verweigern',
     clickForReasoning: (label: string) => `${label} \u2014 Klicken f\u00fcr Begr\u00fcndung`,
+    subjectOr: 'oder',
 
     // ── Rollenauswahlmodal ─────────────────────────────────────────────────
     rolePickerHeadline: 'Benutzergruppe ausw\u00e4hlen',
@@ -94,6 +95,8 @@ export default {
     defaultPermissions: 'Standardberechtigungen',
     determiningEntry: 'Dieser Eintrag hat Vorrang',
     noReasoningData: 'Keine Berechtigungsdaten f\u00fcr dieses Recht verf\u00fcgbar.',
+    defaultAllowNote: 'Es sind keine Berechtigungen festgelegt, dies ist standardm\u00e4\u00dfig erlaubt.',
+    defaultDenyNote: 'Es sind keine Berechtigungen festgelegt, dies wird standardm\u00e4\u00dfig verweigert.',
 
     // ── Weiterleitungsnachricht granulare Berechtigungen ──────────────────
     redirectMessage:
@@ -119,6 +122,10 @@ export default {
     docTypePermissions_allDocTypes: 'Alle Dokumenttypen',
     docTypePermissions_verbInsert: 'Einfügen',
     docTypePermissions_documentType: 'Dokumenttyp',
+    chooseDocType: 'Dokumenttyp ausw\u00e4hlen',
+    notAnInsertOption: 'Dieser Dokumenttyp ist derzeit keine Einf\u00fcgeoption auf diesem Knoten.',
+    notAnInsertOptionAllowedNote: 'Dieser Dokumenttyp ist keine Einf\u00fcgeoption auf diesem Knoten, w\u00e4re aber andernfalls erlaubt.',
+    notAnInsertOptionDeniedNote: 'Dieser Dokumenttyp ist keine Einf\u00fcgeoption auf diesem Knoten, w\u00fcrde aber andernfalls verweigert.',
     docTypePermissions_pickDocType: '\u2014 Dokumenttyp ausw\u00e4hlen \u2014',
     docTypePermissions_pickToStart: 'W\u00e4hlen Sie eine Benutzergruppe und einen Dokumenttyp aus.',
     docTypePermissions_defaultRowLabel: 'Standard (gilt \u00fcberall)',
@@ -132,6 +139,5 @@ export default {
     docTypePermissions_reasoning: 'Begr\u00fcndung',
     docTypePermissions_defaultAllow: 'Standardm\u00e4\u00dfig erlaubt',
     docTypePermissions_viaDefault: 'aus Standardzeile',
-    docTypePermissions_notInAllowedChildren: 'Nicht in der Liste der erlaubten Untertypen',
   },
 } satisfies UmbLocalizationDictionary;

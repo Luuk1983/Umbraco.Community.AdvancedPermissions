@@ -60,6 +60,19 @@ export class UapReasoningDialogElement extends UmbLitElement {
   @property({ type: Boolean }) loading = false;
 
   /**
+   * The polarity of the resolver's default when no role had an opinion. Drives the default note:
+   * the doc-type Insert audit defaults to `allow`, the content Access Viewer defaults to `deny`.
+   */
+  @property() defaultState: 'allow' | 'deny' = 'deny';
+
+  /**
+   * Doc-type Insert audit only: true when the selected doc type isn't an insert option on the
+   * target node. Drives an info note explaining that the resolution still reads even though
+   * Umbraco wouldn't currently offer the type here. Takes priority over the default-state note.
+   */
+  @property({ type: Boolean, attribute: 'outside-allowed' }) outsideAllowed = false;
+
+  /**
    * Function mapping a role alias to its display name. Defaults to identity if not supplied.
    */
   @property({ attribute: false }) roleNameLookup: (alias: string) => string = (a) => a;
@@ -84,6 +97,7 @@ export class UapReasoningDialogElement extends UmbLitElement {
       <dialog class="reasoning-dialog" @close=${this.#onClose}>
         <uui-dialog-layout headline=${this.#localize.term('uap_reasoningHeadline', this.verbLabel, this.nodeName)}>
           ${this.#renderBanner()}
+          ${this.#renderInfoNote()}
 
           ${this.loading
             ? html`<div class="dialog-loading"><uui-loader-circle></uui-loader-circle></div>`
@@ -147,6 +161,34 @@ export class UapReasoningDialogElement extends UmbLitElement {
       <div class="effective-banner ${cls}">
         <span class="banner-icon">${icon}</span>
         <span class="banner-text">${message}</span>
+      </div>
+    `;
+  }
+
+  /**
+   * Renders an info note above the path table. Two cases, in priority order:
+   * 1. `outsideAllowed` (doc-type Insert audit): the type isn't an insert option on this node, but
+   *    its resolution still reads — note that it would otherwise be allowed/denied per the result.
+   * 2. The result came purely from the resolver default (empty reasoning chain): explain the
+   *    default polarity — Insert defaults allow, content access defaults deny.
+   * Returns nothing while loading, before the effective permission lands, or when neither applies.
+   */
+  #renderInfoNote(): TemplateResult {
+    if (this.loading || !this.effectivePerm) {
+      return html``;
+    }
+    let term: string;
+    if (this.outsideAllowed) {
+      term = this.effectivePerm.isAllowed ? 'uap_notAnInsertOptionAllowedNote' : 'uap_notAnInsertOptionDeniedNote';
+    } else if (this.effectivePerm.reasoning.length === 0) {
+      term = this.defaultState === 'allow' ? 'uap_defaultAllowNote' : 'uap_defaultDenyNote';
+    } else {
+      return html``;
+    }
+    return html`
+      <div class="info-note">
+        <span class="info-note-icon">ⓘ</span>
+        <span class="info-note-text">${this.#localize.term(term)}</span>
       </div>
     `;
   }
@@ -306,6 +348,30 @@ export class UapReasoningDialogElement extends UmbLitElement {
     }
     .result-allow .banner-icon { color: var(--uui-color-positive, #34a853); }
     .result-deny .banner-icon { color: var(--uui-color-danger, #ea4335); }
+
+    /* ── Info note ─────────────────────────────────────────────────
+       Shown when the result came purely from the resolver default (empty reasoning chain),
+       or when the doc type isn't an insert option on the node (outside-allowed). */
+    .info-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      line-height: 1.4;
+      background: color-mix(in srgb, var(--uui-color-focus, #3879ff) 8%, transparent);
+      border-left: 4px solid color-mix(in srgb, var(--uui-color-focus, #3879ff) 70%, transparent);
+    }
+    .info-note-icon {
+      font-size: 15px;
+      flex-shrink: 0;
+      color: var(--uui-color-focus, #3879ff);
+    }
+    .info-note-text {
+      color: var(--uui-color-text, #333);
+    }
 
     .dialog-table-wrap {
       overflow-x: auto;

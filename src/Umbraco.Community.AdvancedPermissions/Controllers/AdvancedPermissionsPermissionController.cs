@@ -33,7 +33,7 @@ public sealed class AdvancedPermissionsPermissionController(
     /// </param>
     /// <param name="roleAlias">The role alias to filter by.</param>
     /// <returns>The stored entries for the given node and role.</returns>
-    [HttpGet("permissions")]
+    [HttpGet("permissions", Name = "GetPermissions")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<IReadOnlyList<PermissionEntryResponseModel>>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets permission entries for a node and role.")]
@@ -54,7 +54,7 @@ public sealed class AdvancedPermissionsPermissionController(
     /// The content node key. Use <c>ffffffff-ffff-ffff-ffff-ffffffffffff</c> for virtual-root entries.
     /// </param>
     /// <returns>All stored entries for the given node.</returns>
-    [HttpGet("permissions/by-node")]
+    [HttpGet("permissions/by-node", Name = "GetPermissionsByNode")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<IReadOnlyList<PermissionEntryResponseModel>>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets all permission entries for a node (all roles).")]
@@ -73,7 +73,7 @@ public sealed class AdvancedPermissionsPermissionController(
     /// <param name="request">The entries to save.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <returns><see cref="StatusCodes.Status200OK"/> on success.</returns>
-    [HttpPut("permissions")]
+    [HttpPut("permissions", Name = "PutPermissions")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -132,7 +132,7 @@ public sealed class AdvancedPermissionsPermissionController(
     /// <param name="nodeKey">The content node key of the target node.</param>
     /// <param name="verb">The permission verb to filter entries by.</param>
     /// <returns>The path and filtered entries.</returns>
-    [HttpGet("permissions/for-path")]
+    [HttpGet("permissions/for-path", Name = "GetPermissionsForPath")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<PathEntriesResponseModel>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets the inheritance path and stored entries for a verb along that path.")]
@@ -193,7 +193,7 @@ public sealed class AdvancedPermissionsPermissionController(
     /// <param name="roleAlias">The role alias.</param>
     /// <param name="verb">The permission verb to remove.</param>
     /// <returns><see cref="StatusCodes.Status200OK"/> on success.</returns>
-    [HttpDelete("permissions")]
+    [HttpDelete("permissions", Name = "DeletePermission")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [EndpointSummary("Removes a specific permission entry (reverts to inherit).")]

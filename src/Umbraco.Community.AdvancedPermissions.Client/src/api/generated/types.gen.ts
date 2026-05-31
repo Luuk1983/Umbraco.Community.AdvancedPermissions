@@ -7,82 +7,67 @@ export type ClientOptions = {
 export type AllowedDocumentTypeModel = {
     id: string;
     name: string;
-    description?: string | null;
-    icon?: string | null;
+    description?: null | string;
+    icon?: null | string;
 };
 
 export type AllowedMediaTypeItemResponseModel = {
+    matchedFileExtension: boolean;
+    icon?: null | string;
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
-    icon?: string | null;
-    matchedFileExtension: boolean;
 };
 
 export type AllowedMediaTypeModel = {
     id: string;
     name: string;
-    description?: string | null;
-    icon?: string | null;
+    description?: null | string;
+    icon?: null | string;
+};
+
+export type AllowedMemberTypeModel = {
+    id: string;
+    name: string;
+    description?: null | string;
+    icon?: null | string;
 };
 
 export type AuditLogResponseModel = {
     user: ReferenceByIdModel;
     timestamp: string;
     logType: AuditTypeModel;
-    comment?: string | null;
-    parameters?: string | null;
+    comment?: null | string;
+    parameters?: null | string;
 };
 
-export enum AuditTypeModel {
-    NEW = 'New',
-    SAVE = 'Save',
-    SAVE_VARIANT = 'SaveVariant',
-    OPEN = 'Open',
-    DELETE = 'Delete',
-    PUBLISH = 'Publish',
-    PUBLISH_VARIANT = 'PublishVariant',
-    SEND_TO_PUBLISH = 'SendToPublish',
-    SEND_TO_PUBLISH_VARIANT = 'SendToPublishVariant',
-    UNPUBLISH = 'Unpublish',
-    UNPUBLISH_VARIANT = 'UnpublishVariant',
-    MOVE = 'Move',
-    COPY = 'Copy',
-    ASSIGN_DOMAIN = 'AssignDomain',
-    PUBLIC_ACCESS = 'PublicAccess',
-    SORT = 'Sort',
-    NOTIFY = 'Notify',
-    SYSTEM = 'System',
-    ROLL_BACK = 'RollBack',
-    PACKAGER_INSTALL = 'PackagerInstall',
-    PACKAGER_UNINSTALL = 'PackagerUninstall',
-    CUSTOM = 'Custom',
-    CONTENT_VERSION_PREVENT_CLEANUP = 'ContentVersionPreventCleanup',
-    CONTENT_VERSION_ENABLE_CLEANUP = 'ContentVersionEnableCleanup'
-}
+/**
+ * Defines audit types.
+ */
+export type AuditTypeModel = 'New' | 'Save' | 'SaveVariant' | 'Open' | 'Delete' | 'Publish' | 'PublishVariant' | 'SendToPublish' | 'SendToPublishVariant' | 'Unpublish' | 'UnpublishVariant' | 'Move' | 'Copy' | 'AssignDomain' | 'PublicAccess' | 'Sort' | 'Notify' | 'System' | 'RollBack' | 'PackagerInstall' | 'PackagerUninstall' | 'Custom' | 'ContentVersionPreventCleanup' | 'ContentVersionEnableCleanup';
 
 export type AvailableDocumentTypeCompositionResponseModel = {
+    folderPath: Array<string>;
+    isCompatible: boolean;
     id: string;
     name: string;
     icon: string;
-    folderPath: Array<string>;
-    isCompatible: boolean;
 };
 
 export type AvailableMediaTypeCompositionResponseModel = {
+    folderPath: Array<string>;
+    isCompatible: boolean;
     id: string;
     name: string;
     icon: string;
-    folderPath: Array<string>;
-    isCompatible: boolean;
 };
 
 export type AvailableMemberTypeCompositionResponseModel = {
+    folderPath: Array<string>;
+    isCompatible: boolean;
     id: string;
     name: string;
     icon: string;
-    folderPath: Array<string>;
-    isCompatible: boolean;
 };
 
 export type BatchResponseModelDataTypeResponseModel = {
@@ -111,21 +96,20 @@ export type CalculatedUserStartNodesResponseModel = {
     hasDocumentRootAccess: boolean;
     mediaStartNodeIds: Array<ReferenceByIdModel>;
     hasMediaRootAccess: boolean;
+    elementStartNodeIds: Array<ReferenceByIdModel>;
+    hasElementRootAccess: boolean;
 };
 
 export type ChangePasswordCurrentUserRequestModel = {
+    oldPassword?: null | string;
     newPassword: string;
-    oldPassword?: string | null;
 };
 
 export type ChangePasswordUserRequestModel = {
     newPassword: string;
 };
 
-export enum CompositionTypeModel {
-    COMPOSITION = 'Composition',
-    INHERITANCE = 'Inheritance'
-}
+export type CompositionTypeModel = 'Composition' | 'Inheritance';
 
 export type ConsentLevelPresentationModel = {
     level: TelemetryLevelModel;
@@ -133,82 +117,98 @@ export type ConsentLevelPresentationModel = {
 };
 
 export type CopyDataTypeRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
 };
 
 export type CopyDocumentRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
     relateToOriginal: boolean;
     includeDescendants: boolean;
 };
 
 export type CopyDocumentTypeRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
+};
+
+export type CopyElementRequestModel = {
+    target?: null | ReferenceByIdModel;
 };
 
 export type CopyMediaTypeRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
 };
 
 export type CopyMemberTypeRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
 };
 
 export type CreateDataTypeRequestModel = {
+    id?: null | string;
+    parent?: null | ReferenceByIdModel;
     name: string;
     editorAlias: string;
     editorUiAlias: string;
     values: Array<DataTypePropertyPresentationModel>;
-    id?: string | null;
-    parent?: ReferenceByIdModel | null;
 };
 
 export type CreateDictionaryItemRequestModel = {
+    id?: null | string;
+    parent?: null | ReferenceByIdModel;
     name: string;
     translations: Array<DictionaryItemTranslationModel>;
-    id?: string | null;
-    parent?: ReferenceByIdModel | null;
 };
 
 export type CreateDocumentBlueprintFromDocumentRequestModel = {
     document: ReferenceByIdModel;
-    id?: string | null;
+    id?: null | string;
     name: string;
-    parent?: ReferenceByIdModel | null;
+    parent?: null | ReferenceByIdModel;
 };
 
 export type CreateDocumentBlueprintRequestModel = {
-    values: Array<DocumentValueModel>;
-    variants: Array<DocumentVariantRequestModel>;
-    id?: string | null;
-    parent?: ReferenceByIdModel | null;
     documentType: ReferenceByIdModel;
+    parent?: null | ReferenceByIdModel;
+    id?: null | string;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<DocumentValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<DocumentVariantRequestModel>;
 };
 
 export type CreateDocumentRequestModel = {
-    values: Array<DocumentValueModel>;
-    variants: Array<DocumentVariantRequestModel>;
-    id?: string | null;
-    parent?: ReferenceByIdModel | null;
+    template: null | ReferenceByIdModel;
     documentType: ReferenceByIdModel;
-    template: ReferenceByIdModel | null;
+    parent?: null | ReferenceByIdModel;
+    id?: null | string;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<DocumentValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<DocumentVariantRequestModel>;
 };
 
 export type CreateDocumentTypePropertyTypeContainerRequestModel = {
     id: string;
-    parent?: ReferenceByIdModel | null;
-    name?: string | null;
+    parent?: null | ReferenceByIdModel;
+    name?: null | string;
     type: string;
     sortOrder: number;
 };
 
 export type CreateDocumentTypePropertyTypeRequestModel = {
     id: string;
-    container?: ReferenceByIdModel | null;
+    container?: null | ReferenceByIdModel;
     sortOrder: number;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     dataType: ReferenceByIdModel;
     variesByCulture: boolean;
     variesBySegment: boolean;
@@ -217,24 +217,25 @@ export type CreateDocumentTypePropertyTypeRequestModel = {
 };
 
 export type CreateDocumentTypeRequestModel = {
+    allowedTemplates: Array<ReferenceByIdModel>;
+    defaultTemplate?: null | ReferenceByIdModel;
+    cleanup: DocumentTypeCleanupModel;
+    allowedDocumentTypes: Array<DocumentTypeSortModel>;
+    compositions: Array<DocumentTypeCompositionModel>;
+    parent?: null | ReferenceByIdModel;
+    id?: null | string;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     icon: string;
     allowedAsRoot: boolean;
     variesByCulture: boolean;
     variesBySegment: boolean;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
     isElement: boolean;
+    allowedInLibrary: boolean;
     properties: Array<CreateDocumentTypePropertyTypeRequestModel>;
     containers: Array<CreateDocumentTypePropertyTypeContainerRequestModel>;
-    id?: string | null;
-    parent?: ReferenceByIdModel | null;
-    allowedTemplates: Array<ReferenceByIdModel>;
-    defaultTemplate?: ReferenceByIdModel | null;
-    cleanup: DocumentTypeCleanupModel;
-    allowedDocumentTypes: Array<DocumentTypeSortModel>;
-    compositions: Array<DocumentTypeCompositionModel>;
 };
 
 export type CreateDocumentTypeTemplateRequestModel = {
@@ -243,49 +244,69 @@ export type CreateDocumentTypeTemplateRequestModel = {
     isDefault: boolean;
 };
 
+export type CreateElementRequestModel = {
+    documentType: ReferenceByIdModel;
+    parent?: null | ReferenceByIdModel;
+    id?: null | string;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<ElementValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<ElementVariantRequestModel>;
+};
+
 export type CreateFolderRequestModel = {
+    id?: null | string;
+    parent?: null | ReferenceByIdModel;
     name: string;
-    id?: string | null;
-    parent?: ReferenceByIdModel | null;
 };
 
 export type CreateInitialPasswordUserRequestModel = {
+    password: string;
     user: ReferenceByIdModel;
     token: string;
-    password: string;
 };
 
 export type CreateLanguageRequestModel = {
+    isoCode: string;
     name: string;
     isDefault: boolean;
     isMandatory: boolean;
-    fallbackIsoCode?: string | null;
-    isoCode: string;
+    fallbackIsoCode?: null | string;
 };
 
 export type CreateMediaRequestModel = {
-    values: Array<MediaValueModel>;
-    variants: Array<MediaVariantRequestModel>;
-    id?: string | null;
-    parent?: ReferenceByIdModel | null;
     mediaType: ReferenceByIdModel;
+    parent?: null | ReferenceByIdModel;
+    id?: null | string;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<MediaValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<MediaVariantRequestModel>;
 };
 
 export type CreateMediaTypePropertyTypeContainerRequestModel = {
     id: string;
-    parent?: ReferenceByIdModel | null;
-    name?: string | null;
+    parent?: null | ReferenceByIdModel;
+    name?: null | string;
     type: string;
     sortOrder: number;
 };
 
 export type CreateMediaTypePropertyTypeRequestModel = {
     id: string;
-    container?: ReferenceByIdModel | null;
+    container?: null | ReferenceByIdModel;
     sortOrder: number;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     dataType: ReferenceByIdModel;
     variesByCulture: boolean;
     variesBySegment: boolean;
@@ -294,84 +315,93 @@ export type CreateMediaTypePropertyTypeRequestModel = {
 };
 
 export type CreateMediaTypeRequestModel = {
+    allowedMediaTypes: Array<MediaTypeSortModel>;
+    compositions: Array<MediaTypeCompositionModel>;
+    parent?: null | ReferenceByIdModel;
+    id?: null | string;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     icon: string;
     allowedAsRoot: boolean;
     variesByCulture: boolean;
     variesBySegment: boolean;
+    collection?: null | ReferenceByIdModel;
     isElement: boolean;
+    allowedInLibrary: boolean;
     properties: Array<CreateMediaTypePropertyTypeRequestModel>;
     containers: Array<CreateMediaTypePropertyTypeContainerRequestModel>;
-    id?: string | null;
-    parent?: ReferenceByIdModel | null;
-    allowedMediaTypes: Array<MediaTypeSortModel>;
-    compositions: Array<MediaTypeCompositionModel>;
-    collection?: ReferenceByIdModel | null;
 };
 
 export type CreateMemberGroupRequestModel = {
+    id?: null | string;
     name: string;
-    id?: string | null;
 };
 
 export type CreateMemberRequestModel = {
-    values: Array<MemberValueModel>;
-    variants: Array<MemberVariantRequestModel>;
-    id?: string | null;
     email: string;
     username: string;
     password: string;
     memberType: ReferenceByIdModel;
-    groups?: Array<string> | null;
+    groups?: null | Array<string>;
     isApproved: boolean;
+    id?: null | string;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<MemberValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<MemberVariantRequestModel>;
 };
 
 export type CreateMemberTypePropertyTypeContainerRequestModel = {
     id: string;
-    parent?: ReferenceByIdModel | null;
-    name?: string | null;
+    parent?: null | ReferenceByIdModel;
+    name?: null | string;
     type: string;
     sortOrder: number;
 };
 
 export type CreateMemberTypePropertyTypeRequestModel = {
+    isSensitive: boolean;
+    visibility: MemberTypePropertyTypeVisibilityModel;
     id: string;
-    container?: ReferenceByIdModel | null;
+    container?: null | ReferenceByIdModel;
     sortOrder: number;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     dataType: ReferenceByIdModel;
     variesByCulture: boolean;
     variesBySegment: boolean;
     validation: PropertyTypeValidationModel;
     appearance: PropertyTypeAppearanceModel;
-    isSensitive: boolean;
-    visibility: MemberTypePropertyTypeVisibilityModel;
 };
 
 export type CreateMemberTypeRequestModel = {
+    compositions: Array<MemberTypeCompositionModel>;
+    parent?: null | ReferenceByIdModel;
+    id?: null | string;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     icon: string;
     allowedAsRoot: boolean;
     variesByCulture: boolean;
     variesBySegment: boolean;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
     isElement: boolean;
+    allowedInLibrary: boolean;
     properties: Array<CreateMemberTypePropertyTypeRequestModel>;
     containers: Array<CreateMemberTypePropertyTypeContainerRequestModel>;
-    id?: string | null;
-    parent?: ReferenceByIdModel | null;
-    compositions: Array<MemberTypeCompositionModel>;
 };
 
 export type CreatePackageRequestModel = {
+    id?: null | string;
     name: string;
-    contentNodeId?: string | null;
+    contentNodeId?: null | string;
     contentLoadChildNodes: boolean;
     mediaIds: Array<string>;
     mediaLoadChildNodes: boolean;
@@ -384,47 +414,46 @@ export type CreatePackageRequestModel = {
     scripts: Array<string>;
     languages: Array<string>;
     dictionaryItems: Array<string>;
-    id?: string | null;
 };
 
 export type CreatePartialViewFolderRequestModel = {
     name: string;
-    parent?: FileSystemFolderModel | null;
+    parent?: null | FileSystemFolderModel;
 };
 
 export type CreatePartialViewRequestModel = {
-    name: string;
-    parent?: FileSystemFolderModel | null;
     content: string;
+    name: string;
+    parent?: null | FileSystemFolderModel;
 };
 
 export type CreateScriptFolderRequestModel = {
     name: string;
-    parent?: FileSystemFolderModel | null;
+    parent?: null | FileSystemFolderModel;
 };
 
 export type CreateScriptRequestModel = {
-    name: string;
-    parent?: FileSystemFolderModel | null;
     content: string;
+    name: string;
+    parent?: null | FileSystemFolderModel;
 };
 
 export type CreateStylesheetFolderRequestModel = {
     name: string;
-    parent?: FileSystemFolderModel | null;
+    parent?: null | FileSystemFolderModel;
 };
 
 export type CreateStylesheetRequestModel = {
-    name: string;
-    parent?: FileSystemFolderModel | null;
     content: string;
+    name: string;
+    parent?: null | FileSystemFolderModel;
 };
 
 export type CreateTemplateRequestModel = {
+    id?: null | string;
     name: string;
     alias: string;
-    content?: string | null;
-    id?: string | null;
+    content?: null | string;
 };
 
 export type CreateUserClientCredentialsRequestModel = {
@@ -433,54 +462,56 @@ export type CreateUserClientCredentialsRequestModel = {
 };
 
 export type CreateUserDataRequestModel = {
+    key?: null | string;
     group: string;
     identifier: string;
     value: string;
-    key?: string | null;
 };
 
 export type CreateUserGroupRequestModel = {
+    id?: null | string;
     name: string;
     alias: string;
-    description?: string | null;
-    icon?: string | null;
+    description?: null | string;
+    icon?: null | string;
     sections: Array<string>;
     languages: Array<string>;
     hasAccessToAllLanguages: boolean;
-    documentStartNode?: ReferenceByIdModel | null;
+    documentStartNode?: null | ReferenceByIdModel;
     documentRootAccess: boolean;
-    mediaStartNode?: ReferenceByIdModel | null;
+    mediaStartNode?: null | ReferenceByIdModel;
     mediaRootAccess: boolean;
+    elementStartNode?: null | ReferenceByIdModel;
+    elementRootAccess: boolean;
     fallbackPermissions: Array<string>;
-    permissions: Array<DocumentPermissionPresentationModel | DocumentPropertyValuePermissionPresentationModel | UnknownTypePermissionPresentationModel>;
-    id?: string | null;
+    permissions: Array<IPermissionPresentationModel>;
 };
 
 export type CreateUserRequestModel = {
+    kind: UserKindModel;
+    id?: null | string;
     email: string;
     userName: string;
     name: string;
     userGroupIds: Array<ReferenceByIdModel>;
-    id?: string | null;
-    kind: UserKindModel;
 };
 
 export type CreateWebhookRequestModel = {
+    id?: null | string;
+    events: Array<string>;
     enabled: boolean;
-    name?: string | null;
-    description?: string | null;
+    name?: null | string;
+    description?: null | string;
     url: string;
     contentTypeKeys: Array<string>;
     headers: {
         [key: string]: string;
     };
-    id?: string | null;
-    events: Array<string>;
 };
 
 export type CultureAndScheduleRequestModel = {
-    culture?: string | null;
-    schedule?: ScheduleRequestModel | null;
+    culture?: null | string;
+    schedule?: null | ScheduleRequestModel;
 };
 
 export type CultureReponseModel = {
@@ -496,76 +527,37 @@ export type CurrentUserConfigurationResponseModel = {
 };
 
 export type CurrentUserResponseModel = {
-    email: string;
-    userName: string;
-    name: string;
-    userGroupIds: Array<ReferenceByIdModel>;
     id: string;
-    languageIsoCode: string | null;
+    languageIsoCode: null | string;
     documentStartNodeIds: Array<ReferenceByIdModel>;
     hasDocumentRootAccess: boolean;
     mediaStartNodeIds: Array<ReferenceByIdModel>;
     hasMediaRootAccess: boolean;
+    elementStartNodeIds: Array<ReferenceByIdModel>;
+    hasElementRootAccess: boolean;
     avatarUrls: Array<string>;
     languages: Array<string>;
     hasAccessToAllLanguages: boolean;
     hasAccessToSensitiveData: boolean;
     fallbackPermissions: Array<string>;
-    permissions: Array<DocumentPermissionPresentationModel | DocumentPropertyValuePermissionPresentationModel | UnknownTypePermissionPresentationModel>;
+    permissions: Array<IPermissionPresentationModel>;
     allowedSections: Array<string>;
     isAdmin: boolean;
-};
-
-export enum DataTypeChangeModeModel {
-    TRUE = 'True',
-    FALSE = 'False',
-    FALSE_WITH_HELP_TEXT = 'FalseWithHelpText'
-}
-
-export type DataTypeItemResponseModel = {
-    id: string;
-    flags: Array<FlagModel>;
+    email: string;
+    userName: string;
     name: string;
-    editorUiAlias?: string | null;
-    editorAlias: string;
-    isDeletable: boolean;
-};
-
-export type DataTypePropertyPresentationModel = {
-    alias: string;
-    value?: unknown;
-};
-
-export type DataTypeResponseModel = {
-    name: string;
-    editorAlias: string;
-    editorUiAlias: string;
-    values: Array<DataTypePropertyPresentationModel>;
-    id: string;
-    isDeletable: boolean;
-    canIgnoreStartNodes: boolean;
-};
-
-export type DataTypeTreeItemResponseModel = {
-    hasChildren: boolean;
-    id: string;
-    parent?: ReferenceByIdModel | null;
-    flags: Array<FlagModel>;
-    name: string;
-    isFolder: boolean;
-    editorUiAlias?: string | null;
-    isDeletable: boolean;
+    userGroupIds: Array<ReferenceByIdModel>;
 };
 
 export type DatabaseInstallRequestModel = {
     id: string;
-    providerName: string;
-    server?: string | null;
-    name?: string | null;
-    username?: string | null;
-    password?: string | null;
+    providerName: null | string;
+    server?: null | string;
+    name?: null | string;
+    username?: null | string;
+    password?: null | string;
     useIntegratedAuthentication: boolean;
-    connectionString?: string | null;
+    connectionString?: null | string;
     trustServerCertificate: boolean;
 };
 
@@ -584,18 +576,63 @@ export type DatabaseSettingsPresentationModel = {
     requiresConnectionTest: boolean;
 };
 
+/**
+ * Specifies the mode for allowing data type changes after they have been used.
+ */
+export type DataTypeChangeModeModel = 'True' | 'False' | 'FalseWithHelpText';
+
 export type DatatypeConfigurationResponseModel = {
     canBeChanged: DataTypeChangeModeModel;
     documentListViewId: string;
     mediaListViewId: string;
 };
 
-export type DefaultReferenceResponseModel = {
-    $type: string;
+export type DataTypeItemResponseModel = {
+    editorUiAlias?: null | string;
+    editorAlias: string;
+    isDeletable: boolean;
+    name: string;
     id: string;
-    name?: string | null;
-    type?: string | null;
-    icon?: string | null;
+    flags: Array<FlagModel>;
+};
+
+export type DataTypePropertyPresentationModel = {
+    alias: string;
+    value?: unknown;
+};
+
+export type DataTypeResponseModel = {
+    id: string;
+    isDeletable: boolean;
+    canIgnoreStartNodes: boolean;
+    name: string;
+    editorAlias: string;
+    editorUiAlias: string;
+    values: Array<DataTypePropertyPresentationModel>;
+};
+
+export type DataTypeSchemaItemResponseModel = {
+    id: string;
+    valueTypeName?: null | string;
+    jsonSchema?: null | JsonObject;
+    error?: null | string;
+};
+
+export type DataTypeSchemaResponseModel = {
+    valueTypeName?: null | string;
+    jsonSchema?: null | JsonObject;
+};
+
+export type DataTypeTreeItemResponseModel = {
+    editorUiAlias?: null | string;
+    isDeletable: boolean;
+    isFolder: boolean;
+    noAccess: boolean;
+    name: string;
+    id: string;
+    parent?: null | ReferenceByIdModel;
+    flags: Array<FlagModel>;
+    hasChildren: boolean;
 };
 
 export type DeleteUserGroupsRequestModel = {
@@ -607,15 +644,15 @@ export type DeleteUsersRequestModel = {
 };
 
 export type DictionaryItemItemResponseModel = {
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
 };
 
 export type DictionaryItemResponseModel = {
+    id: string;
     name: string;
     translations: Array<DictionaryItemTranslationModel>;
-    id: string;
 };
 
 export type DictionaryItemTranslationModel = {
@@ -624,16 +661,16 @@ export type DictionaryItemTranslationModel = {
 };
 
 export type DictionaryOverviewResponseModel = {
-    name?: string | null;
+    name?: null | string;
     id: string;
-    parent?: ReferenceByIdModel | null;
+    parent?: null | ReferenceByIdModel;
     translatedIsoCodes: Array<string>;
 };
 
-export enum DirectionModel {
-    ASCENDING = 'Ascending',
-    DESCENDING = 'Descending'
-}
+/**
+ * Defines the direction for sorting operations.
+ */
+export type DirectionModel = 'Ascending' | 'Descending';
 
 export type DisableUserRequestModel = {
     userIds: Array<ReferenceByIdModel>;
@@ -648,20 +685,20 @@ export type DocTypeAuditForNodeRowResponseModel = {
     contentTypeKey: string;
     contentTypeAlias: string;
     contentTypeName: string;
-    contentTypeIcon?: string | null;
+    contentTypeIcon: null | string;
     isAllowed: boolean;
     isExplicit: boolean;
     isInAllowedChildren: boolean;
-    reasoning: Array<ReasoningItemModel>;
-    wasPriorityOverrideActive?: boolean;
-    suppressedReasoning?: Array<ReasoningItemModel> | null;
+    reasoning: Array<ReasoningItem>;
+    wasPriorityOverrideActive: boolean;
+    suppressedReasoning?: null | Array<ReasoningItem>;
 };
 
 export type DocTypeListItemModel = {
     key: string;
     alias: string;
     name: string;
-    icon?: string | null;
+    icon: null | string;
 };
 
 export type DocTypePathEntriesResponseModel = {
@@ -692,63 +729,73 @@ export type DocTypePermissionEntryResponseModel = {
 };
 
 export type DocumentBlueprintItemResponseModel = {
+    documentType: DocumentTypeReferenceResponseModel;
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
-    documentType: DocumentTypeReferenceResponseModel;
 };
 
 export type DocumentBlueprintResponseModel = {
-    values: Array<DocumentValueResponseModel>;
-    variants: Array<DocumentVariantResponseModel>;
+    documentType: DocumentTypeReferenceResponseModel;
     id: string;
     flags: Array<FlagModel>;
-    documentType: DocumentTypeReferenceResponseModel;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<DocumentValueResponseModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<DocumentVariantResponseModel>;
 };
 
 export type DocumentBlueprintTreeItemResponseModel = {
-    hasChildren: boolean;
-    id: string;
-    parent?: ReferenceByIdModel | null;
-    flags: Array<FlagModel>;
-    name: string;
+    documentType?: null | DocumentTypeReferenceResponseModel;
     isFolder: boolean;
-    documentType?: DocumentTypeReferenceResponseModel | null;
+    noAccess: boolean;
+    name: string;
+    id: string;
+    parent?: null | ReferenceByIdModel;
+    flags: Array<FlagModel>;
+    hasChildren: boolean;
 };
 
 export type DocumentCollectionResponseModel = {
-    values: Array<DocumentValueResponseModel>;
-    variants: Array<DocumentVariantResponseModel>;
-    id: string;
-    flags: Array<FlagModel>;
-    creator?: string | null;
-    sortOrder: number;
     documentType: DocumentTypeCollectionReferenceResponseModel;
     isTrashed: boolean;
     isProtected: boolean;
     ancestors: Array<ReferenceByIdModel>;
-    updater?: string | null;
+    updater?: null | string;
+    creator?: null | string;
+    sortOrder: number;
+    id: string;
+    flags: Array<FlagModel>;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<DocumentValueResponseModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<DocumentVariantResponseModel>;
 };
 
 export type DocumentConfigurationResponseModel = {
     disableDeleteWhenReferenced: boolean;
     disableUnpublishWhenReferenced: boolean;
     allowEditInvariantFromNonDefault: boolean;
-    /**
-     * @deprecated
-     */
     allowNonExistingSegmentsCreation: boolean;
 };
 
 export type DocumentItemResponseModel = {
-    id: string;
-    flags: Array<FlagModel>;
     isTrashed: boolean;
     isProtected: boolean;
-    parent?: ReferenceByIdModel | null;
+    parent?: null | ReferenceByIdModel;
     hasChildren: boolean;
     documentType: DocumentTypeReferenceResponseModel;
     variants: Array<DocumentVariantItemResponseModel>;
+    id: string;
+    flags: Array<FlagModel>;
 };
 
 export type DocumentNotificationResponseModel = {
@@ -757,59 +804,43 @@ export type DocumentNotificationResponseModel = {
     subscribed: boolean;
 };
 
-export type DocumentPermissionPresentationModel = {
-    $type: string;
-    document: ReferenceByIdModel;
-    verbs: Array<string>;
-};
-
-export type DocumentPropertyValuePermissionPresentationModel = {
-    $type: string;
-    documentType: ReferenceByIdModel;
-    propertyType: ReferenceByIdModel;
-    verbs: Array<string>;
-};
-
 export type DocumentRecycleBinItemResponseModel = {
+    documentType: DocumentTypeReferenceResponseModel;
+    variants: Array<DocumentVariantItemResponseModel>;
     id: string;
     createDate: string;
     hasChildren: boolean;
-    parent?: ItemReferenceByIdResponseModel | null;
-    documentType: DocumentTypeReferenceResponseModel;
-    variants: Array<DocumentVariantItemResponseModel>;
-};
-
-export type DocumentReferenceResponseModel = {
-    $type: string;
-    id: string;
-    name?: string | null;
-    published?: boolean | null;
-    documentType: TrackedReferenceDocumentTypeModel;
-    variants: Array<DocumentVariantItemResponseModel>;
+    parent?: null | ItemReferenceByIdResponseModel;
 };
 
 export type DocumentResponseModel = {
-    values: Array<DocumentValueResponseModel>;
-    variants: Array<DocumentVariantResponseModel>;
+    template?: null | ReferenceByIdModel;
+    isTrashed: boolean;
+    documentType: DocumentTypeReferenceResponseModel;
     id: string;
     flags: Array<FlagModel>;
-    documentType: DocumentTypeReferenceResponseModel;
-    template?: ReferenceByIdModel | null;
-    isTrashed: boolean;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<DocumentValueResponseModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<DocumentVariantResponseModel>;
 };
 
 export type DocumentTreeItemResponseModel = {
-    hasChildren: boolean;
-    id: string;
-    parent?: ReferenceByIdModel | null;
-    flags: Array<FlagModel>;
-    noAccess: boolean;
-    isTrashed: boolean;
-    createDate: string;
     isProtected: boolean;
     ancestors: Array<ReferenceByIdModel>;
     documentType: DocumentTypeReferenceResponseModel;
     variants: Array<DocumentVariantItemResponseModel>;
+    noAccess: boolean;
+    isTrashed: boolean;
+    createDate: string;
+    id: string;
+    parent?: null | ReferenceByIdModel;
+    flags: Array<FlagModel>;
+    hasChildren: boolean;
 };
 
 export type DocumentTypeAllowedParentsResponseModel = {
@@ -817,22 +848,22 @@ export type DocumentTypeAllowedParentsResponseModel = {
 };
 
 export type DocumentTypeBlueprintItemResponseModel = {
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
 };
 
 export type DocumentTypeCleanupModel = {
     preventCleanup: boolean;
-    keepAllVersionsNewerThanDays?: number | null;
-    keepLatestVersionPerDayForDays?: number | null;
+    keepAllVersionsNewerThanDays?: null | number;
+    keepLatestVersionPerDayForDays?: null | number;
 };
 
 export type DocumentTypeCollectionReferenceResponseModel = {
     id: string;
     alias: string;
     icon: string;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
 };
 
 export type DocumentTypeCompositionModel = {
@@ -841,10 +872,10 @@ export type DocumentTypeCompositionModel = {
 };
 
 export type DocumentTypeCompositionRequestModel = {
-    id?: string | null;
+    isElement: boolean;
+    id?: null | string;
     currentPropertyAliases: Array<string>;
     currentCompositeIds: Array<string>;
-    isElement: boolean;
 };
 
 export type DocumentTypeCompositionResponseModel = {
@@ -861,37 +892,30 @@ export type DocumentTypeConfigurationResponseModel = {
 };
 
 export type DocumentTypeItemResponseModel = {
+    isElement: boolean;
+    allowedInLibrary: boolean;
+    icon?: null | string;
+    description?: null | string;
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
-    isElement: boolean;
-    icon?: string | null;
-    description?: string | null;
 };
 
 export type DocumentTypePropertyTypeContainerResponseModel = {
     id: string;
-    parent?: ReferenceByIdModel | null;
-    name?: string | null;
+    parent?: null | ReferenceByIdModel;
+    name?: null | string;
     type: string;
     sortOrder: number;
 };
 
-export type DocumentTypePropertyTypeReferenceResponseModel = {
-    $type: string;
-    id: string;
-    name?: string | null;
-    alias?: string | null;
-    documentType: TrackedReferenceDocumentTypeModel;
-};
-
 export type DocumentTypePropertyTypeResponseModel = {
     id: string;
-    container?: ReferenceByIdModel | null;
+    container?: null | ReferenceByIdModel;
     sortOrder: number;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     dataType: ReferenceByIdModel;
     variesByCulture: boolean;
     variesBySegment: boolean;
@@ -902,27 +926,28 @@ export type DocumentTypePropertyTypeResponseModel = {
 export type DocumentTypeReferenceResponseModel = {
     id: string;
     icon: string;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
 };
 
 export type DocumentTypeResponseModel = {
+    allowedTemplates: Array<ReferenceByIdModel>;
+    defaultTemplate?: null | ReferenceByIdModel;
+    cleanup: DocumentTypeCleanupModel;
+    allowedDocumentTypes: Array<DocumentTypeSortModel>;
+    compositions: Array<DocumentTypeCompositionModel>;
+    id: string;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     icon: string;
     allowedAsRoot: boolean;
     variesByCulture: boolean;
     variesBySegment: boolean;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
     isElement: boolean;
+    allowedInLibrary: boolean;
     properties: Array<DocumentTypePropertyTypeResponseModel>;
     containers: Array<DocumentTypePropertyTypeContainerResponseModel>;
-    id: string;
-    allowedTemplates: Array<ReferenceByIdModel>;
-    defaultTemplate?: ReferenceByIdModel | null;
-    cleanup: DocumentTypeCleanupModel;
-    allowedDocumentTypes: Array<DocumentTypeSortModel>;
-    compositions: Array<DocumentTypeCompositionModel>;
 };
 
 export type DocumentTypeSortModel = {
@@ -931,21 +956,22 @@ export type DocumentTypeSortModel = {
 };
 
 export type DocumentTypeTreeItemResponseModel = {
-    hasChildren: boolean;
-    id: string;
-    parent?: ReferenceByIdModel | null;
-    flags: Array<FlagModel>;
-    name: string;
-    isFolder: boolean;
     isElement: boolean;
     icon: string;
+    isFolder: boolean;
+    noAccess: boolean;
+    name: string;
+    id: string;
+    parent?: null | ReferenceByIdModel;
+    flags: Array<FlagModel>;
+    hasChildren: boolean;
 };
 
 export type DocumentUrlInfoModel = {
-    culture: string | null;
-    url: string | null;
-    message: string | null;
+    message: null | string;
     provider: string;
+    culture: null | string;
+    url: null | string;
 };
 
 export type DocumentUrlInfoResponseModel = {
@@ -954,55 +980,92 @@ export type DocumentUrlInfoResponseModel = {
 };
 
 export type DocumentValueModel = {
-    culture?: string | null;
-    segment?: string | null;
+    /**
+     * Gets or sets the culture code for this value, or `null` for invariant properties.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this value, or `null` for non-segmented properties.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the property type alias.
+     */
     alias: string;
+    /**
+     * Gets or sets the property value.
+     */
     value?: unknown;
 };
 
 export type DocumentValueResponseModel = {
-    culture?: string | null;
-    segment?: string | null;
-    alias: string;
-    value?: unknown;
+    /**
+     * Gets or sets the alias of the property editor used for this value.
+     */
     editorAlias: string;
+    /**
+     * Gets or sets the culture code for this value, or `null` for invariant properties.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this value, or `null` for non-segmented properties.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the property type alias.
+     */
+    alias: string;
+    /**
+     * Gets or sets the property value.
+     */
+    value?: unknown;
 };
 
 export type DocumentVariantItemResponseModel = {
-    name: string;
-    culture?: string | null;
-    readonly id: string;
+    id: string;
     flags: Array<FlagModel>;
-    state: DocumentVariantStateModel;
+    state: PublishableVariantStateModel;
+    name: string;
+    culture?: null | string;
 };
 
 export type DocumentVariantRequestModel = {
-    culture?: string | null;
-    segment?: string | null;
+    /**
+     * Gets or sets the culture code for this variant, or `null` for invariant content.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this variant, or `null` for non-segmented content.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the name of the content for this variant.
+     */
     name: string;
 };
 
 export type DocumentVariantResponseModel = {
-    culture?: string | null;
-    segment?: string | null;
-    name: string;
+    id: string;
+    flags: Array<FlagModel>;
+    state: PublishableVariantStateModel;
+    publishDate?: null | string;
+    scheduledPublishDate?: null | string;
+    scheduledUnpublishDate?: null | string;
     createDate: string;
     updateDate: string;
-    state: DocumentVariantStateModel;
-    publishDate?: string | null;
-    scheduledPublishDate?: string | null;
-    scheduledUnpublishDate?: string | null;
-    readonly id: string;
-    flags: Array<FlagModel>;
+    /**
+     * Gets or sets the culture code for this variant, or `null` for invariant content.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this variant, or `null` for non-segmented content.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the name of the content for this variant.
+     */
+    name: string;
 };
-
-export enum DocumentVariantStateModel {
-    NOT_CREATED = 'NotCreated',
-    DRAFT = 'Draft',
-    PUBLISHED = 'Published',
-    PUBLISHED_PENDING_CHANGES = 'PublishedPendingChanges',
-    TRASHED = 'Trashed'
-}
 
 export type DocumentVersionItemResponseModel = {
     id: string;
@@ -1016,12 +1079,18 @@ export type DocumentVersionItemResponseModel = {
 };
 
 export type DocumentVersionResponseModel = {
-    values: Array<DocumentValueResponseModel>;
-    variants: Array<DocumentVariantResponseModel>;
+    document?: null | ReferenceByIdModel;
+    documentType: DocumentTypeReferenceResponseModel;
     id: string;
     flags: Array<FlagModel>;
-    documentType: DocumentTypeReferenceResponseModel;
-    document?: ReferenceByIdModel | null;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<DocumentValueResponseModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<DocumentVariantResponseModel>;
 };
 
 export type DomainPresentationModel = {
@@ -1030,20 +1099,20 @@ export type DomainPresentationModel = {
 };
 
 export type DomainsResponseModel = {
-    defaultIsoCode?: string | null;
+    defaultIsoCode?: null | string;
     domains: Array<DomainPresentationModel>;
 };
 
 export type DynamicRootContextRequestModel = {
-    id?: string | null;
+    id?: null | string;
     parent: ReferenceByIdModel;
-    culture?: string | null;
-    segment?: string | null;
+    culture?: null | string;
+    segment?: null | string;
 };
 
 export type DynamicRootQueryOriginRequestModel = {
     alias: string;
-    id?: string | null;
+    id?: null | string;
 };
 
 export type DynamicRootQueryRequestModel = {
@@ -1065,18 +1134,188 @@ export type DynamicRootResponseModel = {
     roots: Array<string>;
 };
 
-export type EffectivePermissionItemModel = {
+export type EffectivePermissionItem = {
     verb: string;
     isAllowed: boolean;
     isExplicit: boolean;
-    reasoning: Array<ReasoningItemModel>;
+    reasoning: Array<ReasoningItem>;
     wasPriorityOverrideActive: boolean;
-    suppressedReasoning: Array<ReasoningItemModel>;
+    suppressedReasoning: Array<ReasoningItem>;
 };
 
 export type EffectivePermissionsResponseModel = {
     nodeKey: string;
-    permissions: Array<EffectivePermissionItemModel>;
+    permissions: Array<EffectivePermissionItem>;
+};
+
+export type ElementConfigurationResponseModel = {
+    disableDeleteWhenReferenced: boolean;
+    disableUnpublishWhenReferenced: boolean;
+    allowEditInvariantFromNonDefault: boolean;
+    allowNonExistingSegmentsCreation: boolean;
+};
+
+export type ElementItemResponseModel = {
+    isTrashed: boolean;
+    parent?: null | ReferenceByIdModel;
+    hasChildren: boolean;
+    documentType: DocumentTypeReferenceResponseModel;
+    variants: Array<ElementVariantItemResponseModel>;
+    id: string;
+    flags: Array<FlagModel>;
+};
+
+export type ElementRecycleBinItemResponseModel = {
+    documentType?: null | DocumentTypeReferenceResponseModel;
+    variants: Array<ElementVariantItemResponseModel>;
+    isFolder: boolean;
+    name: string;
+    id: string;
+    createDate: string;
+    hasChildren: boolean;
+    parent?: null | ItemReferenceByIdResponseModel;
+};
+
+export type ElementResponseModel = {
+    isTrashed: boolean;
+    documentType: DocumentTypeReferenceResponseModel;
+    id: string;
+    flags: Array<FlagModel>;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<ElementValueResponseModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<ElementVariantResponseModel>;
+};
+
+export type ElementTreeItemResponseModel = {
+    createDate: string;
+    documentType?: null | DocumentTypeReferenceResponseModel;
+    variants: Array<ElementVariantItemResponseModel>;
+    isFolder: boolean;
+    noAccess: boolean;
+    name: string;
+    id: string;
+    parent?: null | ReferenceByIdModel;
+    flags: Array<FlagModel>;
+    hasChildren: boolean;
+};
+
+export type ElementValueModel = {
+    /**
+     * Gets or sets the culture code for this value, or `null` for invariant properties.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this value, or `null` for non-segmented properties.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the property type alias.
+     */
+    alias: string;
+    /**
+     * Gets or sets the property value.
+     */
+    value?: unknown;
+};
+
+export type ElementValueResponseModel = {
+    /**
+     * Gets or sets the alias of the property editor used for this value.
+     */
+    editorAlias: string;
+    /**
+     * Gets or sets the culture code for this value, or `null` for invariant properties.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this value, or `null` for non-segmented properties.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the property type alias.
+     */
+    alias: string;
+    /**
+     * Gets or sets the property value.
+     */
+    value?: unknown;
+};
+
+export type ElementVariantItemResponseModel = {
+    id: string;
+    flags: Array<FlagModel>;
+    state: PublishableVariantStateModel;
+    name: string;
+    culture?: null | string;
+};
+
+export type ElementVariantRequestModel = {
+    /**
+     * Gets or sets the culture code for this variant, or `null` for invariant content.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this variant, or `null` for non-segmented content.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the name of the content for this variant.
+     */
+    name: string;
+};
+
+export type ElementVariantResponseModel = {
+    id: string;
+    flags: Array<FlagModel>;
+    state: PublishableVariantStateModel;
+    publishDate?: null | string;
+    scheduledPublishDate?: null | string;
+    scheduledUnpublishDate?: null | string;
+    createDate: string;
+    updateDate: string;
+    /**
+     * Gets or sets the culture code for this variant, or `null` for invariant content.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this variant, or `null` for non-segmented content.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the name of the content for this variant.
+     */
+    name: string;
+};
+
+export type ElementVersionItemResponseModel = {
+    id: string;
+    element: ReferenceByIdModel;
+    documentType: ReferenceByIdModel;
+    user: ReferenceByIdModel;
+    versionDate: string;
+    isCurrentPublishedVersion: boolean;
+    isCurrentDraftVersion: boolean;
+    preventCleanup: boolean;
+};
+
+export type ElementVersionResponseModel = {
+    element?: null | ReferenceByIdModel;
+    documentType: DocumentTypeReferenceResponseModel;
+    id: string;
+    flags: Array<FlagModel>;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<ElementValueResponseModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<ElementVariantResponseModel>;
 };
 
 export type EnableTwoFactorRequestModel = {
@@ -1090,17 +1329,19 @@ export type EnableUserRequestModel = {
 
 export type EntityImportAnalysisResponseModel = {
     entityType: string;
-    alias?: string | null;
-    key?: string | null;
+    alias?: null | string;
+    key?: null | string;
 };
 
-export enum EventMessageTypeModel {
-    DEFAULT = 'Default',
-    INFO = 'Info',
-    ERROR = 'Error',
-    SUCCESS = 'Success',
-    WARNING = 'Warning'
-}
+/**
+ * The type of event message
+ */
+export type EventMessageTypeModel = 'Default' | 'Info' | 'Error' | 'Success' | 'Warning';
+
+export type FetchResponseModelDataTypeSchemaItemResponseModel = {
+    total: number;
+    items: Array<DataTypeSchemaItemResponseModel>;
+};
 
 export type FieldPresentationModel = {
     name: string;
@@ -1112,39 +1353,46 @@ export type FileSystemFolderModel = {
 };
 
 export type FileSystemTreeItemPresentationModel = {
-    hasChildren: boolean;
     name: string;
     path: string;
-    parent?: FileSystemFolderModel | null;
+    parent?: null | FileSystemFolderModel;
     isFolder: boolean;
+    hasChildren: boolean;
 };
 
 export type FlagModel = {
     alias: string;
 };
 
-export type FolderResponseModel = {
+export type FolderItemResponseModel = {
     name: string;
     id: string;
+    flags: Array<FlagModel>;
+};
+
+export type FolderResponseModel = {
+    id: string;
+    isTrashed: boolean;
+    name: string;
 };
 
 export type HealthCheckActionRequestModel = {
     healthCheck: ReferenceByIdModel;
-    alias?: string | null;
-    name?: string | null;
-    description?: string | null;
+    alias?: null | string;
+    name?: null | string;
+    description?: null | string;
     valueRequired: boolean;
-    providedValue?: string | null;
-    providedValueValidation?: string | null;
-    providedValueValidationRegex?: string | null;
-    actionParameters?: {
+    providedValue?: null | string;
+    providedValueValidation?: null | string;
+    providedValueValidationRegex?: null | string;
+    actionParameters?: null | {
         [key: string]: unknown;
-    } | null;
+    };
 };
 
 export type HealthCheckGroupPresentationModel = {
-    name: string;
     checks: Array<HealthCheckModel>;
+    name: string;
 };
 
 export type HealthCheckGroupResponseModel = {
@@ -1156,54 +1404,42 @@ export type HealthCheckGroupWithResultResponseModel = {
 };
 
 export type HealthCheckModel = {
-    id: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
+    id: string;
 };
 
 export type HealthCheckResultResponseModel = {
     message: string;
     resultType: StatusResultTypeModel;
-    actions?: Array<HealthCheckActionRequestModel> | null;
-    readMoreLink?: string | null;
+    actions?: null | Array<HealthCheckActionRequestModel>;
+    readMoreLink?: null | string;
 };
 
 export type HealthCheckWithResultPresentationModel = {
+    results?: null | Array<HealthCheckResultResponseModel>;
     id: string;
-    results?: Array<HealthCheckResultResponseModel> | null;
 };
 
-export enum HealthStatusModel {
-    HEALTHY = 'Healthy',
-    UNHEALTHY = 'Unhealthy',
-    REBUILDING = 'Rebuilding',
-    CORRUPT = 'Corrupt'
-}
+export type HealthStatusModel = 'Healthy' | 'Unhealthy' | 'Rebuilding' | 'Corrupt';
 
 export type HealthStatusResponseModel = {
     status: HealthStatusModel;
-    message?: string | null;
+    message?: null | string;
 };
 
 export type HelpPageResponseModel = {
-    name?: string | null;
-    description?: string | null;
-    url?: string | null;
-    type?: string | null;
+    name?: null | string;
+    description?: null | string;
+    url?: null | string;
+    type?: null | string;
 };
 
-export enum ImageCropModeModel {
-    CROP = 'Crop',
-    MAX = 'Max',
-    STRETCH = 'Stretch',
-    PAD = 'Pad',
-    BOX_PAD = 'BoxPad',
-    MIN = 'Min'
-}
+export type ImageCropModeModel = 'Crop' | 'Max' | 'Stretch' | 'Pad' | 'BoxPad' | 'Min';
 
 export type ImportDictionaryRequestModel = {
     temporaryFile: ReferenceByIdModel;
-    parent?: ReferenceByIdModel | null;
+    parent?: null | ReferenceByIdModel;
 };
 
 export type ImportDocumentTypeRequestModel = {
@@ -1225,9 +1461,10 @@ export type IndexResponseModel = {
     searcherName: string;
     documentCount: number;
     fieldCount: number;
-    providerProperties?: {
+    providerProperties?: null | {
         [key: string]: unknown;
-    } | null;
+    };
+    uniqueKeyFieldName?: null | string;
 };
 
 export type InstallRequestModel = {
@@ -1242,12 +1479,151 @@ export type InstallSettingsResponseModel = {
 };
 
 export type InviteUserRequestModel = {
+    message?: null | string;
+    id?: null | string;
     email: string;
     userName: string;
     name: string;
     userGroupIds: Array<ReferenceByIdModel>;
-    id?: string | null;
-    message?: string | null;
+};
+
+export type IPermissionPresentationModel = ({
+    $type?: 'DocumentPermissionPresentationModel';
+} & IPermissionPresentationModelDocumentPermissionPresentationModel) | ({
+    $type?: 'DocumentPropertyValuePermissionPresentationModel';
+} & IPermissionPresentationModelDocumentPropertyValuePermissionPresentationModel) | ({
+    $type?: 'ElementPermissionPresentationModel';
+} & IPermissionPresentationModelElementPermissionPresentationModel) | ({
+    $type?: 'UnknownTypePermissionPresentationModel';
+} & IPermissionPresentationModelUnknownTypePermissionPresentationModel);
+
+export type IPermissionPresentationModelDocumentPermissionPresentationModel = {
+    $type: 'DocumentPermissionPresentationModel';
+    document: ReferenceByIdModel;
+    verbs: Array<string>;
+};
+
+export type IPermissionPresentationModelDocumentPropertyValuePermissionPresentationModel = {
+    $type: 'DocumentPropertyValuePermissionPresentationModel';
+    documentType: ReferenceByIdModel;
+    propertyType: ReferenceByIdModel;
+    verbs: Array<string>;
+};
+
+export type IPermissionPresentationModelElementPermissionPresentationModel = {
+    $type: 'ElementPermissionPresentationModel';
+    element: ReferenceByIdModel;
+    verbs: Array<string>;
+};
+
+export type IPermissionPresentationModelUnknownTypePermissionPresentationModel = {
+    $type: 'UnknownTypePermissionPresentationModel';
+    verbs: Array<string>;
+    context: string;
+};
+
+export type IReferenceResponseModel = ({
+    $type?: 'DefaultReferenceResponseModel';
+} & IReferenceResponseModelDefaultReferenceResponseModel) | ({
+    $type?: 'DocumentReferenceResponseModel';
+} & IReferenceResponseModelDocumentReferenceResponseModel) | ({
+    $type?: 'DocumentTypePropertyTypeReferenceResponseModel';
+} & IReferenceResponseModelDocumentTypePropertyTypeReferenceResponseModel) | ({
+    $type?: 'ElementContainerReferenceResponseModel';
+} & IReferenceResponseModelElementContainerReferenceResponseModel) | ({
+    $type?: 'ElementReferenceResponseModel';
+} & IReferenceResponseModelElementReferenceResponseModel) | ({
+    $type?: 'MediaReferenceResponseModel';
+} & IReferenceResponseModelMediaReferenceResponseModel) | ({
+    $type?: 'MediaTypePropertyTypeReferenceResponseModel';
+} & IReferenceResponseModelMediaTypePropertyTypeReferenceResponseModel) | ({
+    $type?: 'MemberReferenceResponseModel';
+} & IReferenceResponseModelMemberReferenceResponseModel) | ({
+    $type?: 'MemberTypePropertyTypeReferenceResponseModel';
+} & IReferenceResponseModelMemberTypePropertyTypeReferenceResponseModel);
+
+export type IReferenceResponseModelDefaultReferenceResponseModel = {
+    $type: 'DefaultReferenceResponseModel';
+    type?: null | string;
+    icon?: null | string;
+    id: string;
+    name?: null | string;
+};
+
+export type IReferenceResponseModelDocumentReferenceResponseModel = {
+    $type: 'DocumentReferenceResponseModel';
+    published?: null | boolean;
+    documentType: TrackedReferenceDocumentTypeModel;
+    variants: Array<DocumentVariantItemResponseModel>;
+    id: string;
+    name?: null | string;
+};
+
+export type IReferenceResponseModelDocumentTypePropertyTypeReferenceResponseModel = {
+    $type: 'DocumentTypePropertyTypeReferenceResponseModel';
+    documentType: TrackedReferenceDocumentTypeModel;
+    alias?: null | string;
+    id: string;
+    name?: null | string;
+};
+
+export type IReferenceResponseModelElementContainerReferenceResponseModel = {
+    $type: 'ElementContainerReferenceResponseModel';
+    id: string;
+    name?: null | string;
+};
+
+export type IReferenceResponseModelElementReferenceResponseModel = {
+    $type: 'ElementReferenceResponseModel';
+    published?: null | boolean;
+    documentType: TrackedReferenceDocumentTypeModel;
+    variants: Array<ElementVariantItemResponseModel>;
+    id: string;
+    name?: null | string;
+};
+
+export type IReferenceResponseModelMediaReferenceResponseModel = {
+    $type: 'MediaReferenceResponseModel';
+    mediaType: TrackedReferenceMediaTypeModel;
+    id: string;
+    name?: null | string;
+};
+
+export type IReferenceResponseModelMediaTypePropertyTypeReferenceResponseModel = {
+    $type: 'MediaTypePropertyTypeReferenceResponseModel';
+    mediaType: TrackedReferenceMediaTypeModel;
+    alias?: null | string;
+    id: string;
+    name?: null | string;
+};
+
+export type IReferenceResponseModelMemberReferenceResponseModel = {
+    $type: 'MemberReferenceResponseModel';
+    memberType: TrackedReferenceMemberTypeModel;
+    id: string;
+    name?: null | string;
+};
+
+export type IReferenceResponseModelMemberTypePropertyTypeReferenceResponseModel = {
+    $type: 'MemberTypePropertyTypeReferenceResponseModel';
+    memberType: TrackedReferenceMemberTypeModel;
+    alias?: null | string;
+    id: string;
+    name?: null | string;
+};
+
+/**
+ * Marker interface that is used to setup different two factor methods. The interface ensures the openapi docs will show all possible implementations.
+ */
+export type ISetupTwoFactorModel = {
+    $type?: 'NoopSetupTwoFactorModel';
+} & ISetupTwoFactorModelNoopSetupTwoFactorModel;
+
+/**
+ * A No-operation implementation of the ISetupTwoFactorModel.
+ */
+export type ISetupTwoFactorModelNoopSetupTwoFactorModel = {
+    $type: 'NoopSetupTwoFactorModel';
 };
 
 export type ItemAncestorsResponseModelDocumentItemResponseModel = {
@@ -1284,17 +1660,26 @@ export type ItemSortingRequestModel = {
     sortOrder: number;
 };
 
+export type JsonObject = {
+    [key: string]: unknown;
+};
+
 export type LanguageItemResponseModel = {
     name: string;
     isoCode: string;
 };
 
 export type LanguageResponseModel = {
+    isoCode: string;
     name: string;
     isDefault: boolean;
     isMandatory: boolean;
-    fallbackIsoCode?: string | null;
-    isoCode: string;
+    fallbackIsoCode?: null | string;
+};
+
+export type LoggerResponseModel = {
+    name: string;
+    level: LogLevelModel;
 };
 
 export type LogLevelCountsReponseModel = {
@@ -1305,109 +1690,102 @@ export type LogLevelCountsReponseModel = {
     fatal: number;
 };
 
-export enum LogLevelModel {
-    VERBOSE = 'Verbose',
-    DEBUG = 'Debug',
-    INFORMATION = 'Information',
-    WARNING = 'Warning',
-    ERROR = 'Error',
-    FATAL = 'Fatal'
-}
+/**
+ * Specifies the level of a log event.
+ */
+export type LogLevelModel = 'Verbose' | 'Debug' | 'Information' | 'Warning' | 'Error' | 'Fatal';
 
 export type LogMessagePropertyPresentationModel = {
     name: string;
-    value?: string | null;
+    value?: null | string;
 };
 
 export type LogMessageResponseModel = {
     timestamp: string;
     level: LogLevelModel;
-    messageTemplate?: string | null;
-    renderedMessage?: string | null;
+    messageTemplate?: null | string;
+    renderedMessage?: null | string;
     properties: Array<LogMessagePropertyPresentationModel>;
-    exception?: string | null;
+    exception?: null | string;
 };
 
 export type LogTemplateResponseModel = {
-    messageTemplate?: string | null;
+    messageTemplate?: null | string;
     count: number;
-};
-
-export type LoggerResponseModel = {
-    name: string;
-    level: LogLevelModel;
 };
 
 export type ManifestResponseModel = {
     name: string;
-    id?: string | null;
-    version?: string | null;
+    id?: null | string;
+    version?: null | string;
     extensions: Array<unknown>;
 };
 
 export type MediaCollectionResponseModel = {
-    values: Array<MediaValueResponseModel>;
-    variants: Array<MediaVariantResponseModel>;
+    mediaType: MediaTypeCollectionReferenceResponseModel;
+    creator?: null | string;
+    sortOrder: number;
     id: string;
     flags: Array<FlagModel>;
-    creator?: string | null;
-    sortOrder: number;
-    mediaType: MediaTypeCollectionReferenceResponseModel;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<MediaValueResponseModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<MediaVariantResponseModel>;
 };
 
 export type MediaConfigurationResponseModel = {
     disableDeleteWhenReferenced: boolean;
-    /**
-     * @deprecated
-     */
     disableUnpublishWhenReferenced: boolean;
 };
 
 export type MediaItemResponseModel = {
-    id: string;
-    flags: Array<FlagModel>;
     isTrashed: boolean;
-    parent?: ReferenceByIdModel | null;
+    parent?: null | ReferenceByIdModel;
     hasChildren: boolean;
     mediaType: MediaTypeReferenceResponseModel;
     variants: Array<VariantItemResponseModel>;
+    id: string;
+    flags: Array<FlagModel>;
 };
 
 export type MediaRecycleBinItemResponseModel = {
+    mediaType: MediaTypeReferenceResponseModel;
+    variants: Array<VariantItemResponseModel>;
     id: string;
     createDate: string;
     hasChildren: boolean;
-    parent?: ItemReferenceByIdResponseModel | null;
-    mediaType: MediaTypeReferenceResponseModel;
-    variants: Array<VariantItemResponseModel>;
-};
-
-export type MediaReferenceResponseModel = {
-    $type: string;
-    id: string;
-    name?: string | null;
-    mediaType: TrackedReferenceMediaTypeModel;
+    parent?: null | ItemReferenceByIdResponseModel;
 };
 
 export type MediaResponseModel = {
-    values: Array<MediaValueResponseModel>;
-    variants: Array<MediaVariantResponseModel>;
-    id: string;
-    flags: Array<FlagModel>;
     isTrashed: boolean;
     mediaType: MediaTypeReferenceResponseModel;
+    id: string;
+    flags: Array<FlagModel>;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<MediaValueResponseModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<MediaVariantResponseModel>;
 };
 
 export type MediaTreeItemResponseModel = {
-    hasChildren: boolean;
-    id: string;
-    parent?: ReferenceByIdModel | null;
-    flags: Array<FlagModel>;
+    mediaType: MediaTypeReferenceResponseModel;
+    variants: Array<VariantItemResponseModel>;
     noAccess: boolean;
     isTrashed: boolean;
     createDate: string;
-    mediaType: MediaTypeReferenceResponseModel;
-    variants: Array<VariantItemResponseModel>;
+    id: string;
+    parent?: null | ReferenceByIdModel;
+    flags: Array<FlagModel>;
+    hasChildren: boolean;
 };
 
 export type MediaTypeAllowedParentsResponseModel = {
@@ -1418,7 +1796,7 @@ export type MediaTypeCollectionReferenceResponseModel = {
     id: string;
     alias: string;
     icon: string;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
 };
 
 export type MediaTypeCompositionModel = {
@@ -1427,7 +1805,7 @@ export type MediaTypeCompositionModel = {
 };
 
 export type MediaTypeCompositionRequestModel = {
-    id?: string | null;
+    id?: null | string;
     currentPropertyAliases: Array<string>;
     currentCompositeIds: Array<string>;
 };
@@ -1443,35 +1821,27 @@ export type MediaTypeConfigurationResponseModel = {
 };
 
 export type MediaTypeItemResponseModel = {
+    icon?: null | string;
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
-    icon?: string | null;
 };
 
 export type MediaTypePropertyTypeContainerResponseModel = {
     id: string;
-    parent?: ReferenceByIdModel | null;
-    name?: string | null;
+    parent?: null | ReferenceByIdModel;
+    name?: null | string;
     type: string;
     sortOrder: number;
 };
 
-export type MediaTypePropertyTypeReferenceResponseModel = {
-    $type: string;
-    id: string;
-    name?: string | null;
-    alias?: string | null;
-    mediaType: TrackedReferenceMediaTypeModel;
-};
-
 export type MediaTypePropertyTypeResponseModel = {
     id: string;
-    container?: ReferenceByIdModel | null;
+    container?: null | ReferenceByIdModel;
     sortOrder: number;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     dataType: ReferenceByIdModel;
     variesByCulture: boolean;
     variesBySegment: boolean;
@@ -1482,26 +1852,27 @@ export type MediaTypePropertyTypeResponseModel = {
 export type MediaTypeReferenceResponseModel = {
     id: string;
     icon: string;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
 };
 
 export type MediaTypeResponseModel = {
-    alias: string;
-    name: string;
-    description?: string | null;
-    icon: string;
-    allowedAsRoot: boolean;
-    variesByCulture: boolean;
-    variesBySegment: boolean;
-    collection?: ReferenceByIdModel | null;
-    isElement: boolean;
-    properties: Array<MediaTypePropertyTypeResponseModel>;
-    containers: Array<MediaTypePropertyTypeContainerResponseModel>;
-    id: string;
     allowedMediaTypes: Array<MediaTypeSortModel>;
     compositions: Array<MediaTypeCompositionModel>;
     isDeletable: boolean;
     aliasCanBeChanged: boolean;
+    id: string;
+    alias: string;
+    name: string;
+    description?: null | string;
+    icon: string;
+    allowedAsRoot: boolean;
+    variesByCulture: boolean;
+    variesBySegment: boolean;
+    collection?: null | ReferenceByIdModel;
+    isElement: boolean;
+    allowedInLibrary: boolean;
+    properties: Array<MediaTypePropertyTypeResponseModel>;
+    containers: Array<MediaTypePropertyTypeContainerResponseModel>;
 };
 
 export type MediaTypeSortModel = {
@@ -1510,19 +1881,20 @@ export type MediaTypeSortModel = {
 };
 
 export type MediaTypeTreeItemResponseModel = {
-    hasChildren: boolean;
-    id: string;
-    parent?: ReferenceByIdModel | null;
-    flags: Array<FlagModel>;
-    name: string;
-    isFolder: boolean;
     icon: string;
     isDeletable: boolean;
+    isFolder: boolean;
+    noAccess: boolean;
+    name: string;
+    id: string;
+    parent?: null | ReferenceByIdModel;
+    flags: Array<FlagModel>;
+    hasChildren: boolean;
 };
 
 export type MediaUrlInfoModel = {
-    culture: string | null;
-    url: string | null;
+    culture: null | string;
+    url: null | string;
 };
 
 export type MediaUrlInfoResponseModel = {
@@ -1531,74 +1903,104 @@ export type MediaUrlInfoResponseModel = {
 };
 
 export type MediaValueModel = {
-    culture?: string | null;
-    segment?: string | null;
+    /**
+     * Gets or sets the culture code for this value, or `null` for invariant properties.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this value, or `null` for non-segmented properties.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the property type alias.
+     */
     alias: string;
+    /**
+     * Gets or sets the property value.
+     */
     value?: unknown;
 };
 
 export type MediaValueResponseModel = {
-    culture?: string | null;
-    segment?: string | null;
-    alias: string;
-    value?: unknown;
+    /**
+     * Gets or sets the alias of the property editor used for this value.
+     */
     editorAlias: string;
+    /**
+     * Gets or sets the culture code for this value, or `null` for invariant properties.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this value, or `null` for non-segmented properties.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the property type alias.
+     */
+    alias: string;
+    /**
+     * Gets or sets the property value.
+     */
+    value?: unknown;
 };
 
 export type MediaVariantRequestModel = {
-    culture?: string | null;
-    segment?: string | null;
+    /**
+     * Gets or sets the culture code for this variant, or `null` for invariant content.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this variant, or `null` for non-segmented content.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the name of the content for this variant.
+     */
     name: string;
 };
 
 export type MediaVariantResponseModel = {
-    culture?: string | null;
-    segment?: string | null;
-    name: string;
     createDate: string;
     updateDate: string;
-};
-
-export type MemberConfigurationResponseModel = {
-    [key: string]: never;
+    /**
+     * Gets or sets the culture code for this variant, or `null` for invariant content.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this variant, or `null` for non-segmented content.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the name of the content for this variant.
+     */
+    name: string;
 };
 
 export type MemberGroupItemResponseModel = {
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
 };
 
 export type MemberGroupResponseModel = {
-    name: string;
     id: string;
+    name: string;
 };
 
 export type MemberItemResponseModel = {
-    id: string;
-    flags: Array<FlagModel>;
     memberType: MemberTypeReferenceResponseModel;
     variants: Array<VariantItemResponseModel>;
     kind: MemberKindModel;
-};
-
-export enum MemberKindModel {
-    DEFAULT = 'Default',
-    API = 'Api'
-}
-
-export type MemberReferenceResponseModel = {
-    $type: string;
-    id: string;
-    name?: string | null;
-    memberType: TrackedReferenceMemberTypeModel;
-};
-
-export type MemberResponseModel = {
-    values: Array<MemberValueResponseModel>;
-    variants: Array<MemberVariantResponseModel>;
     id: string;
     flags: Array<FlagModel>;
+};
+
+/**
+ * Represents the kind or type of member.
+ */
+export type MemberKindModel = 'Default' | 'Api' | 'ExternalOnly';
+
+export type MemberResponseModel = {
     email: string;
     username: string;
     memberType: MemberTypeReferenceResponseModel;
@@ -1606,11 +2008,22 @@ export type MemberResponseModel = {
     isLockedOut: boolean;
     isTwoFactorEnabled: boolean;
     failedPasswordAttempts: number;
-    lastLoginDate?: string | null;
-    lastLockoutDate?: string | null;
-    lastPasswordChangeDate?: string | null;
+    lastLoginDate?: null | string;
+    lastLockoutDate?: null | string;
+    lastPasswordChangeDate?: null | string;
     groups: Array<string>;
     kind: MemberKindModel;
+    profileData?: null | string;
+    id: string;
+    flags: Array<FlagModel>;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<MemberValueResponseModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<MemberVariantResponseModel>;
 };
 
 export type MemberTypeCompositionModel = {
@@ -1619,7 +2032,7 @@ export type MemberTypeCompositionModel = {
 };
 
 export type MemberTypeCompositionRequestModel = {
-    id?: string | null;
+    id?: null | string;
     currentPropertyAliases: Array<string>;
     currentCompositeIds: Array<string>;
 };
@@ -1635,42 +2048,34 @@ export type MemberTypeConfigurationResponseModel = {
 };
 
 export type MemberTypeItemResponseModel = {
+    icon?: null | string;
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
-    icon?: string | null;
 };
 
 export type MemberTypePropertyTypeContainerResponseModel = {
     id: string;
-    parent?: ReferenceByIdModel | null;
-    name?: string | null;
+    parent?: null | ReferenceByIdModel;
+    name?: null | string;
     type: string;
     sortOrder: number;
 };
 
-export type MemberTypePropertyTypeReferenceResponseModel = {
-    $type: string;
-    id: string;
-    name?: string | null;
-    alias?: string | null;
-    memberType: TrackedReferenceMemberTypeModel;
-};
-
 export type MemberTypePropertyTypeResponseModel = {
+    isSensitive: boolean;
+    visibility: MemberTypePropertyTypeVisibilityModel;
     id: string;
-    container?: ReferenceByIdModel | null;
+    container?: null | ReferenceByIdModel;
     sortOrder: number;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     dataType: ReferenceByIdModel;
     variesByCulture: boolean;
     variesBySegment: boolean;
     validation: PropertyTypeValidationModel;
     appearance: PropertyTypeAppearanceModel;
-    isSensitive: boolean;
-    visibility: MemberTypePropertyTypeVisibilityModel;
 };
 
 export type MemberTypePropertyTypeVisibilityModel = {
@@ -1681,136 +2086,187 @@ export type MemberTypePropertyTypeVisibilityModel = {
 export type MemberTypeReferenceResponseModel = {
     id: string;
     icon: string;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
 };
 
 export type MemberTypeResponseModel = {
+    compositions: Array<MemberTypeCompositionModel>;
+    id: string;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     icon: string;
     allowedAsRoot: boolean;
     variesByCulture: boolean;
     variesBySegment: boolean;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
     isElement: boolean;
+    allowedInLibrary: boolean;
     properties: Array<MemberTypePropertyTypeResponseModel>;
     containers: Array<MemberTypePropertyTypeContainerResponseModel>;
-    id: string;
-    compositions: Array<MemberTypeCompositionModel>;
 };
 
 export type MemberTypeTreeItemResponseModel = {
-    hasChildren: boolean;
-    id: string;
-    parent?: ReferenceByIdModel | null;
-    flags: Array<FlagModel>;
-    name: string;
-    isFolder: boolean;
     icon: string;
+    isFolder: boolean;
+    noAccess: boolean;
+    name: string;
+    id: string;
+    parent?: null | ReferenceByIdModel;
+    flags: Array<FlagModel>;
+    hasChildren: boolean;
 };
 
 export type MemberValueModel = {
-    culture?: string | null;
-    segment?: string | null;
+    /**
+     * Gets or sets the culture code for this value, or `null` for invariant properties.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this value, or `null` for non-segmented properties.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the property type alias.
+     */
     alias: string;
+    /**
+     * Gets or sets the property value.
+     */
     value?: unknown;
 };
 
 export type MemberValueResponseModel = {
-    culture?: string | null;
-    segment?: string | null;
-    alias: string;
-    value?: unknown;
+    /**
+     * Gets or sets the alias of the property editor used for this value.
+     */
     editorAlias: string;
+    /**
+     * Gets or sets the culture code for this value, or `null` for invariant properties.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this value, or `null` for non-segmented properties.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the property type alias.
+     */
+    alias: string;
+    /**
+     * Gets or sets the property value.
+     */
+    value?: unknown;
 };
 
 export type MemberVariantRequestModel = {
-    culture?: string | null;
-    segment?: string | null;
+    /**
+     * Gets or sets the culture code for this variant, or `null` for invariant content.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this variant, or `null` for non-segmented content.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the name of the content for this variant.
+     */
     name: string;
 };
 
 export type MemberVariantResponseModel = {
-    culture?: string | null;
-    segment?: string | null;
-    name: string;
     createDate: string;
     updateDate: string;
+    /**
+     * Gets or sets the culture code for this variant, or `null` for invariant content.
+     */
+    culture?: null | string;
+    /**
+     * Gets or sets the segment identifier for this variant, or `null` for non-segmented content.
+     */
+    segment?: null | string;
+    /**
+     * Gets or sets the name of the content for this variant.
+     */
+    name: string;
 };
 
 export type ModelsBuilderResponseModel = {
     mode: string;
     canGenerate: boolean;
     outOfDateModels: boolean;
-    lastError?: string | null;
-    version?: string | null;
-    modelsNamespace?: string | null;
+    lastError?: null | string;
+    version?: null | string;
+    modelsNamespace?: null | string;
     trackingOutOfDateModels: boolean;
 };
 
 export type MoveDataTypeRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
 };
 
 export type MoveDictionaryRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
 };
 
 export type MoveDocumentBlueprintRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
 };
 
 export type MoveDocumentRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
 };
 
 export type MoveDocumentTypeRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
+};
+
+export type MoveElementRequestModel = {
+    target?: null | ReferenceByIdModel;
+};
+
+export type MoveFolderRequestModel = {
+    target?: null | ReferenceByIdModel;
 };
 
 export type MoveMediaRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
 };
 
 export type MoveMediaTypeRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
 };
 
 export type MoveMemberTypeRequestModel = {
-    target?: ReferenceByIdModel | null;
+    target?: null | ReferenceByIdModel;
 };
 
 export type NamedEntityTreeItemResponseModel = {
-    hasChildren: boolean;
-    id: string;
-    parent?: ReferenceByIdModel | null;
-    flags: Array<FlagModel>;
     name: string;
+    id: string;
+    parent?: null | ReferenceByIdModel;
+    flags: Array<FlagModel>;
+    hasChildren: boolean;
 };
 
 export type NamedItemResponseModel = {
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
 };
 
 export type NewsDashboardItemResponseModel = {
     priority: string;
     header: string;
-    body?: string | null;
-    buttonText?: string | null;
-    imageUrl?: string | null;
-    imageAltText?: string | null;
-    url?: string | null;
+    body?: null | string;
+    buttonText?: null | string;
+    imageUrl?: null | string;
+    imageAltText?: null | string;
+    url?: null | string;
 };
 
 export type NewsDashboardResponseModel = {
     items: Array<NewsDashboardItemResponseModel>;
-};
-
-export type NoopSetupTwoFactorModel = {
-    [key: string]: never;
 };
 
 export type NotificationHeaderModel = {
@@ -1819,43 +2275,38 @@ export type NotificationHeaderModel = {
     type: EventMessageTypeModel;
 };
 
+export type ObjectTypeResponseModel = {
+    name?: null | string;
+    id: string;
+};
+
 export type OEmbedResponseModel = {
     markup: string;
 };
 
-export type ObjectTypeResponseModel = {
-    name?: string | null;
-    id: string;
-};
-
-export enum OperatorModel {
-    EQUALS = 'Equals',
-    NOT_EQUALS = 'NotEquals',
-    CONTAINS = 'Contains',
-    NOT_CONTAINS = 'NotContains',
-    LESS_THAN = 'LessThan',
-    LESS_THAN_EQUAL_TO = 'LessThanEqualTo',
-    GREATER_THAN = 'GreaterThan',
-    GREATER_THAN_EQUAL_TO = 'GreaterThanEqualTo'
-}
+/**
+ * Represents the comparison operators available for template query conditions.
+ */
+export type OperatorModel = 'Equals' | 'NotEquals' | 'Contains' | 'NotContains' | 'LessThan' | 'LessThanEqualTo' | 'GreaterThan' | 'GreaterThanEqualTo';
 
 export type OutOfDateStatusResponseModel = {
     status: OutOfDateTypeModel;
 };
 
-export enum OutOfDateTypeModel {
-    OUT_OF_DATE = 'OutOfDate',
-    CURRENT = 'Current',
-    UNKNOWN = 'Unknown'
-}
+/**
+ * Defines the status of whether something is up to date.
+ */
+export type OutOfDateTypeModel = 'OutOfDate' | 'Current' | 'Unknown';
 
 export type PackageConfigurationResponseModel = {
     marketplaceUrl: string;
 };
 
 export type PackageDefinitionResponseModel = {
+    id: string;
+    packagePath: string;
     name: string;
-    contentNodeId?: string | null;
+    contentNodeId?: null | string;
     contentLoadChildNodes: boolean;
     mediaIds: Array<string>;
     mediaLoadChildNodes: boolean;
@@ -1868,8 +2319,6 @@ export type PackageDefinitionResponseModel = {
     scripts: Array<string>;
     languages: Array<string>;
     dictionaryItems: Array<string>;
-    id: string;
-    readonly packagePath: string;
 };
 
 export type PackageMigrationStatusResponseModel = {
@@ -1877,329 +2326,948 @@ export type PackageMigrationStatusResponseModel = {
     hasPendingMigrations: boolean;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedAllowedDocumentTypeModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<AllowedDocumentTypeModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedAllowedMediaTypeModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<AllowedMediaTypeModel>;
 };
 
-export type PagedAuditLogResponseModel = {
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedAllowedMemberTypeModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
+    items: Array<AllowedMemberTypeModel>;
+};
+
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedAuditLogResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
+    total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<AuditLogResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedCultureReponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<CultureReponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedDataTypeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<DataTypeItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedDataTypeTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<DataTypeTreeItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedDictionaryOverviewResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<DictionaryOverviewResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedDocumentBlueprintTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<DocumentBlueprintTreeItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedDocumentCollectionResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<DocumentCollectionResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedDocumentRecycleBinItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<DocumentRecycleBinItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedDocumentTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<DocumentTreeItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedDocumentTypeBlueprintItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<DocumentTypeBlueprintItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedDocumentTypeTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<DocumentTypeTreeItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedDocumentVersionItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<DocumentVersionItemResponseModel>;
 };
 
-export type PagedFileSystemTreeItemPresentationModel = {
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedElementRecycleBinItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
+    items: Array<ElementRecycleBinItemResponseModel>;
+};
+
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedElementTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
+    total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
+    items: Array<ElementTreeItemResponseModel>;
+};
+
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedElementVersionItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
+    total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
+    items: Array<ElementVersionItemResponseModel>;
+};
+
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedFileSystemTreeItemPresentationModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
+    total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<FileSystemTreeItemPresentationModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedHealthCheckGroupResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<HealthCheckGroupResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedHelpPageResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<HelpPageResponseModel>;
 };
 
-export type PagedIReferenceResponseModel = {
-    total: number;
-    items: Array<DefaultReferenceResponseModel | DocumentReferenceResponseModel | DocumentTypePropertyTypeReferenceResponseModel | MediaReferenceResponseModel | MediaTypePropertyTypeReferenceResponseModel | MemberReferenceResponseModel | MemberTypePropertyTypeReferenceResponseModel>;
-};
-
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedIndexResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<IndexResponseModel>;
 };
 
-export type PagedLanguageResponseModel = {
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedIReferenceResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
+    items: Array<IReferenceResponseModel>;
+};
+
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedLanguageResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
+    total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<LanguageResponseModel>;
 };
 
-export type PagedLogMessageResponseModel = {
-    total: number;
-    items: Array<LogMessageResponseModel>;
-};
-
-export type PagedLogTemplateResponseModel = {
-    total: number;
-    items: Array<LogTemplateResponseModel>;
-};
-
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedLoggerResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<LoggerResponseModel>;
 };
 
-export type PagedMediaCollectionResponseModel = {
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedLogMessageResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
+    items: Array<LogMessageResponseModel>;
+};
+
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedLogTemplateResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
+    total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
+    items: Array<LogTemplateResponseModel>;
+};
+
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedMediaCollectionResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
+    total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<MediaCollectionResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedMediaRecycleBinItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<MediaRecycleBinItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedMediaTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<MediaTreeItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedMediaTypeTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<MediaTypeTreeItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedMemberGroupResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<MemberGroupResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedMemberResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<MemberResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedMemberTypeTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<MemberTypeTreeItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count information.
+ */
 export type PagedModelAllowedMediaTypeItemResponseModel = {
+    /**
+     * Gets the items for the current page.
+     */
     items: Array<AllowedMediaTypeItemResponseModel>;
+    /**
+     * Gets the total number of items available across all pages.
+     */
     total: number;
 };
 
+/**
+ * Represents a paged collection of items with total count information.
+ */
 export type PagedModelDataTypeItemResponseModel = {
+    /**
+     * Gets the items for the current page.
+     */
     items: Array<DataTypeItemResponseModel>;
+    /**
+     * Gets the total number of items available across all pages.
+     */
     total: number;
 };
 
+/**
+ * Represents a paged collection of items with total count information.
+ */
 export type PagedModelDocumentItemResponseModel = {
+    /**
+     * Gets the items for the current page.
+     */
     items: Array<DocumentItemResponseModel>;
+    /**
+     * Gets the total number of items available across all pages.
+     */
     total: number;
 };
 
+/**
+ * Represents a paged collection of items with total count information.
+ */
 export type PagedModelDocumentTypeItemResponseModel = {
+    /**
+     * Gets the items for the current page.
+     */
     items: Array<DocumentTypeItemResponseModel>;
+    /**
+     * Gets the total number of items available across all pages.
+     */
     total: number;
 };
 
+/**
+ * Represents a paged collection of items with total count information.
+ */
+export type PagedModelElementItemResponseModel = {
+    /**
+     * Gets the items for the current page.
+     */
+    items: Array<ElementItemResponseModel>;
+    /**
+     * Gets the total number of items available across all pages.
+     */
+    total: number;
+};
+
+/**
+ * Represents a paged collection of items with total count information.
+ */
 export type PagedModelMediaItemResponseModel = {
+    /**
+     * Gets the items for the current page.
+     */
     items: Array<MediaItemResponseModel>;
+    /**
+     * Gets the total number of items available across all pages.
+     */
     total: number;
 };
 
+/**
+ * Represents a paged collection of items with total count information.
+ */
 export type PagedModelMediaTypeItemResponseModel = {
+    /**
+     * Gets the items for the current page.
+     */
     items: Array<MediaTypeItemResponseModel>;
+    /**
+     * Gets the total number of items available across all pages.
+     */
     total: number;
 };
 
+/**
+ * Represents a paged collection of items with total count information.
+ */
 export type PagedModelMemberItemResponseModel = {
+    /**
+     * Gets the items for the current page.
+     */
     items: Array<MemberItemResponseModel>;
+    /**
+     * Gets the total number of items available across all pages.
+     */
     total: number;
 };
 
+/**
+ * Represents a paged collection of items with total count information.
+ */
 export type PagedModelMemberTypeItemResponseModel = {
+    /**
+     * Gets the items for the current page.
+     */
     items: Array<MemberTypeItemResponseModel>;
+    /**
+     * Gets the total number of items available across all pages.
+     */
     total: number;
 };
 
+/**
+ * Represents a paged collection of items with total count information.
+ */
 export type PagedModelTemplateItemResponseModel = {
+    /**
+     * Gets the items for the current page.
+     */
     items: Array<TemplateItemResponseModel>;
+    /**
+     * Gets the total number of items available across all pages.
+     */
     total: number;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedNamedEntityTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<NamedEntityTreeItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedObjectTypeResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<ObjectTypeResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedPackageDefinitionResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<PackageDefinitionResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedPackageMigrationStatusResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<PackageMigrationStatusResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedPartialViewSnippetItemResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<PartialViewSnippetItemResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedProblemDetailsModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<ProblemDetails>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedRedirectUrlResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<RedirectUrlResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedReferenceByIdModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<ReferenceByIdModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedRelationResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<RelationResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedRelationTypeResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<RelationTypeResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedSavedLogSearchResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<SavedLogSearchResponseModel>;
 };
 
-export type PagedSearchResultResponseModel = {
-    total: number;
-    items: Array<SearchResultResponseModel>;
-};
-
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedSearcherResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<SearcherResponseModel>;
 };
 
-export type PagedSegmentResponseModel = {
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedSearchResultResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
+    items: Array<SearchResultResponseModel>;
+};
+
+/**
+ * Represents a paged collection of items with total count.
+ */
+export type PagedSegmentResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
+    total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<SegmentResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedTagResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<TagResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedTelemetryResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<TelemetryResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedUserDataResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<UserDataResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedUserGroupResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<UserGroupResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedUserResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<UserResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedWebhookEventModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<WebhookEventModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedWebhookLogResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<WebhookLogResponseModel>;
 };
 
+/**
+ * Represents a paged collection of items with total count.
+ */
 export type PagedWebhookResponseModel = {
+    /**
+     * Gets or sets the total number of items available.
+     */
     total: number;
+    /**
+     * Gets or sets the items in the current page.
+     */
     items: Array<WebhookResponseModel>;
 };
 
 export type PartialViewFolderResponseModel = {
-    path: string;
     name: string;
-    parent?: FileSystemFolderModel | null;
+    parent?: null | FileSystemFolderModel;
+    path: string;
 };
 
 export type PartialViewItemResponseModel = {
-    path: string;
-    name: string;
-    parent?: FileSystemFolderModel | null;
     isFolder: boolean;
+    name: string;
+    parent?: null | FileSystemFolderModel;
+    path: string;
 };
 
 export type PartialViewResponseModel = {
-    path: string;
-    name: string;
-    parent?: FileSystemFolderModel | null;
     content: string;
+    name: string;
+    parent?: null | FileSystemFolderModel;
+    path: string;
 };
 
 export type PartialViewSnippetItemResponseModel = {
@@ -2208,9 +3276,9 @@ export type PartialViewSnippetItemResponseModel = {
 };
 
 export type PartialViewSnippetResponseModel = {
+    content: string;
     id: string;
     name: string;
-    content: string;
 };
 
 export type PasswordConfigurationResponseModel = {
@@ -2221,6 +3289,16 @@ export type PasswordConfigurationResponseModel = {
     requireUppercase: boolean;
 };
 
+export type PatchDocumentRequestModel = {
+    operations: Array<PatchOperationRequestModel>;
+};
+
+export type PatchOperationRequestModel = {
+    op: string;
+    path: string;
+    value?: unknown;
+};
+
 export type PathEntriesResponseModel = {
     path: Array<PathNodeModel>;
     entries: Array<PermissionEntryResponseModel>;
@@ -2229,7 +3307,7 @@ export type PathEntriesResponseModel = {
 export type PathNodeModel = {
     key: string;
     name: string;
-    icon?: string | null;
+    icon: null | string;
 };
 
 export type PermissionEntryResponseModel = {
@@ -2243,16 +3321,18 @@ export type PermissionEntryResponseModel = {
 };
 
 export type ProblemDetails = {
-    type?: string | null;
-    title?: string | null;
-    status?: number | null;
-    detail?: string | null;
-    instance?: string | null;
-    [key: string]: unknown | string | null | string | null | number | null | string | null | string | null | undefined;
+    type?: null | string;
+    title?: null | string;
+    status?: null | number;
+    detail?: null | string;
+    instance?: null | string;
 };
 
+/**
+ * A fluent builder for creating RFC 7807 ProblemDetails responses.
+ */
 export type ProblemDetailsBuilderModel = {
-    [key: string]: never;
+    [key: string]: unknown;
 };
 
 export type ProfilingStatusRequestModel = {
@@ -2269,25 +3349,27 @@ export type PropertyTypeAppearanceModel = {
 
 export type PropertyTypeValidationModel = {
     mandatory: boolean;
-    mandatoryMessage?: string | null;
-    regEx?: string | null;
-    regExMessage?: string | null;
+    mandatoryMessage?: null | string;
+    regEx?: null | string;
+    regExMessage?: null | string;
 };
 
 export type PublicAccessRequestModel = {
-    loginDocument: ReferenceByIdModel;
-    errorDocument: ReferenceByIdModel;
     memberUserNames: Array<string>;
     memberGroupNames: Array<string>;
+    loginDocument: ReferenceByIdModel;
+    errorDocument: ReferenceByIdModel;
 };
 
 export type PublicAccessResponseModel = {
-    loginDocument: ReferenceByIdModel;
-    errorDocument: ReferenceByIdModel;
     members: Array<MemberItemResponseModel>;
     groups: Array<MemberGroupItemResponseModel>;
     isProtectedByAncestor: boolean;
+    loginDocument: ReferenceByIdModel;
+    errorDocument: ReferenceByIdModel;
 };
+
+export type PublishableVariantStateModel = 'NotCreated' | 'Draft' | 'Published' | 'PublishedPendingChanges' | 'Trashed';
 
 export type PublishDocumentRequestModel = {
     publishSchedules: Array<CultureAndScheduleRequestModel>;
@@ -2298,27 +3380,37 @@ export type PublishDocumentWithDescendantsRequestModel = {
     cultures: Array<string>;
 };
 
+export type PublishedDocumentResponseModel = {
+    template?: null | ReferenceByIdModel;
+    isTrashed: boolean;
+    documentType: DocumentTypeReferenceResponseModel;
+    id: string;
+    flags: Array<FlagModel>;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<DocumentValueResponseModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<DocumentVariantResponseModel>;
+};
+
+export type PublishElementRequestModel = {
+    publishSchedules: Array<CultureAndScheduleRequestModel>;
+};
+
 export type PublishWithDescendantsResultModel = {
     taskId: string;
     isComplete: boolean;
 };
 
-export type PublishedDocumentResponseModel = {
-    values: Array<DocumentValueResponseModel>;
-    variants: Array<DocumentVariantResponseModel>;
-    id: string;
-    flags: Array<FlagModel>;
-    documentType: DocumentTypeReferenceResponseModel;
-    template?: ReferenceByIdModel | null;
-    isTrashed: boolean;
-};
-
-export type ReasoningItemModel = {
+export type ReasoningItem = {
     contributingRole: string;
     state: string;
     isExplicit: boolean;
     sourceNodeKey: string;
-    sourceScope?: string | null;
+    sourceScope: null | string;
     isFromGroupDefault: boolean;
     isPriorityOverride: boolean;
 };
@@ -2327,10 +3419,10 @@ export type RebuildStatusModel = {
     isRebuilding: boolean;
 };
 
-export enum RedirectStatusModel {
-    ENABLED = 'Enabled',
-    DISABLED = 'Disabled'
-}
+/**
+ * Represents the status of redirect URL tracking.
+ */
+export type RedirectStatusModel = 'Enabled' | 'Disabled';
 
 export type RedirectUrlResponseModel = {
     id: string;
@@ -2338,7 +3430,7 @@ export type RedirectUrlResponseModel = {
     destinationUrl: string;
     created: string;
     document: ReferenceByIdModel;
-    culture?: string | null;
+    culture?: null | string;
 };
 
 export type RedirectUrlStatusResponseModel = {
@@ -2352,7 +3444,7 @@ export type ReferenceByIdModel = {
 
 export type RelationReferenceModel = {
     id: string;
-    name?: string | null;
+    name?: null | string;
 };
 
 export type RelationResponseModel = {
@@ -2360,25 +3452,25 @@ export type RelationResponseModel = {
     relationType: ReferenceByIdModel;
     parent: RelationReferenceModel;
     child: RelationReferenceModel;
-    readonly createDate: string;
-    readonly comment?: string | null;
+    createDate: string;
+    comment?: null | string;
 };
 
 export type RelationTypeItemResponseModel = {
+    isDeletable: boolean;
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
-    isDeletable: boolean;
 };
 
 export type RelationTypeResponseModel = {
+    id: string;
+    alias?: null | string;
+    parentObject?: null | ObjectTypeResponseModel;
+    childObject?: null | ObjectTypeResponseModel;
     name: string;
     isBidirectional: boolean;
     isDependency: boolean;
-    id: string;
-    alias?: string | null;
-    parentObject?: ObjectTypeResponseModel | null;
-    childObject?: ObjectTypeResponseModel | null;
 };
 
 export type RenamePartialViewRequestModel = {
@@ -2395,7 +3487,7 @@ export type RenameStylesheetRequestModel = {
 
 export type ResendInviteUserRequestModel = {
     user: ReferenceByIdModel;
-    message?: string | null;
+    message?: null | string;
 };
 
 export type ResetPasswordRequestModel = {
@@ -2403,13 +3495,13 @@ export type ResetPasswordRequestModel = {
 };
 
 export type ResetPasswordTokenRequestModel = {
+    password: string;
     user: ReferenceByIdModel;
     resetCode: string;
-    password: string;
 };
 
 export type ResetPasswordUserResponseModel = {
-    resetPassword?: string | null;
+    resetPassword?: null | string;
 };
 
 export type RoleResponseModel = {
@@ -2418,41 +3510,15 @@ export type RoleResponseModel = {
     isEveryone: boolean;
 };
 
-export enum RuntimeLevelModel {
-    UNKNOWN = 'Unknown',
-    BOOT = 'Boot',
-    INSTALL = 'Install',
-    UPGRADE = 'Upgrade',
-    UPGRADING = 'Upgrading',
-    RUN = 'Run',
-    BOOT_FAILED = 'BootFailed'
-}
+/**
+ * Describes the levels in which the runtime can run.
+ */
+export type RuntimeLevelModel = 'Unknown' | 'Boot' | 'Install' | 'Upgrade' | 'Upgrading' | 'Run' | 'BootFailed';
 
-export enum RuntimeModeModel {
-    BACKOFFICE_DEVELOPMENT = 'BackofficeDevelopment',
-    DEVELOPMENT = 'Development',
-    PRODUCTION = 'Production'
-}
-
-export type SaveDocTypePermissionsRequestModel = {
-    nodeKey: string;
-    roleAlias: string;
-    contentTypeKey: string;
-    entries: Array<SavePermissionEntryItemModel>;
-};
-
-export type SavePermissionEntryItemModel = {
-    verb: string;
-    state: string;
-    scope: string;
-    isPriorityOverride?: boolean;
-};
-
-export type SavePermissionsRequestModel = {
-    nodeKey: string;
-    roleAlias: string;
-    entries: Array<SavePermissionEntryItemModel>;
-};
+/**
+ * Represents the configured Umbraco runtime mode.
+ */
+export type RuntimeModeModel = 'BackofficeDevelopment' | 'Development' | 'Production';
 
 export type SavedLogSearchRequestModel = {
     name: string;
@@ -2464,40 +3530,60 @@ export type SavedLogSearchResponseModel = {
     query: string;
 };
 
+export type SaveDocTypePermissionsRequestModel = {
+    nodeKey: string;
+    roleAlias: string;
+    contentTypeKey: string;
+    entries: Array<SavePermissionEntryItem>;
+};
+
+export type SavePermissionEntryItem = {
+    verb: string;
+    state: string;
+    scope: string;
+    isPriorityOverride: boolean;
+};
+
+export type SavePermissionsRequestModel = {
+    nodeKey: string;
+    roleAlias: string;
+    entries: Array<SavePermissionEntryItem>;
+};
+
 export type ScheduleRequestModel = {
-    publishTime?: string | null;
-    unpublishTime?: string | null;
+    publishTime?: null | string;
+    unpublishTime?: null | string;
 };
 
 export type ScriptFolderResponseModel = {
-    path: string;
     name: string;
-    parent?: FileSystemFolderModel | null;
+    parent?: null | FileSystemFolderModel;
+    path: string;
 };
 
 export type ScriptItemResponseModel = {
-    path: string;
-    name: string;
-    parent?: FileSystemFolderModel | null;
     isFolder: boolean;
+    name: string;
+    parent?: null | FileSystemFolderModel;
+    path: string;
 };
 
 export type ScriptResponseModel = {
-    path: string;
-    name: string;
-    parent?: FileSystemFolderModel | null;
     content: string;
+    name: string;
+    parent?: null | FileSystemFolderModel;
+    path: string;
+};
+
+export type SearcherResponseModel = {
+    name: string;
 };
 
 export type SearchResultResponseModel = {
     id: string;
     score: number;
-    readonly fieldCount: number;
+    fieldCount: number;
     fields: Array<FieldPresentationModel>;
-};
-
-export type SearcherResponseModel = {
-    name: string;
 };
 
 export type SecurityConfigurationResponseModel = {
@@ -2507,10 +3593,7 @@ export type SecurityConfigurationResponseModel = {
 export type SegmentResponseModel = {
     name: string;
     alias: string;
-    /**
-     * @deprecated
-     */
-    cultures?: Array<string> | null;
+    cultures?: null | Array<string>;
 };
 
 export type ServerConfigurationItemResponseModel = {
@@ -2523,6 +3606,7 @@ export type ServerConfigurationResponseModel = {
     versionCheckPeriod: number;
     allowLocalLogin: boolean;
     umbracoCssPath: string;
+    signalR: SignalRClientSettingsResponseModel;
 };
 
 export type ServerInformationResponseModel = {
@@ -2544,123 +3628,292 @@ export type SetAvatarRequestModel = {
     file: ReferenceByIdModel;
 };
 
+export type SignalRClientSettingsResponseModel = {
+    skipNegotiation: boolean;
+};
+
 export type SortingRequestModel = {
-    parent?: ReferenceByIdModel | null;
+    parent?: null | ReferenceByIdModel;
     sorting: Array<ItemSortingRequestModel>;
 };
 
 export type StaticFileItemResponseModel = {
-    path: string;
-    name: string;
-    parent?: FileSystemFolderModel | null;
     isFolder: boolean;
+    name: string;
+    parent?: null | FileSystemFolderModel;
+    path: string;
 };
 
-export enum StatusResultTypeModel {
-    SUCCESS = 'Success',
-    WARNING = 'Warning',
-    ERROR = 'Error',
-    INFO = 'Info'
-}
+/**
+ * Specifies the result type of a health check status.
+ */
+export type StatusResultTypeModel = 'Success' | 'Warning' | 'Error' | 'Info';
 
 export type StylesheetFolderResponseModel = {
-    path: string;
     name: string;
-    parent?: FileSystemFolderModel | null;
+    parent?: null | FileSystemFolderModel;
+    path: string;
 };
 
 export type StylesheetItemResponseModel = {
-    path: string;
-    name: string;
-    parent?: FileSystemFolderModel | null;
     isFolder: boolean;
+    name: string;
+    parent?: null | FileSystemFolderModel;
+    path: string;
 };
 
 export type StylesheetResponseModel = {
-    path: string;
-    name: string;
-    parent?: FileSystemFolderModel | null;
     content: string;
+    name: string;
+    parent?: null | FileSystemFolderModel;
+    path: string;
 };
 
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
 export type SubsetDataTypeTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
     totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
     totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
     items: Array<DataTypeTreeItemResponseModel>;
 };
 
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
 export type SubsetDocumentBlueprintTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
     totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
     totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
     items: Array<DocumentBlueprintTreeItemResponseModel>;
 };
 
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
 export type SubsetDocumentRecycleBinItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
     totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
     totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
     items: Array<DocumentRecycleBinItemResponseModel>;
 };
 
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
 export type SubsetDocumentTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
     totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
     totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
     items: Array<DocumentTreeItemResponseModel>;
 };
 
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
 export type SubsetDocumentTypeTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
     totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
     totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
     items: Array<DocumentTypeTreeItemResponseModel>;
 };
 
-export type SubsetFileSystemTreeItemPresentationModel = {
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
+export type SubsetElementRecycleBinItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
     totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
     totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
+    items: Array<ElementRecycleBinItemResponseModel>;
+};
+
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
+export type SubsetElementTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
+    totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
+    totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
+    items: Array<ElementTreeItemResponseModel>;
+};
+
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
+export type SubsetFileSystemTreeItemPresentationModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
+    totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
+    totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
     items: Array<FileSystemTreeItemPresentationModel>;
 };
 
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
 export type SubsetMediaRecycleBinItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
     totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
     totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
     items: Array<MediaRecycleBinItemResponseModel>;
 };
 
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
 export type SubsetMediaTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
     totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
     totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
     items: Array<MediaTreeItemResponseModel>;
 };
 
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
 export type SubsetMediaTypeTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
     totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
     totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
     items: Array<MediaTypeTreeItemResponseModel>;
 };
 
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
 export type SubsetMemberTypeTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
     totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
     totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
     items: Array<MemberTypeTreeItemResponseModel>;
 };
 
+/**
+ * Represents a subset of items with counts of items before and after the subset.
+ */
 export type SubsetNamedEntityTreeItemResponseModel = {
+    /**
+     * Gets or sets the total number of items before this subset.
+     */
     totalBefore: number;
+    /**
+     * Gets or sets the total number of items after this subset.
+     */
     totalAfter: number;
+    /**
+     * Gets or sets the items in the subset.
+     */
     items: Array<NamedEntityTreeItemResponseModel>;
 };
 
 export type TagResponseModel = {
     id: string;
-    text?: string | null;
-    group?: string | null;
+    text?: null | string;
+    group?: null | string;
     nodeCount: number;
 };
 
-export enum TelemetryLevelModel {
-    MINIMAL = 'Minimal',
-    BASIC = 'Basic',
-    DETAILED = 'Detailed'
-}
+/**
+ * Defines the level of telemetry data to be collected and sent.
+ */
+export type TelemetryLevelModel = 'Minimal' | 'Basic' | 'Detailed';
 
 export type TelemetryRequestModel = {
     telemetryLevel: TelemetryLevelModel;
@@ -2675,10 +3928,10 @@ export type TemplateConfigurationResponseModel = {
 };
 
 export type TemplateItemResponseModel = {
+    alias: string;
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
-    alias: string;
 };
 
 export type TemplateQueryExecuteFilterPresentationModel = {
@@ -2688,16 +3941,16 @@ export type TemplateQueryExecuteFilterPresentationModel = {
 };
 
 export type TemplateQueryExecuteModel = {
-    rootDocument?: ReferenceByIdModel | null;
-    documentTypeAlias?: string | null;
-    filters?: Array<TemplateQueryExecuteFilterPresentationModel> | null;
-    sort?: TemplateQueryExecuteSortModel | null;
+    rootDocument?: null | ReferenceByIdModel;
+    documentTypeAlias?: null | string;
+    filters?: null | Array<TemplateQueryExecuteFilterPresentationModel>;
+    sort?: null | TemplateQueryExecuteSortModel;
     take: number;
 };
 
 export type TemplateQueryExecuteSortModel = {
     propertyAlias: string;
-    direction?: string | null;
+    direction?: null | string;
 };
 
 export type TemplateQueryOperatorModel = {
@@ -2710,11 +3963,7 @@ export type TemplateQueryPropertyPresentationModel = {
     type: TemplateQueryPropertyTypeModel;
 };
 
-export enum TemplateQueryPropertyTypeModel {
-    STRING = 'String',
-    DATE_TIME = 'DateTime',
-    INTEGER = 'Integer'
-}
+export type TemplateQueryPropertyTypeModel = 'String' | 'DateTime' | 'Integer';
 
 export type TemplateQueryResultItemPresentationModel = {
     icon: string;
@@ -2735,65 +3984,56 @@ export type TemplateQuerySettingsResponseModel = {
 };
 
 export type TemplateResponseModel = {
+    id: string;
+    layoutTemplate?: null | ReferenceByIdModel;
+    masterTemplate?: null | ReferenceByIdModel;
     name: string;
     alias: string;
-    content?: string | null;
-    id: string;
-    masterTemplate?: ReferenceByIdModel | null;
+    content?: null | string;
 };
 
 export type TemporaryFileConfigurationResponseModel = {
     imageFileTypes: Array<string>;
     disallowedUploadedFilesExtensions: Array<string>;
     allowedUploadedFileExtensions: Array<string>;
-    maxFileSize?: number | null;
+    maxFileSize?: null | number;
 };
 
 export type TemporaryFileResponseModel = {
     id: string;
-    availableUntil?: string | null;
+    availableUntil?: null | string;
     fileName: string;
 };
 
 export type TrackedReferenceDocumentTypeModel = {
     id: string;
-    icon?: string | null;
-    alias?: string | null;
-    name?: string | null;
+    icon?: null | string;
+    alias?: null | string;
+    name?: null | string;
 };
 
 export type TrackedReferenceMediaTypeModel = {
     id: string;
-    icon?: string | null;
-    alias?: string | null;
-    name?: string | null;
+    icon?: null | string;
+    alias?: null | string;
+    name?: null | string;
 };
 
 export type TrackedReferenceMemberTypeModel = {
     id: string;
-    icon?: string | null;
-    alias?: string | null;
-    name?: string | null;
+    icon?: null | string;
+    alias?: null | string;
+    name?: null | string;
 };
 
-export enum TreeItemKindModel {
-    ITEM = 'Item',
-    FOLDER = 'Folder',
-    ALL = 'All'
-}
+export type TreeItemKindModel = string;
 
 export type TreeNodeResponseModel = {
     key: string;
     name: string;
-    icon?: string | null;
+    icon: null | string;
     hasChildren: boolean;
     entries: Array<PermissionEntryResponseModel>;
-};
-
-export type UnknownTypePermissionPresentationModel = {
-    $type: string;
-    verbs: Array<string>;
-    context: string;
 };
 
 export type UnlockUsersRequestModel = {
@@ -2801,7 +4041,15 @@ export type UnlockUsersRequestModel = {
 };
 
 export type UnpublishDocumentRequestModel = {
-    cultures?: Array<string> | null;
+    cultures?: null | Array<string>;
+};
+
+export type UnpublishElementRequestModel = {
+    cultures?: null | Array<string>;
+};
+
+export type UpdateCurrentUserRequestModel = {
+    languageIsoCode: string;
 };
 
 export type UpdateDataTypeRequestModel = {
@@ -2817,7 +4065,13 @@ export type UpdateDictionaryItemRequestModel = {
 };
 
 export type UpdateDocumentBlueprintRequestModel = {
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
     values: Array<DocumentValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
     variants: Array<DocumentVariantRequestModel>;
 };
 
@@ -2826,26 +4080,32 @@ export type UpdateDocumentNotificationsRequestModel = {
 };
 
 export type UpdateDocumentRequestModel = {
+    template?: null | ReferenceByIdModel;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
     values: Array<DocumentValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
     variants: Array<DocumentVariantRequestModel>;
-    template?: ReferenceByIdModel | null;
 };
 
 export type UpdateDocumentTypePropertyTypeContainerRequestModel = {
     id: string;
-    parent?: ReferenceByIdModel | null;
-    name?: string | null;
+    parent?: null | ReferenceByIdModel;
+    name?: null | string;
     type: string;
     sortOrder: number;
 };
 
 export type UpdateDocumentTypePropertyTypeRequestModel = {
     id: string;
-    container?: ReferenceByIdModel | null;
+    container?: null | ReferenceByIdModel;
     sortOrder: number;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     dataType: ReferenceByIdModel;
     variesByCulture: boolean;
     variesBySegment: boolean;
@@ -2854,27 +4114,39 @@ export type UpdateDocumentTypePropertyTypeRequestModel = {
 };
 
 export type UpdateDocumentTypeRequestModel = {
+    allowedTemplates: Array<ReferenceByIdModel>;
+    defaultTemplate?: null | ReferenceByIdModel;
+    cleanup: DocumentTypeCleanupModel;
+    allowedDocumentTypes: Array<DocumentTypeSortModel>;
+    compositions: Array<DocumentTypeCompositionModel>;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     icon: string;
     allowedAsRoot: boolean;
     variesByCulture: boolean;
     variesBySegment: boolean;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
     isElement: boolean;
+    allowedInLibrary: boolean;
     properties: Array<UpdateDocumentTypePropertyTypeRequestModel>;
     containers: Array<UpdateDocumentTypePropertyTypeContainerRequestModel>;
-    allowedTemplates: Array<ReferenceByIdModel>;
-    defaultTemplate?: ReferenceByIdModel | null;
-    cleanup: DocumentTypeCleanupModel;
-    allowedDocumentTypes: Array<DocumentTypeSortModel>;
-    compositions: Array<DocumentTypeCompositionModel>;
 };
 
 export type UpdateDomainsRequestModel = {
-    defaultIsoCode?: string | null;
+    defaultIsoCode?: null | string;
     domains: Array<DomainPresentationModel>;
+};
+
+export type UpdateElementRequestModel = {
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<ElementValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<ElementVariantRequestModel>;
 };
 
 export type UpdateFolderResponseModel = {
@@ -2885,29 +4157,35 @@ export type UpdateLanguageRequestModel = {
     name: string;
     isDefault: boolean;
     isMandatory: boolean;
-    fallbackIsoCode?: string | null;
+    fallbackIsoCode?: null | string;
 };
 
 export type UpdateMediaRequestModel = {
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
     values: Array<MediaValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
     variants: Array<MediaVariantRequestModel>;
 };
 
 export type UpdateMediaTypePropertyTypeContainerRequestModel = {
     id: string;
-    parent?: ReferenceByIdModel | null;
-    name?: string | null;
+    parent?: null | ReferenceByIdModel;
+    name?: null | string;
     type: string;
     sortOrder: number;
 };
 
 export type UpdateMediaTypePropertyTypeRequestModel = {
     id: string;
-    container?: ReferenceByIdModel | null;
+    container?: null | ReferenceByIdModel;
     sortOrder: number;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     dataType: ReferenceByIdModel;
     variesByCulture: boolean;
     variesBySegment: boolean;
@@ -2916,19 +4194,20 @@ export type UpdateMediaTypePropertyTypeRequestModel = {
 };
 
 export type UpdateMediaTypeRequestModel = {
+    allowedMediaTypes: Array<MediaTypeSortModel>;
+    compositions: Array<MediaTypeCompositionModel>;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     icon: string;
     allowedAsRoot: boolean;
     variesByCulture: boolean;
     variesBySegment: boolean;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
     isElement: boolean;
+    allowedInLibrary: boolean;
     properties: Array<UpdateMediaTypePropertyTypeRequestModel>;
     containers: Array<UpdateMediaTypePropertyTypeContainerRequestModel>;
-    allowedMediaTypes: Array<MediaTypeSortModel>;
-    compositions: Array<MediaTypeCompositionModel>;
 };
 
 export type UpdateMemberGroupRequestModel = {
@@ -2936,60 +4215,68 @@ export type UpdateMemberGroupRequestModel = {
 };
 
 export type UpdateMemberRequestModel = {
-    values: Array<MemberValueModel>;
-    variants: Array<MemberVariantRequestModel>;
     email: string;
     username: string;
-    oldPassword?: string | null;
-    newPassword?: string | null;
-    groups?: Array<string> | null;
+    oldPassword?: null | string;
+    newPassword?: null | string;
+    groups?: null | Array<string>;
     isApproved: boolean;
     isLockedOut: boolean;
     isTwoFactorEnabled: boolean;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<MemberValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<MemberVariantRequestModel>;
 };
 
 export type UpdateMemberTypePropertyTypeContainerRequestModel = {
     id: string;
-    parent?: ReferenceByIdModel | null;
-    name?: string | null;
+    parent?: null | ReferenceByIdModel;
+    name?: null | string;
     type: string;
     sortOrder: number;
 };
 
 export type UpdateMemberTypePropertyTypeRequestModel = {
+    isSensitive: boolean;
+    visibility: MemberTypePropertyTypeVisibilityModel;
     id: string;
-    container?: ReferenceByIdModel | null;
+    container?: null | ReferenceByIdModel;
     sortOrder: number;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     dataType: ReferenceByIdModel;
     variesByCulture: boolean;
     variesBySegment: boolean;
     validation: PropertyTypeValidationModel;
     appearance: PropertyTypeAppearanceModel;
-    isSensitive: boolean;
-    visibility: MemberTypePropertyTypeVisibilityModel;
 };
 
 export type UpdateMemberTypeRequestModel = {
+    compositions: Array<MemberTypeCompositionModel>;
     alias: string;
     name: string;
-    description?: string | null;
+    description?: null | string;
     icon: string;
     allowedAsRoot: boolean;
     variesByCulture: boolean;
     variesBySegment: boolean;
-    collection?: ReferenceByIdModel | null;
+    collection?: null | ReferenceByIdModel;
     isElement: boolean;
+    allowedInLibrary: boolean;
     properties: Array<UpdateMemberTypePropertyTypeRequestModel>;
     containers: Array<UpdateMemberTypePropertyTypeContainerRequestModel>;
-    compositions: Array<MemberTypeCompositionModel>;
 };
 
 export type UpdatePackageRequestModel = {
+    packagePath: string;
     name: string;
-    contentNodeId?: string | null;
+    contentNodeId?: null | string;
     contentLoadChildNodes: boolean;
     mediaIds: Array<string>;
     mediaLoadChildNodes: boolean;
@@ -3002,7 +4289,6 @@ export type UpdatePackageRequestModel = {
     scripts: Array<string>;
     languages: Array<string>;
     dictionaryItems: Array<string>;
-    readonly packagePath: string;
 };
 
 export type UpdatePartialViewRequestModel = {
@@ -3020,30 +4306,32 @@ export type UpdateStylesheetRequestModel = {
 export type UpdateTemplateRequestModel = {
     name: string;
     alias: string;
-    content?: string | null;
+    content?: null | string;
 };
 
 export type UpdateUserDataRequestModel = {
+    key: string;
     group: string;
     identifier: string;
     value: string;
-    key: string;
 };
 
 export type UpdateUserGroupRequestModel = {
     name: string;
     alias: string;
-    description?: string | null;
-    icon?: string | null;
+    description?: null | string;
+    icon?: null | string;
     sections: Array<string>;
     languages: Array<string>;
     hasAccessToAllLanguages: boolean;
-    documentStartNode?: ReferenceByIdModel | null;
+    documentStartNode?: null | ReferenceByIdModel;
     documentRootAccess: boolean;
-    mediaStartNode?: ReferenceByIdModel | null;
+    mediaStartNode?: null | ReferenceByIdModel;
     mediaRootAccess: boolean;
+    elementStartNode?: null | ReferenceByIdModel;
+    elementRootAccess: boolean;
     fallbackPermissions: Array<string>;
-    permissions: Array<DocumentPermissionPresentationModel | DocumentPropertyValuePermissionPresentationModel | UnknownTypePermissionPresentationModel>;
+    permissions: Array<IPermissionPresentationModel>;
 };
 
 export type UpdateUserGroupsOnUserRequestModel = {
@@ -3052,27 +4340,29 @@ export type UpdateUserGroupsOnUserRequestModel = {
 };
 
 export type UpdateUserRequestModel = {
-    email: string;
-    userName: string;
-    name: string;
-    userGroupIds: Array<ReferenceByIdModel>;
     languageIsoCode: string;
     documentStartNodeIds: Array<ReferenceByIdModel>;
     hasDocumentRootAccess: boolean;
     mediaStartNodeIds: Array<ReferenceByIdModel>;
     hasMediaRootAccess: boolean;
+    elementStartNodeIds: Array<ReferenceByIdModel>;
+    hasElementRootAccess: boolean;
+    email: string;
+    userName: string;
+    name: string;
+    userGroupIds: Array<ReferenceByIdModel>;
 };
 
 export type UpdateWebhookRequestModel = {
+    events: Array<string>;
     enabled: boolean;
-    name?: string | null;
-    description?: string | null;
+    name?: null | string;
+    description?: null | string;
     url: string;
     contentTypeKeys: Array<string>;
     headers: {
         [key: string]: string;
     };
-    events: Array<string>;
 };
 
 export type UpgradeCheckResponseModel = {
@@ -3086,7 +4376,7 @@ export type UpgradeSettingsResponseModel = {
     newState: string;
     newVersion: string;
     oldVersion: string;
-    readonly reportUrl: string;
+    reportUrl: null | string;
 };
 
 export type UserConfigurationResponseModel = {
@@ -3103,52 +4393,68 @@ export type UserDataModel = {
     value: string;
 };
 
-export enum UserDataOperationStatusModel {
-    SUCCESS = 'Success',
-    NOT_FOUND = 'NotFound',
-    USER_NOT_FOUND = 'UserNotFound',
-    ALREADY_EXISTS = 'AlreadyExists'
-}
+/**
+ * Represents the status of a user data operation.
+ */
+export type UserDataOperationStatusModel = 'Success' | 'NotFound' | 'UserNotFound' | 'AlreadyExists';
 
 export type UserDataResponseModel = {
+    key: string;
     group: string;
     identifier: string;
     value: string;
-    key: string;
 };
 
+/**
+ * Represents information about an external login provider and its association with a user.
+ */
 export type UserExternalLoginProviderModel = {
+    /**
+     * Gets the authentication scheme name of the external login provider.
+     */
     providerSchemeName: string;
-    providerKey?: string | null;
+    /**
+     * Gets or sets the provider-specific key identifying the user with this provider.
+     * The provider key, or `null` if the user is not linked to this provider.
+     */
+    providerKey: null | string;
+    /**
+     * Gets a value indicating whether this external login provider is linked to the user.
+     */
     isLinkedOnUser: boolean;
+    /**
+     * Gets a value indicating whether manual linking is enabled for this provider.
+     */
     hasManualLinkingEnabled: boolean;
 };
 
 export type UserGroupItemResponseModel = {
+    icon?: null | string;
+    alias?: null | string;
+    name: string;
     id: string;
     flags: Array<FlagModel>;
-    name: string;
-    icon?: string | null;
-    alias?: string | null;
 };
 
 export type UserGroupResponseModel = {
-    name: string;
-    alias: string;
-    description?: string | null;
-    icon?: string | null;
-    sections: Array<string>;
-    languages: Array<string>;
-    hasAccessToAllLanguages: boolean;
-    documentStartNode?: ReferenceByIdModel | null;
-    documentRootAccess: boolean;
-    mediaStartNode?: ReferenceByIdModel | null;
-    mediaRootAccess: boolean;
-    fallbackPermissions: Array<string>;
-    permissions: Array<DocumentPermissionPresentationModel | DocumentPropertyValuePermissionPresentationModel | UnknownTypePermissionPresentationModel>;
     id: string;
     isDeletable: boolean;
     aliasCanBeChanged: boolean;
+    name: string;
+    alias: string;
+    description?: null | string;
+    icon?: null | string;
+    sections: Array<string>;
+    languages: Array<string>;
+    hasAccessToAllLanguages: boolean;
+    documentStartNode?: null | ReferenceByIdModel;
+    documentRootAccess: boolean;
+    mediaStartNode?: null | ReferenceByIdModel;
+    mediaRootAccess: boolean;
+    elementStartNode?: null | ReferenceByIdModel;
+    elementRootAccess: boolean;
+    fallbackPermissions: Array<string>;
+    permissions: Array<IPermissionPresentationModel>;
 };
 
 export type UserInstallRequestModel = {
@@ -3159,30 +4465,22 @@ export type UserInstallRequestModel = {
 };
 
 export type UserItemResponseModel = {
-    id: string;
-    flags: Array<FlagModel>;
-    name: string;
     avatarUrls: Array<string>;
     kind: UserKindModel;
+    name: string;
+    id: string;
+    flags: Array<FlagModel>;
 };
 
-export enum UserKindModel {
-    DEFAULT = 'Default',
-    API = 'Api'
-}
+/**
+ * Represents the kind or type of user.
+ */
+export type UserKindModel = 'Default' | 'Api';
 
-export enum UserOrderModel {
-    USER_NAME = 'UserName',
-    LANGUAGE = 'Language',
-    NAME = 'Name',
-    EMAIL = 'Email',
-    ID = 'Id',
-    CREATE_DATE = 'CreateDate',
-    UPDATE_DATE = 'UpdateDate',
-    IS_APPROVED = 'IsApproved',
-    IS_LOCKED_OUT = 'IsLockedOut',
-    LAST_LOGIN_DATE = 'LastLoginDate'
-}
+/**
+ * Specifies the field by which to order user query results.
+ */
+export type UserOrderModel = 'UserName' | 'Language' | 'Name' | 'Email' | 'Id' | 'CreateDate' | 'UpdateDate' | 'IsApproved' | 'IsLockedOut' | 'LastLoginDate';
 
 export type UserPermissionModel = {
     nodeKey: string;
@@ -3194,26 +4492,28 @@ export type UserPermissionsResponseModel = {
 };
 
 export type UserResponseModel = {
-    email: string;
-    userName: string;
-    name: string;
-    userGroupIds: Array<ReferenceByIdModel>;
     id: string;
-    languageIsoCode?: string | null;
+    languageIsoCode?: null | string;
     documentStartNodeIds: Array<ReferenceByIdModel>;
     hasDocumentRootAccess: boolean;
     mediaStartNodeIds: Array<ReferenceByIdModel>;
     hasMediaRootAccess: boolean;
+    elementStartNodeIds: Array<ReferenceByIdModel>;
+    hasElementRootAccess: boolean;
     avatarUrls: Array<string>;
     state: UserStateModel;
     failedLoginAttempts: number;
     createDate: string;
     updateDate: string;
-    lastLoginDate?: string | null;
-    lastLockoutDate?: string | null;
-    lastPasswordChangeDate?: string | null;
+    lastLoginDate?: null | string;
+    lastLockoutDate?: null | string;
+    lastPasswordChangeDate?: null | string;
     isAdmin: boolean;
     kind: UserKindModel;
+    email: string;
+    userName: string;
+    name: string;
+    userGroupIds: Array<ReferenceByIdModel>;
 };
 
 export type UserSettingsPresentationModel = {
@@ -3222,30 +4522,53 @@ export type UserSettingsPresentationModel = {
     consentLevels: Array<ConsentLevelPresentationModel>;
 };
 
-export enum UserStateModel {
-    ACTIVE = 'Active',
-    DISABLED = 'Disabled',
-    LOCKED_OUT = 'LockedOut',
-    INVITED = 'Invited',
-    INACTIVE = 'Inactive',
-    ALL = 'All'
-}
+/**
+ * The state of a user
+ */
+export type UserStateModel = 'Active' | 'Disabled' | 'LockedOut' | 'Invited' | 'Inactive' | 'All';
 
+/**
+ * Represents information about a two-factor authentication provider and its status for a user.
+ */
 export type UserTwoFactorProviderModel = {
+    /**
+     * Gets the name of the two-factor authentication provider.
+     */
     providerName: string;
+    /**
+     * Gets a value indicating whether this two-factor provider is enabled for the user.
+     */
     isEnabledOnUser: boolean;
 };
 
 export type ValidateUpdateDocumentRequestModel = {
+    cultures?: null | Array<string>;
+    template?: null | ReferenceByIdModel;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
     values: Array<DocumentValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
     variants: Array<DocumentVariantRequestModel>;
-    template?: ReferenceByIdModel | null;
-    cultures?: Array<string> | null;
+};
+
+export type ValidateUpdateElementRequestModel = {
+    cultures?: null | Array<string>;
+    /**
+     * Gets or sets the collection of property values for the content.
+     */
+    values: Array<ElementValueModel>;
+    /**
+     * Gets or sets the collection of variant models for culture and segment variations.
+     */
+    variants: Array<ElementVariantRequestModel>;
 };
 
 export type VariantItemResponseModel = {
     name: string;
-    culture?: string | null;
+    culture?: null | string;
 };
 
 export type VerbResponseModel = {
@@ -3284,13 +4607,13 @@ export type WebhookEventResponseModel = {
 };
 
 export type WebhookItemResponseModel = {
-    id: string;
-    flags: Array<FlagModel>;
     enabled: boolean;
     name: string;
     events: string;
     url: string;
     types: string;
+    id: string;
+    flags: Array<FlagModel>;
 };
 
 export type WebhookLogResponseModel = {
@@ -3310,89 +4633,16 @@ export type WebhookLogResponseModel = {
 };
 
 export type WebhookResponseModel = {
+    id: string;
+    events: Array<WebhookEventResponseModel>;
     enabled: boolean;
-    name?: string | null;
-    description?: string | null;
+    name?: null | string;
+    description?: null | string;
     url: string;
     contentTypeKeys: Array<string>;
     headers: {
         [key: string]: string;
     };
-    id: string;
-    events: Array<WebhookEventResponseModel>;
-};
-
-export type DocumentVariantItemResponseModelWritable = {
-    name: string;
-    culture?: string | null;
-    flags: Array<FlagModel>;
-    state: DocumentVariantStateModel;
-};
-
-export type DocumentVariantResponseModelWritable = {
-    culture?: string | null;
-    segment?: string | null;
-    name: string;
-    createDate: string;
-    updateDate: string;
-    state: DocumentVariantStateModel;
-    publishDate?: string | null;
-    scheduledPublishDate?: string | null;
-    scheduledUnpublishDate?: string | null;
-    flags: Array<FlagModel>;
-};
-
-export type PackageDefinitionResponseModelWritable = {
-    name: string;
-    contentNodeId?: string | null;
-    contentLoadChildNodes: boolean;
-    mediaIds: Array<string>;
-    mediaLoadChildNodes: boolean;
-    documentTypes: Array<string>;
-    mediaTypes: Array<string>;
-    dataTypes: Array<string>;
-    templates: Array<string>;
-    partialViews: Array<string>;
-    stylesheets: Array<string>;
-    scripts: Array<string>;
-    languages: Array<string>;
-    dictionaryItems: Array<string>;
-    id: string;
-};
-
-export type RelationResponseModelWritable = {
-    id: string;
-    relationType: ReferenceByIdModel;
-};
-
-export type SearchResultResponseModelWritable = {
-    id: string;
-    score: number;
-    fields: Array<FieldPresentationModel>;
-};
-
-export type UpdatePackageRequestModelWritable = {
-    name: string;
-    contentNodeId?: string | null;
-    contentLoadChildNodes: boolean;
-    mediaIds: Array<string>;
-    mediaLoadChildNodes: boolean;
-    documentTypes: Array<string>;
-    mediaTypes: Array<string>;
-    dataTypes: Array<string>;
-    templates: Array<string>;
-    partialViews: Array<string>;
-    stylesheets: Array<string>;
-    scripts: Array<string>;
-    languages: Array<string>;
-    dictionaryItems: Array<string>;
-};
-
-export type UpgradeSettingsResponseModelWritable = {
-    currentState: string;
-    newState: string;
-    newVersion: string;
-    oldVersion: string;
 };
 
 export type GetForEditorData = {
@@ -3425,14 +4675,14 @@ export type GetForEditorResponses = {
 
 export type GetForEditorResponse = GetForEditorResponses[keyof GetForEditorResponses];
 
-export type SaveData = {
-    body?: SaveDocTypePermissionsRequestModel;
+export type PutDocTypePermissionsData = {
+    body: SaveDocTypePermissionsRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions';
 };
 
-export type SaveErrors = {
+export type PutDocTypePermissionsErrors = {
     /**
      * Bad Request
      */
@@ -3447,16 +4697,16 @@ export type SaveErrors = {
     403: unknown;
 };
 
-export type SaveError = SaveErrors[keyof SaveErrors];
+export type PutDocTypePermissionsError = PutDocTypePermissionsErrors[keyof PutDocTypePermissionsErrors];
 
-export type SaveResponses = {
+export type PutDocTypePermissionsResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type AuditForNodeData = {
+export type GetDocTypeAuditData = {
     body?: never;
     path?: never;
     query?: {
@@ -3467,7 +4717,7 @@ export type AuditForNodeData = {
     url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/audit-for-node';
 };
 
-export type AuditForNodeErrors = {
+export type GetDocTypeAuditErrors = {
     /**
      * Bad Request
      */
@@ -3486,16 +4736,16 @@ export type AuditForNodeErrors = {
     404: ProblemDetails;
 };
 
-export type AuditForNodeError = AuditForNodeErrors[keyof AuditForNodeErrors];
+export type GetDocTypeAuditError = GetDocTypeAuditErrors[keyof GetDocTypeAuditErrors];
 
-export type AuditForNodeResponses = {
+export type GetDocTypeAuditResponses = {
     /**
      * OK
      */
     200: DocTypeAuditForNodeResponseModel;
 };
 
-export type AuditForNodeResponse = AuditForNodeResponses[keyof AuditForNodeResponses];
+export type GetDocTypeAuditResponse = GetDocTypeAuditResponses[keyof GetDocTypeAuditResponses];
 
 export type GetDocTypesData = {
     body?: never;
@@ -3524,7 +4774,7 @@ export type GetDocTypesResponses = {
 
 export type GetDocTypesResponse = GetDocTypesResponses[keyof GetDocTypesResponses];
 
-export type PathEntriesData = {
+export type GetDocTypePathEntriesData = {
     body?: never;
     path?: never;
     query?: {
@@ -3534,7 +4784,7 @@ export type PathEntriesData = {
     url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/path-entries';
 };
 
-export type PathEntriesErrors = {
+export type GetDocTypePathEntriesErrors = {
     /**
      * The resource is protected and requires an authentication token
      */
@@ -3545,14 +4795,14 @@ export type PathEntriesErrors = {
     403: unknown;
 };
 
-export type PathEntriesResponses = {
+export type GetDocTypePathEntriesResponses = {
     /**
      * OK
      */
     200: DocTypePathEntriesResponseModel;
 };
 
-export type PathEntriesResponse = PathEntriesResponses[keyof PathEntriesResponses];
+export type GetDocTypePathEntriesResponse = GetDocTypePathEntriesResponses[keyof GetDocTypePathEntriesResponses];
 
 export type GetEffectiveForUserData = {
     body?: never;
@@ -3673,14 +4923,14 @@ export type GetPermissionsResponses = {
 
 export type GetPermissionsResponse = GetPermissionsResponses[keyof GetPermissionsResponses];
 
-export type SavePermissionsData = {
-    body?: SavePermissionsRequestModel;
+export type PutPermissionsData = {
+    body: SavePermissionsRequestModel;
     path?: never;
     query?: never;
     url: '/umbraco/management/api/v1/advanced-permissions/permissions';
 };
 
-export type SavePermissionsErrors = {
+export type PutPermissionsErrors = {
     /**
      * Bad Request
      */
@@ -3695,9 +4945,9 @@ export type SavePermissionsErrors = {
     403: unknown;
 };
 
-export type SavePermissionsError = SavePermissionsErrors[keyof SavePermissionsErrors];
+export type PutPermissionsError = PutPermissionsErrors[keyof PutPermissionsErrors];
 
-export type SavePermissionsResponses = {
+export type PutPermissionsResponses = {
     /**
      * OK
      */

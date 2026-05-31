@@ -1,4 +1,4 @@
-import { AdvancedPermissionsService } from './generated/sdk.gen.js';
+import * as Sdk from './generated/sdk.gen.js';
 import type {
   DocTypeListItem,
   DocTypePermissionEntry,
@@ -12,7 +12,7 @@ import type {
 
 /** Lists every non-element document type for the editor picker. */
 export async function getDocTypes(signal?: AbortSignal): Promise<DocTypeListItem[]> {
-  const { data } = await AdvancedPermissionsService.getDocTypes({
+  const { data } = await Sdk.getDocTypes({
     throwOnError: true,
     ...(signal ? { signal } : {}),
   });
@@ -25,7 +25,7 @@ export async function getDocTypePermissions(
   contentTypeKey: string,
   signal?: AbortSignal,
 ): Promise<DocTypePermissionEntry[]> {
-  const { data } = await AdvancedPermissionsService.getForEditor({
+  const { data } = await Sdk.getForEditor({
     throwOnError: true,
     query: { roleAlias, contentTypeKey },
     ...(signal ? { signal } : {}),
@@ -40,7 +40,7 @@ export async function saveDocTypePermissions(
   contentTypeKey: string,
   entries: SaveDocTypePermissionItem[],
 ): Promise<void> {
-  await AdvancedPermissionsService.save({
+  await Sdk.putDocTypePermissions({
     throwOnError: true,
     body: { nodeKey, roleAlias, contentTypeKey, entries },
   });
@@ -60,7 +60,7 @@ export async function getDocTypeAuditForNode(
   if ('userKey' in subject) query.userKey = subject.userKey;
   else query.roleAlias = subject.roleAlias;
 
-  const { data } = await AdvancedPermissionsService.auditForNode({
+  const { data } = await Sdk.getDocTypeAudit({
     throwOnError: true,
     query,
     ...(signal ? { signal } : {}),
@@ -77,7 +77,7 @@ export async function getDocTypePathEntries(
   contentTypeKey: string,
   signal?: AbortSignal,
 ): Promise<DocTypePathEntriesResponse> {
-  const { data } = await AdvancedPermissionsService.pathEntries({
+  const { data } = await Sdk.getDocTypePathEntries({
     throwOnError: true,
     query: { nodeKey, contentTypeKey },
     ...(signal ? { signal } : {}),

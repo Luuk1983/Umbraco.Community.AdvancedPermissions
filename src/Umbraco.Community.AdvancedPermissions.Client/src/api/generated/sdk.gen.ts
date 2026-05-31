@@ -2,9 +2,9 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuditForNodeData, AuditForNodeErrors, AuditForNodeResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PathEntriesData, PathEntriesErrors, PathEntriesResponses, SaveData, SaveErrors, SavePermissionsData, SavePermissionsErrors, SavePermissionsResponses, SaveResponses } from './types.gen';
+import type { DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypeAuditData, GetDocTypeAuditErrors, GetDocTypeAuditResponses, GetDocTypePathEntriesData, GetDocTypePathEntriesErrors, GetDocTypePathEntriesResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PutDocTypePermissionsData, PutDocTypePermissionsErrors, PutDocTypePermissionsResponses, PutPermissionsData, PutPermissionsErrors, PutPermissionsResponses } from './types.gen';
 
-export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
+export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
      * You can provide a client instance returned by `createClient()` instead of
      * individual options. This might be also useful if you want to implement a
@@ -18,268 +18,154 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
     meta?: Record<string, unknown>;
 };
 
-export class AdvancedPermissionsService {
-    /**
-     * Gets all doc-type permission entries for a (role, content-type) combination.
-     */
-    public static getForEditor<ThrowOnError extends boolean = false>(options?: Options<GetForEditorData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetForEditorResponses, GetForEditorErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions',
-            ...options
-        });
+/**
+ * Gets all doc-type permission entries for a (role, content-type) combination.
+ */
+export const getForEditor = <ThrowOnError extends boolean = false>(options?: Options<GetForEditorData, ThrowOnError>) => (options?.client ?? client).get<GetForEditorResponses, GetForEditorErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions',
+    ...options
+});
+
+/**
+ * Saves (replaces) doc-type permission entries for a node+role+content-type triple.
+ */
+export const putDocTypePermissions = <ThrowOnError extends boolean = false>(options: Options<PutDocTypePermissionsData, ThrowOnError>) => (options.client ?? client).put<PutDocTypePermissionsResponses, PutDocTypePermissionsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
     }
-    
-    /**
-     * Saves (replaces) doc-type permission entries for a node+role+content-type triple.
-     */
-    public static save<ThrowOnError extends boolean = false>(options?: Options<SaveData, ThrowOnError>) {
-        return (options?.client ?? client).put<SaveResponses, SaveErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions',
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers
-            }
-        });
+});
+
+/**
+ * Audits which doc-types a subject may create under a given parent (tree-style).
+ */
+export const getDocTypeAudit = <ThrowOnError extends boolean = false>(options?: Options<GetDocTypeAuditData, ThrowOnError>) => (options?.client ?? client).get<GetDocTypeAuditResponses, GetDocTypeAuditErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/audit-for-node',
+    ...options
+});
+
+/**
+ * Lists non-element document types.
+ */
+export const getDocTypes = <ThrowOnError extends boolean = false>(options?: Options<GetDocTypesData, ThrowOnError>) => (options?.client ?? client).get<GetDocTypesResponses, GetDocTypesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/doc-types',
+    ...options
+});
+
+/**
+ * Gets the inheritance path and stored doc-type entries along that path for a content-type.
+ */
+export const getDocTypePathEntries = <ThrowOnError extends boolean = false>(options?: Options<GetDocTypePathEntriesData, ThrowOnError>) => (options?.client ?? client).get<GetDocTypePathEntriesResponses, GetDocTypePathEntriesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/path-entries',
+    ...options
+});
+
+/**
+ * Resolves effective permissions for a user at a content node.
+ */
+export const getEffectiveForUser = <ThrowOnError extends boolean = false>(options?: Options<GetEffectiveForUserData, ThrowOnError>) => (options?.client ?? client).get<GetEffectiveForUserResponses, GetEffectiveForUserErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/effective',
+    ...options
+});
+
+/**
+ * Resolves effective permissions for a role at a content node.
+ */
+export const getEffectiveForRole = <ThrowOnError extends boolean = false>(options?: Options<GetEffectiveForRoleData, ThrowOnError>) => (options?.client ?? client).get<GetEffectiveForRoleResponses, GetEffectiveForRoleErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/effective/by-role',
+    ...options
+});
+
+/**
+ * Removes a specific permission entry (reverts to inherit).
+ */
+export const deletePermission = <ThrowOnError extends boolean = false>(options?: Options<DeletePermissionData, ThrowOnError>) => (options?.client ?? client).delete<DeletePermissionResponses, DeletePermissionErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/permissions',
+    ...options
+});
+
+/**
+ * Gets permission entries for a node and role.
+ */
+export const getPermissions = <ThrowOnError extends boolean = false>(options?: Options<GetPermissionsData, ThrowOnError>) => (options?.client ?? client).get<GetPermissionsResponses, GetPermissionsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/permissions',
+    ...options
+});
+
+/**
+ * Saves (replaces) permission entries for a node and role.
+ */
+export const putPermissions = <ThrowOnError extends boolean = false>(options: Options<PutPermissionsData, ThrowOnError>) => (options.client ?? client).put<PutPermissionsResponses, PutPermissionsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/permissions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
     }
-    
-    /**
-     * Audits which doc-types a subject may create under a given parent (tree-style).
-     */
-    public static auditForNode<ThrowOnError extends boolean = false>(options?: Options<AuditForNodeData, ThrowOnError>) {
-        return (options?.client ?? client).get<AuditForNodeResponses, AuditForNodeErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/audit-for-node',
-            ...options
-        });
-    }
-    
-    /**
-     * Lists non-element document types.
-     */
-    public static getDocTypes<ThrowOnError extends boolean = false>(options?: Options<GetDocTypesData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetDocTypesResponses, GetDocTypesErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/doc-types',
-            ...options
-        });
-    }
-    
-    /**
-     * Gets the inheritance path and stored doc-type entries along that path for a content-type.
-     */
-    public static pathEntries<ThrowOnError extends boolean = false>(options?: Options<PathEntriesData, ThrowOnError>) {
-        return (options?.client ?? client).get<PathEntriesResponses, PathEntriesErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/path-entries',
-            ...options
-        });
-    }
-    
-    /**
-     * Resolves effective permissions for a user at a content node.
-     */
-    public static getEffectiveForUser<ThrowOnError extends boolean = false>(options?: Options<GetEffectiveForUserData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetEffectiveForUserResponses, GetEffectiveForUserErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/effective',
-            ...options
-        });
-    }
-    
-    /**
-     * Resolves effective permissions for a role at a content node.
-     */
-    public static getEffectiveForRole<ThrowOnError extends boolean = false>(options?: Options<GetEffectiveForRoleData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetEffectiveForRoleResponses, GetEffectiveForRoleErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/effective/by-role',
-            ...options
-        });
-    }
-    
-    /**
-     * Removes a specific permission entry (reverts to inherit).
-     */
-    public static deletePermission<ThrowOnError extends boolean = false>(options?: Options<DeletePermissionData, ThrowOnError>) {
-        return (options?.client ?? client).delete<DeletePermissionResponses, DeletePermissionErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/permissions',
-            ...options
-        });
-    }
-    
-    /**
-     * Gets permission entries for a node and role.
-     */
-    public static getPermissions<ThrowOnError extends boolean = false>(options?: Options<GetPermissionsData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetPermissionsResponses, GetPermissionsErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/permissions',
-            ...options
-        });
-    }
-    
-    /**
-     * Saves (replaces) permission entries for a node and role.
-     */
-    public static savePermissions<ThrowOnError extends boolean = false>(options?: Options<SavePermissionsData, ThrowOnError>) {
-        return (options?.client ?? client).put<SavePermissionsResponses, SavePermissionsErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/permissions',
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers
-            }
-        });
-    }
-    
-    /**
-     * Gets all permission entries for a node (all roles).
-     */
-    public static getPermissionsByNode<ThrowOnError extends boolean = false>(options?: Options<GetPermissionsByNodeData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetPermissionsByNodeResponses, GetPermissionsByNodeErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/permissions/by-node',
-            ...options
-        });
-    }
-    
-    /**
-     * Gets the inheritance path and stored entries for a verb along that path.
-     */
-    public static getPermissionsForPath<ThrowOnError extends boolean = false>(options?: Options<GetPermissionsForPathData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetPermissionsForPathResponses, GetPermissionsForPathErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/permissions/for-path',
-            ...options
-        });
-    }
-    
-    /**
-     * Gets all assignable roles (user groups + $everyone).
-     */
-    public static getRoles<ThrowOnError extends boolean = false>(options?: Options<GetRolesData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetRolesResponses, GetRolesErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/roles',
-            ...options
-        });
-    }
-    
-    /**
-     * Gets child content nodes with permission entries for a role.
-     */
-    public static getChildren<ThrowOnError extends boolean = false>(options?: Options<GetChildrenData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetChildrenResponses, GetChildrenErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/tree/children',
-            ...options
-        });
-    }
-    
-    /**
-     * Gets root content nodes with permission entries for a role.
-     */
-    public static getRoot<ThrowOnError extends boolean = false>(options?: Options<GetRootData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetRootResponses, GetRootErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/tree/root',
-            ...options
-        });
-    }
-    
-    /**
-     * Gets all available permission verbs.
-     */
-    public static getVerbs<ThrowOnError extends boolean = false>(options?: Options<GetVerbsData, ThrowOnError>) {
-        return (options?.client ?? client).get<GetVerbsResponses, GetVerbsErrors, ThrowOnError>({
-            security: [
-                {
-                    scheme: 'bearer',
-                    type: 'http'
-                }
-            ],
-            url: '/umbraco/management/api/v1/advanced-permissions/verbs',
-            ...options
-        });
-    }
-}
+});
+
+/**
+ * Gets all permission entries for a node (all roles).
+ */
+export const getPermissionsByNode = <ThrowOnError extends boolean = false>(options?: Options<GetPermissionsByNodeData, ThrowOnError>) => (options?.client ?? client).get<GetPermissionsByNodeResponses, GetPermissionsByNodeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/permissions/by-node',
+    ...options
+});
+
+/**
+ * Gets the inheritance path and stored entries for a verb along that path.
+ */
+export const getPermissionsForPath = <ThrowOnError extends boolean = false>(options?: Options<GetPermissionsForPathData, ThrowOnError>) => (options?.client ?? client).get<GetPermissionsForPathResponses, GetPermissionsForPathErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/permissions/for-path',
+    ...options
+});
+
+/**
+ * Gets all assignable roles (user groups + $everyone).
+ */
+export const getRoles = <ThrowOnError extends boolean = false>(options?: Options<GetRolesData, ThrowOnError>) => (options?.client ?? client).get<GetRolesResponses, GetRolesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/roles',
+    ...options
+});
+
+/**
+ * Gets child content nodes with permission entries for a role.
+ */
+export const getChildren = <ThrowOnError extends boolean = false>(options?: Options<GetChildrenData, ThrowOnError>) => (options?.client ?? client).get<GetChildrenResponses, GetChildrenErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/tree/children',
+    ...options
+});
+
+/**
+ * Gets root content nodes with permission entries for a role.
+ */
+export const getRoot = <ThrowOnError extends boolean = false>(options?: Options<GetRootData, ThrowOnError>) => (options?.client ?? client).get<GetRootResponses, GetRootErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/tree/root',
+    ...options
+});
+
+/**
+ * Gets all available permission verbs.
+ */
+export const getVerbs = <ThrowOnError extends boolean = false>(options?: Options<GetVerbsData, ThrowOnError>) => (options?.client ?? client).get<GetVerbsResponses, GetVerbsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/verbs',
+    ...options
+});

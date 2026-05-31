@@ -1,12 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Umbraco.Cms.Api.Common.OpenApi;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Extensions;
-using Umbraco.Community.AdvancedPermissions.Api.Swagger;
 using Umbraco.Community.AdvancedPermissions.Caching;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Services;
@@ -43,19 +41,6 @@ public sealed class AdvancedPermissionsComposer : IComposer
         RegisterDbContext(builder);
         RegisterServices(builder);
         RegisterNotificationHandlers(builder);
-        RegisterSwaggerHandlers(builder);
-    }
-
-    /// <summary>
-    /// Scopes the default OpenAPI schema and operation ID handlers to this package's namespace
-    /// so the generated management-API Swagger document exposes short, stable names
-    /// (e.g. <c>getRoles</c> instead of <c>getUmbracoManagementApiV1AdvancedPermissionsRoles</c>),
-    /// which keeps the hey-api generated TypeScript client readable.
-    /// </summary>
-    private static void RegisterSwaggerHandlers(IUmbracoBuilder builder)
-    {
-        builder.Services.AddSingleton<ISchemaIdHandler, AdvancedPermissionsSchemaIdHandler>();
-        builder.Services.AddSingleton<IOperationIdHandler, AdvancedPermissionsOperationIdHandler>();
     }
 
     /// <summary>
@@ -75,7 +60,8 @@ public sealed class AdvancedPermissionsComposer : IComposer
         if (providerName.Contains("SqlClient", StringComparison.OrdinalIgnoreCase))
         {
             builder.Services.AddUmbracoDbContext<AdvancedPermissionsDbContextSqlServer>(
-                (sp, optionsBuilder, _, _) => optionsBuilder.UseUmbracoDatabaseProvider(sp));
+                (sp, optionsBuilder, _, _) => optionsBuilder.UseUmbracoDatabaseProvider(sp),
+                shareUmbracoConnection: true);
 
             builder.Services.AddScoped<AdvancedPermissionsDbContext>(sp =>
                 sp.GetRequiredService<AdvancedPermissionsDbContextSqlServer>());
@@ -87,7 +73,8 @@ public sealed class AdvancedPermissionsComposer : IComposer
         else
         {
             builder.Services.AddUmbracoDbContext<AdvancedPermissionsDbContextSqlite>(
-                (sp, optionsBuilder, _, _) => optionsBuilder.UseUmbracoDatabaseProvider(sp));
+                (sp, optionsBuilder, _, _) => optionsBuilder.UseUmbracoDatabaseProvider(sp),
+                shareUmbracoConnection: true);
 
             builder.Services.AddScoped<AdvancedPermissionsDbContext>(sp =>
                 sp.GetRequiredService<AdvancedPermissionsDbContextSqlite>());

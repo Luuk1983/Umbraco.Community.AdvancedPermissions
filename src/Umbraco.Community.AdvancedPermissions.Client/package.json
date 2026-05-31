@@ -1,22 +1,21 @@
 {
   "name": "umbraco-community-advanced-permissions-client",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "watch": "tsc && vite build --watch",
+    "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
-    "generate-client": "node scripts/generate-openapi.js http://localhost:5266/umbraco/swagger/management/swagger.json"
-  },
-  "dependencies": {
-    "@umbraco-cms/backoffice": "^17.3.0"
+    "generate-client": "node scripts/generate-openapi.js http://localhost:5266/umbraco/openapi/management.json"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "^0.85.0",
+    "@hey-api/openapi-ts": "^0.97.0",
+    "@umbraco-cms/backoffice": "^18.0.0-rc1",
     "chalk": "^5.6.2",
     "node-fetch": "^3.3.2",
-    "typescript": "^5.7.3",
-    "vite": "^6.3.1"
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
   }
 }

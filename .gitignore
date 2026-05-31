@@ -370,3 +370,4 @@ src/Umbraco.Community.AdvancedPermissions/wwwroot/App_Plugins/Umbraco.Community.
 
 # Umbraco test site runtime data (database, indexes, locks)
 tests/Umbraco.Community.AdvancedPermissions.TestSite/umbraco/Data/
+/.claude/settings.local.json

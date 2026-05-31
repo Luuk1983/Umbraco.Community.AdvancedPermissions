@@ -24,18 +24,6 @@
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
-  <!--
-    Transient dependency version overrides: forces non-vulnerable package versions
-    pulled in transitively through the main Umbraco.Community.AdvancedPermissions project reference.
-    Mirrors the overrides in tests/Umbraco.Community.AdvancedPermissions.Tests.
-    These top-level references (and the corresponding PackageVersion entries in
-    Directory.Packages.props) can be deleted once the transient dependencies are fixed upstream.
-  -->
-  <ItemGroup>
-    <PackageReference Include="System.Security.Cryptography.Xml" />
-    <PackageReference Include="MailKit" />
-  </ItemGroup>
-
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>

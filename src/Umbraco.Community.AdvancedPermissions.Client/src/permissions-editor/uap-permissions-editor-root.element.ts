@@ -501,10 +501,10 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
           </uap-picker-button>
           ${hasPending
             ? html`
-                <uui-button look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#saveChanges()}>
+                <uui-button label=${this.#localize.term('uap_saveChanges')} look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#saveChanges()}>
                   ${this.#localize.term('uap_saveChanges')}
                 </uui-button>
-                <uui-button look="outline" @click=${() => { this._pendingChanges = new Map(); }}>
+                <uui-button label=${this.#localize.term('uap_discard')} look="outline" @click=${() => { this._pendingChanges = new Map(); }}>
                   ${this.#localize.term('uap_discard')}
                 </uui-button>
               `

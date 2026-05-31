@@ -121,7 +121,7 @@ export class UapReasoningDialogElement extends UmbLitElement {
               : html`<p class="no-reasoning">${this.#localize.term('uap_noReasoningData')}</p>`}
 
           <div slot="actions">
-            <uui-button look="primary" @click=${() => this._dialog.close()}>
+            <uui-button label=${this.#localize.term('uap_close')} look="primary" @click=${() => this._dialog.close()}>
               ${this.#localize.term('uap_close')}
             </uui-button>
           </div>

@@ -1,14 +1,20 @@
-import { html, css, customElement, state, property } from '@umbraco-cms/backoffice/external/lit';
-import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { html, css, customElement, state, property, repeat } from '@umbraco-cms/backoffice/external/lit';
+import { UmbLitElement, umbFocus } from '@umbraco-cms/backoffice/lit-element';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import type { UmbModalContext } from '@umbraco-cms/backoffice/modal';
+import type { UUIInputEvent } from '@umbraco-cms/backoffice/external/uui';
 import type { RolePickerModalData, RolePickerModalValue } from './role-picker-modal.token.js';
 import type { RoleInfo } from '../models/permission.models.js';
 import { getRoles } from '../api/advanced-permissions.api.js';
 
 /**
- * Role picker modal — fetches and shows a filterable list of roles in a sidebar.
- * Selecting a role immediately confirms and closes.
+ * Role (user group) picker modal — fetches and shows a filterable list of user groups,
+ * including the virtual "All Users Group" ($everyone). Selecting an entry immediately
+ * confirms and closes.
+ *
+ * Layout mirrors Umbraco v18's native picker modals (umb-body-layout → uui-box → search
+ * field + uui-ref-node rows) so it inherits the native rounded styling and design tokens
+ * and avoids the horizontal-overflow that a custom uui-table layout caused under v18.
  */
 @customElement('uap-role-picker-modal')
 export class UapRolePickerModalElement extends UmbLitElement {
@@ -45,6 +51,10 @@ export class UapRolePickerModalElement extends UmbLitElement {
     this.modalContext?.submit();
   }
 
+  #onFilterInput(e: UUIInputEvent): void {
+    this._filter = (e.target.value as string) ?? '';
+  }
+
   #cancel(): void {
     this.modalContext?.reject();
   }
@@ -53,57 +63,46 @@ export class UapRolePickerModalElement extends UmbLitElement {
     const filtered = this.#filteredRoles;
 
     return html`
-      <umb-body-layout .headline=${this.#localize.term('uap_rolePickerHeadline')}>
-
-        <div id="filter-bar">
+      <umb-body-layout headline=${this.#localize.term('uap_rolePickerHeadline')}>
+        <uui-box>
           <uui-input
             type="search"
+            id="filter"
             label=${this.#localize.term('uap_rolePickerFilter')}
             placeholder=${this.#localize.term('uap_rolePickerFilter')}
             .value=${this._filter}
-            @input=${(e: InputEvent) => { this._filter = (e.target as HTMLInputElement).value; }}>
+            @input=${this.#onFilterInput}
+            ${umbFocus()}>
+            <uui-icon name="search" slot="prepend" id="filter-icon"></uui-icon>
           </uui-input>
-        </div>
 
-        ${this._loading
-          ? html`<div class="loading"><uui-loader></uui-loader></div>`
-          : filtered.length === 0
-            ? html`<p class="empty">${this.#localize.term('uap_rolePickerNoResults')}</p>`
-            : html`
-                <uui-table>
-                  <uui-table-head>
-                    <uui-table-head-cell>${this.#localize.term('uap_rolePickerNameHeader')}</uui-table-head-cell>
-                  </uui-table-head>
-                  ${filtered.map((role) => this.#renderRow(role))}
-                </uui-table>
-              `}
+          ${this._loading
+            ? html`<div class="center"><uui-loader></uui-loader></div>`
+            : filtered.length === 0
+              ? html`<p class="empty">${this.#localize.term('uap_rolePickerNoResults')}</p>`
+              : repeat(filtered, (role) => role.alias, (role) => this.#renderRow(role))}
+        </uui-box>
 
         <div slot="actions">
-          <uui-button
-            label=${this.#localize.term('uap_cancel')}
-            @click=${this.#cancel}>
-            ${this.#localize.term('uap_cancel')}
-          </uui-button>
+          <uui-button label=${this.#localize.term('uap_cancel')} @click=${this.#cancel}></uui-button>
         </div>
-
       </umb-body-layout>
     `;
   }
 
   #renderRow(role: RoleInfo) {
     const isCurrent = role.alias === this.#currentRole;
-    const initial = role.name[0]?.toUpperCase() ?? '?';
+    const icon = role.isEveryone ? 'icon-globe' : 'icon-users';
     return html`
-      <uui-table-row
+      <uui-ref-node
+        name=${role.name}
+        selectable
+        select-only
         ?selected=${isCurrent}
-        @click=${() => this.#selectRole(role)}>
-        <uui-table-cell>
-          <div class="role-row">
-            <div class="role-avatar">${initial}</div>
-            <span class="role-name">${role.name}</span>
-          </div>
-        </uui-table-cell>
-      </uui-table-row>
+        @selected=${() => this.#selectRole(role)}
+        @deselected=${() => this.#selectRole(role)}>
+        <umb-icon slot="icon" name=${icon}></umb-icon>
+      </uui-ref-node>
     `;
   }
 
@@ -112,72 +111,37 @@ export class UapRolePickerModalElement extends UmbLitElement {
       display: contents;
     }
 
-    #filter-bar {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      padding: var(--uui-size-3, 9px) var(--uui-size-6, 18px);
-      border-bottom: 1px solid var(--uui-color-border);
-      background: var(--uui-color-surface);
-    }
-
-    #filter-bar uui-input {
+    #filter {
       width: 100%;
+      margin-bottom: var(--uui-size-space-4);
     }
 
-    uui-table {
-      width: 100%;
-    }
-
-    uui-table-head {
-      position: sticky;
-      top: 53px;
-      z-index: 1;
-      background: var(--uui-color-surface);
-    }
-
-    uui-table-row {
-      cursor: pointer;
-    }
-
-    uui-table-row[selected] {
-      background: color-mix(in srgb, var(--uui-color-selected) 10%, transparent);
-      outline: 2px solid var(--uui-color-selected, #3544b1);
-      outline-offset: -2px;
-    }
-
-    .role-row {
+    #filter-icon {
       display: flex;
-      align-items: center;
-      gap: var(--uui-size-3, 9px);
+      color: var(--uui-color-border);
+      height: 100%;
+      padding-left: var(--uui-size-space-2);
     }
 
-    .role-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: var(--uui-color-default, #1b264f);
-      color: var(--uui-color-default-contrast, #fff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 14px;
-      flex-shrink: 0;
+    /* uui-ref-node ships a 250px min-width; relax it so rows never force a horizontal
+       scrollbar inside the narrow sidebar modal. */
+    uui-ref-node {
+      min-width: 0;
     }
 
-    .role-name {
-      flex: 1;
+    uui-ref-node:not(:last-of-type) {
+      margin-bottom: var(--uui-size-space-1);
     }
 
-    .loading {
+    .center {
       display: flex;
       justify-content: center;
-      padding: var(--uui-size-6, 18px);
+      padding: var(--uui-size-6);
     }
 
     .empty {
-      padding: var(--uui-size-6, 18px);
+      margin: 0;
+      padding: var(--uui-size-6);
       color: var(--uui-color-text-alt);
     }
   `;

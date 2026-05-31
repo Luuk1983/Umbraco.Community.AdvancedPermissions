@@ -20,7 +20,7 @@ public sealed class AdvancedPermissionsMetaController(IUserGroupService userGrou
     /// Gets all permission verbs available in the Advanced Security system.
     /// </summary>
     /// <returns>The list of permission verbs with display names.</returns>
-    [HttpGet("verbs")]
+    [HttpGet("verbs", Name = "GetVerbs")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<IReadOnlyList<VerbResponseModel>>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets all available permission verbs.")]
@@ -38,7 +38,7 @@ public sealed class AdvancedPermissionsMetaController(IUserGroupService userGrou
     /// </summary>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <returns>The list of roles with their display names.</returns>
-    [HttpGet("roles")]
+    [HttpGet("roles", Name = "GetRoles")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<IReadOnlyList<RoleResponseModel>>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets all assignable roles (user groups + $everyone).")]

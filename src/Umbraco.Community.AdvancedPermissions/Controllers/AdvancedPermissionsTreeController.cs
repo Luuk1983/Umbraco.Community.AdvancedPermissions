@@ -27,7 +27,7 @@ public sealed class AdvancedPermissionsTreeController(
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <param name="roleAlias">The role alias to load entries for.</param>
     /// <returns>Root content nodes, each with the stored permission entries for the role.</returns>
-    [HttpGet("tree/root")]
+    [HttpGet("tree/root", Name = "GetRoot")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<IReadOnlyList<TreeNodeResponseModel>>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets root content nodes with permission entries for a role.")]
@@ -46,7 +46,7 @@ public sealed class AdvancedPermissionsTreeController(
     /// <param name="parentKey">The key of the parent content node.</param>
     /// <param name="roleAlias">The role alias to load entries for.</param>
     /// <returns>Child content nodes, each with the stored permission entries for the role.</returns>
-    [HttpGet("tree/children")]
+    [HttpGet("tree/children", Name = "GetChildren")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<IReadOnlyList<TreeNodeResponseModel>>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets child content nodes with permission entries for a role.")]

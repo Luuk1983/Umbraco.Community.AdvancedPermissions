@@ -32,7 +32,7 @@ public sealed class DocTypePermissionsController(
     /// Lists every non-element document type. Used by the editor's doc-type picker.
     /// </summary>
     /// <returns>The list of non-element doc-types.</returns>
-    [HttpGet("doc-type-permissions/doc-types")]
+    [HttpGet("doc-type-permissions/doc-types", Name = "GetDocTypes")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<IReadOnlyList<DocTypeListItemModel>>(StatusCodes.Status200OK)]
     [EndpointSummary("Lists non-element document types.")]
@@ -60,7 +60,7 @@ public sealed class DocTypePermissionsController(
     /// <param name="roleAlias">The role alias selected in the editor.</param>
     /// <param name="contentTypeKey">The doc-type selected in the editor.</param>
     /// <returns>All stored entries for the combination.</returns>
-    [HttpGet("doc-type-permissions")]
+    [HttpGet("doc-type-permissions", Name = "GetForEditor")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<IReadOnlyList<DocTypePermissionEntryResponseModel>>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets all doc-type permission entries for a (role, content-type) combination.")]
@@ -79,7 +79,7 @@ public sealed class DocTypePermissionsController(
     /// <param name="request">The entries to save.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <returns><see cref="StatusCodes.Status200OK"/> on success.</returns>
-    [HttpPut("doc-type-permissions")]
+    [HttpPut("doc-type-permissions", Name = "PutDocTypePermissions")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -150,7 +150,7 @@ public sealed class DocTypePermissionsController(
     /// </param>
     /// <param name="userKey">The user whose effective permissions to compute. Mutually exclusive with <paramref name="roleAlias"/>.</param>
     /// <param name="roleAlias">A specific role to audit. Mutually exclusive with <paramref name="userKey"/>.</param>
-    [HttpGet("doc-type-permissions/audit-for-node")]
+    [HttpGet("doc-type-permissions/audit-for-node", Name = "GetDocTypeAudit")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<DocTypeAuditForNodeResponseModel>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -247,7 +247,7 @@ public sealed class DocTypePermissionsController(
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <param name="nodeKey">The audited node, or virtual root.</param>
     /// <param name="contentTypeKey">The doc-type whose reasoning to surface.</param>
-    [HttpGet("doc-type-permissions/path-entries")]
+    [HttpGet("doc-type-permissions/path-entries", Name = "GetDocTypePathEntries")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<DocTypePathEntriesResponseModel>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets the inheritance path and stored doc-type entries along that path for a content-type.")]

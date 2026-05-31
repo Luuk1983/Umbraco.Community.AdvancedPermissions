@@ -25,15 +25,4 @@
     </PackageReference>
   </ItemGroup>
 
-  <!--
-    Transient dependency version override: forces a non-vulnerable MailKit version.
-    Pulled in transitively via Umbraco.Cms.Persistence.EFCore -> Umbraco.Cms.Infrastructure.
-    Fixes GHSA-9j88-vvj5-vhgr (moderate severity) in MailKit < 4.16.0.
-    This top-level reference (and the corresponding PackageVersion in Directory.Packages.props)
-    can be deleted once the transient dependency is fixed upstream.
-  -->
-  <ItemGroup>
-    <PackageReference Include="MailKit" />
-  </ItemGroup>
-
 </Project>

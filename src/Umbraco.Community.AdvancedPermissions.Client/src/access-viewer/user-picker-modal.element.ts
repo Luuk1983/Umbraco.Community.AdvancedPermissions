@@ -1,14 +1,19 @@
-import { html, css, customElement, state, property } from '@umbraco-cms/backoffice/external/lit';
-import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { html, css, customElement, state, property, repeat } from '@umbraco-cms/backoffice/external/lit';
+import { UmbLitElement, umbFocus } from '@umbraco-cms/backoffice/lit-element';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import type { UmbModalContext } from '@umbraco-cms/backoffice/modal';
+import type { UUIInputEvent } from '@umbraco-cms/backoffice/external/uui';
 import type { UserPickerModalData, UserPickerModalValue } from './user-picker-modal.token.js';
 import type { UserItem } from '../models/permission.models.js';
 import { getUsers } from '../api/advanced-permissions.api.js';
 
 /**
- * User picker modal — fetches and shows a filterable list of users in a sidebar.
- * Selecting a user immediately confirms and closes.
+ * User picker modal — fetches and shows a filterable list of users. Selecting a user
+ * immediately confirms and closes.
+ *
+ * Layout mirrors Umbraco v18's native picker modals (umb-body-layout → uui-box → search
+ * field + uui-ref-node rows) so it inherits the native rounded styling and design tokens
+ * and avoids the horizontal-overflow that a custom uui-table layout caused under v18.
  */
 @customElement('uap-user-picker-modal')
 export class UapUserPickerModalElement extends UmbLitElement {
@@ -45,6 +50,10 @@ export class UapUserPickerModalElement extends UmbLitElement {
     this.modalContext?.submit();
   }
 
+  #onFilterInput(e: UUIInputEvent): void {
+    this._filter = (e.target.value as string) ?? '';
+  }
+
   #cancel(): void {
     this.modalContext?.reject();
   }
@@ -53,60 +62,46 @@ export class UapUserPickerModalElement extends UmbLitElement {
     const filtered = this.#filteredUsers;
 
     return html`
-      <umb-body-layout .headline=${this.#localize.term('uap_userPickerHeadline')}>
-
-        <div id="filter-bar">
+      <umb-body-layout headline=${this.#localize.term('uap_userPickerHeadline')}>
+        <uui-box>
           <uui-input
             type="search"
+            id="filter"
             label=${this.#localize.term('uap_userPickerFilter')}
             placeholder=${this.#localize.term('uap_userPickerFilter')}
             .value=${this._filter}
-            @input=${(e: InputEvent) => { this._filter = (e.target as HTMLInputElement).value; }}>
+            @input=${this.#onFilterInput}
+            ${umbFocus()}>
+            <uui-icon name="search" slot="prepend" id="filter-icon"></uui-icon>
           </uui-input>
-        </div>
 
-        ${this._loading
-          ? html`<div class="loading"><uui-loader></uui-loader></div>`
-          : filtered.length === 0
-            ? html`<p class="empty">${this.#localize.term('uap_userPickerNoResults')}</p>`
-            : html`
-                <uui-table>
-                  <uui-table-head>
-                    <uui-table-head-cell>${this.#localize.term('uap_userPickerNameHeader')}</uui-table-head-cell>
-                  </uui-table-head>
-                  ${filtered.map((user) => this.#renderRow(user))}
-                </uui-table>
-              `}
+          ${this._loading
+            ? html`<div class="center"><uui-loader></uui-loader></div>`
+            : filtered.length === 0
+              ? html`<p class="empty">${this.#localize.term('uap_userPickerNoResults')}</p>`
+              : repeat(filtered, (user) => user.unique, (user) => this.#renderRow(user))}
+        </uui-box>
 
         <div slot="actions">
-          <uui-button
-            label=${this.#localize.term('uap_cancel')}
-            @click=${this.#cancel}>
-            ${this.#localize.term('uap_cancel')}
-          </uui-button>
+          <uui-button label=${this.#localize.term('uap_cancel')} @click=${this.#cancel}></uui-button>
         </div>
-
       </umb-body-layout>
     `;
   }
 
   #renderRow(user: UserItem) {
     const isCurrent = user.unique === this.#currentUser;
-    const initial = user.name[0]?.toUpperCase() ?? '?';
     const avatarUrl = user.avatarUrls[0];
     return html`
-      <uui-table-row
+      <uui-ref-node
+        name=${user.name}
+        selectable
+        select-only
         ?selected=${isCurrent}
-        @click=${() => this.#selectUser(user)}>
-        <uui-table-cell>
-          <div class="user-row">
-            ${avatarUrl
-              ? html`<img class="user-avatar-img" src=${avatarUrl} alt="" />`
-              : html`<div class="user-avatar">${initial}</div>`}
-            <span class="user-name">${user.name}</span>
-          </div>
-        </uui-table-cell>
-      </uui-table-row>
+        @selected=${() => this.#selectUser(user)}
+        @deselected=${() => this.#selectUser(user)}>
+        <uui-avatar slot="icon" name=${user.name} img-src=${avatarUrl ?? ''}></uui-avatar>
+      </uui-ref-node>
     `;
   }
 
@@ -115,80 +110,42 @@ export class UapUserPickerModalElement extends UmbLitElement {
       display: contents;
     }
 
-    #filter-bar {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      padding: var(--uui-size-3, 9px) var(--uui-size-6, 18px);
-      border-bottom: 1px solid var(--uui-color-border);
-      background: var(--uui-color-surface);
-    }
-
-    #filter-bar uui-input {
+    #filter {
       width: 100%;
+      margin-bottom: var(--uui-size-space-4);
     }
 
-    uui-table {
-      width: 100%;
-    }
-
-    uui-table-head {
-      position: sticky;
-      top: 53px;
-      z-index: 1;
-      background: var(--uui-color-surface);
-    }
-
-    uui-table-row {
-      cursor: pointer;
-    }
-
-    uui-table-row[selected] {
-      background: color-mix(in srgb, var(--uui-color-selected) 10%, transparent);
-      outline: 2px solid var(--uui-color-selected, #3544b1);
-      outline-offset: -2px;
-    }
-
-    .user-row {
+    #filter-icon {
       display: flex;
-      align-items: center;
-      gap: var(--uui-size-3, 9px);
+      color: var(--uui-color-border);
+      height: 100%;
+      padding-left: var(--uui-size-space-2);
     }
 
-    .user-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: var(--uui-color-default, #1b264f);
-      color: var(--uui-color-default-contrast, #fff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 14px;
-      flex-shrink: 0;
+    /* uui-ref-node ships a 250px min-width; relax it so rows never force a horizontal
+       scrollbar inside the narrow sidebar modal. */
+    uui-ref-node {
+      min-width: 0;
     }
 
-    .user-avatar-img {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      object-fit: cover;
-      flex-shrink: 0;
+    uui-ref-node:not(:last-of-type) {
+      margin-bottom: var(--uui-size-space-1);
     }
 
-    .user-name {
-      flex: 1;
+    /* Keep the avatar compact so it matches the row height of Umbraco's native pickers. */
+    uui-avatar {
+      font-size: var(--uui-size-4);
     }
 
-    .loading {
+    .center {
       display: flex;
       justify-content: center;
-      padding: var(--uui-size-6, 18px);
+      padding: var(--uui-size-6);
     }
 
     .empty {
-      padding: var(--uui-size-6, 18px);
+      margin: 0;
+      padding: var(--uui-size-6);
       color: var(--uui-color-text-alt);
     }
   `;

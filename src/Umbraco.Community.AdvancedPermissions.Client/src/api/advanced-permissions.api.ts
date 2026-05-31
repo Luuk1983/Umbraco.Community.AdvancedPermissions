@@ -1,5 +1,5 @@
 import { UserService } from '@umbraco-cms/backoffice/external/backend-api';
-import { AdvancedPermissionsService } from './generated/sdk.gen.js';
+import * as Sdk from './generated/sdk.gen.js';
 import type {
   PermissionEntry,
   PermissionState,
@@ -23,7 +23,7 @@ import type {
 
 /** Returns all assignable roles (user groups + $everyone). */
 export async function getRoles(signal?: AbortSignal): Promise<RoleInfo[]> {
-  const { data } = await AdvancedPermissionsService.getRoles({
+  const { data } = await Sdk.getRoles({
     throwOnError: true,
     ...(signal ? { signal } : {}),
   });
@@ -32,7 +32,7 @@ export async function getRoles(signal?: AbortSignal): Promise<RoleInfo[]> {
 
 /** Returns all available permission verbs with display names. */
 export async function getVerbs(signal?: AbortSignal): Promise<VerbInfo[]> {
-  const { data } = await AdvancedPermissionsService.getVerbs({
+  const { data } = await Sdk.getVerbs({
     throwOnError: true,
     ...(signal ? { signal } : {}),
   });
@@ -41,7 +41,7 @@ export async function getVerbs(signal?: AbortSignal): Promise<VerbInfo[]> {
 
 /** Returns root content nodes with stored permission entries for the given role. */
 export async function getTreeRoot(roleAlias: string, signal?: AbortSignal): Promise<TreeNode[]> {
-  const { data } = await AdvancedPermissionsService.getRoot({
+  const { data } = await Sdk.getRoot({
     throwOnError: true,
     query: { roleAlias },
     ...(signal ? { signal } : {}),
@@ -51,7 +51,7 @@ export async function getTreeRoot(roleAlias: string, signal?: AbortSignal): Prom
 
 /** Returns children of a content node with stored permission entries for the given role. */
 export async function getTreeChildren(parentKey: string, roleAlias: string, signal?: AbortSignal): Promise<TreeNode[]> {
-  const { data } = await AdvancedPermissionsService.getChildren({
+  const { data } = await Sdk.getChildren({
     throwOnError: true,
     query: { parentKey, roleAlias },
     ...(signal ? { signal } : {}),
@@ -69,7 +69,7 @@ export async function savePermissions(
   roleAlias: string,
   entries: Array<{ verb: string; state: PermissionState; scope: PermissionScope; isPriorityOverride: boolean }>,
 ): Promise<void> {
-  await AdvancedPermissionsService.savePermissions({
+  await Sdk.putPermissions({
     throwOnError: true,
     body: { nodeKey, roleAlias, entries },
   });
@@ -77,7 +77,7 @@ export async function savePermissions(
 
 /** Returns stored permission entries for a node+role combination. Use VIRTUAL_ROOT_NODE_KEY for virtual-root entries. */
 export async function getPermissions(nodeKey: string, roleAlias: string, signal?: AbortSignal): Promise<PermissionEntry[]> {
-  const { data } = await AdvancedPermissionsService.getPermissions({
+  const { data } = await Sdk.getPermissions({
     throwOnError: true,
     query: { nodeKey, roleAlias },
     ...(signal ? { signal } : {}),
@@ -87,7 +87,7 @@ export async function getPermissions(nodeKey: string, roleAlias: string, signal?
 
 /** Returns the inheritance path and raw entries for a verb along that path. */
 export async function getPermissionsForPath(nodeKey: string, verb: string, signal?: AbortSignal): Promise<PathEntriesResponse> {
-  const { data } = await AdvancedPermissionsService.getPermissionsForPath({
+  const { data } = await Sdk.getPermissionsForPath({
     throwOnError: true,
     query: { nodeKey, verb },
     ...(signal ? { signal } : {}),
@@ -97,7 +97,7 @@ export async function getPermissionsForPath(nodeKey: string, verb: string, signa
 
 /** Resolves effective permissions for a user at a content node. */
 export async function getEffectiveForUser(userKey: string, nodeKey: string, signal?: AbortSignal): Promise<EffectivePermissions> {
-  const { data } = await AdvancedPermissionsService.getEffectiveForUser({
+  const { data } = await Sdk.getEffectiveForUser({
     throwOnError: true,
     query: { userKey, nodeKey },
     ...(signal ? { signal } : {}),
@@ -107,7 +107,7 @@ export async function getEffectiveForUser(userKey: string, nodeKey: string, sign
 
 /** Resolves effective permissions for a role at a content node. */
 export async function getEffectiveForRole(roleAlias: string, nodeKey: string, signal?: AbortSignal): Promise<EffectivePermissions> {
-  const { data } = await AdvancedPermissionsService.getEffectiveForRole({
+  const { data } = await Sdk.getEffectiveForRole({
     throwOnError: true,
     query: { roleAlias, nodeKey },
     ...(signal ? { signal } : {}),

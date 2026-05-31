@@ -36,7 +36,7 @@ public sealed class AdvancedPermissionsEffectiveController(
     /// <param name="userKey">The key of the user to resolve for.</param>
     /// <param name="nodeKey">The key of the content node to resolve at.</param>
     /// <returns>The effective permissions for all standard verbs, with full reasoning.</returns>
-    [HttpGet("effective")]
+    [HttpGet("effective", Name = "GetEffectiveForUser")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<EffectivePermissionsResponseModel>(StatusCodes.Status200OK)]
     [EndpointSummary("Resolves effective permissions for a user at a content node.")]
@@ -69,7 +69,7 @@ public sealed class AdvancedPermissionsEffectiveController(
     /// <param name="roleAlias">The role alias to resolve for.</param>
     /// <param name="nodeKey">The key of the content node to resolve at.</param>
     /// <returns>The effective permissions for all standard verbs, with full reasoning.</returns>
-    [HttpGet("effective/by-role")]
+    [HttpGet("effective/by-role", Name = "GetEffectiveForRole")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<EffectivePermissionsResponseModel>(StatusCodes.Status200OK)]
     [EndpointSummary("Resolves effective permissions for a role at a content node.")]

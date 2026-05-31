@@ -41,10 +41,15 @@ fetch(swaggerUrl)
             input: filteredSpec,
             output: 'src/api/generated',
             plugins: [
-                ...defaultPlugins,
-                '@hey-api/client-fetch',
-                { name: '@hey-api/typescript', enums: 'typescript' },
-                { name: '@hey-api/sdk', asClass: true, classNameBuilder: '{{name}}Service' },
+                // Mirror Umbraco's dotnet extension template: spread the @hey-api/openapi-ts defaults
+                // and override only the SDK plugin's response style ({ data, error } fields). This keeps us
+                // off the deprecated asClass/classNameBuilder options that Umbraco's template no longer uses,
+                // producing a function-based SDK (getRoles(...), putPermissions(...), …).
+                ...defaultPlugins.filter((plugin) => (typeof plugin === 'string' ? plugin : plugin.name) !== '@hey-api/sdk'),
+                {
+                    name: '@hey-api/sdk',
+                    responseStyle: 'fields',
+                },
             ],
         });
 

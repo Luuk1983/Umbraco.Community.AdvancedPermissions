@@ -332,10 +332,10 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
           ${this.isVirtualRoot ? this.#renderVirtualRootOptions() : this.#renderNodeOptions()}
 
           <div slot="actions">
-            <uui-button look="outline" @click=${() => this._dialog.close()}>
+            <uui-button label=${this.#localize.term('uap_cancel')} look="outline" @click=${() => this._dialog.close()}>
               ${this.#localize.term('uap_cancel')}
             </uui-button>
-            <uui-button look="primary" color="positive" @click=${() => this.#apply()}>
+            <uui-button label=${this.#localize.term('uap_apply')} look="primary" color="positive" @click=${() => this.#apply()}>
               ${this.#localize.term('uap_apply')}
             </uui-button>
           </div>

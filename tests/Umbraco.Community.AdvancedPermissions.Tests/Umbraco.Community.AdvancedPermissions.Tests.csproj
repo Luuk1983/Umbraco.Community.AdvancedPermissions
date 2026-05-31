@@ -22,20 +22,6 @@
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
-  <!--
-    Transient dependency version overrides: forces non-vulnerable package versions.
-    - Fixes GHSA-37gx-xxp4-5rgx and GHSA-w3x6-4m5h-cxqf (high severity) in
-      System.Security.Cryptography.Xml < 10.0.6, pulled in transitively via Umbraco/ASP.NET.
-    - Fixes GHSA-9j88-vvj5-vhgr (moderate severity) in MailKit < 4.16.0, pulled in
-      transitively via Umbraco.Cms.
-    These top-level references (and the corresponding PackageVersion entries in
-    Directory.Packages.props) can be deleted once the transient dependencies are fixed upstream.
-  -->
-  <ItemGroup>
-    <PackageReference Include="System.Security.Cryptography.Xml" />
-    <PackageReference Include="MailKit" />
-  </ItemGroup>
-
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>

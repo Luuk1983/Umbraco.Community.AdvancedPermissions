@@ -1,0 +1,143 @@
+import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
+
+export default {
+  uap: {
+    // ── Navigation ────────────────────────────────────────────────────────
+    sectionLabel: 'Advanced Permissions',
+    editorsSectionLabel: 'Editors',
+    viewersSectionLabel: 'Viewers',
+    permissionsEditor: 'Content Permissions Editor',
+    accessViewer: 'Access Viewer',
+
+    // ── Common ────────────────────────────────────────────────────────────
+    roleLabel: 'User Group',
+    rolePlaceholder: '— Select a user group —',
+    userLabel: 'User',
+    saveChanges: 'Save Changes',
+    discard: 'Discard',
+    cancel: 'Cancel',
+    apply: 'Apply',
+    close: 'Close',
+    inherit: 'Inherit',
+    allow: 'Allow',
+    deny: 'Deny',
+    umbracoUsers: 'All Users',
+
+    // ── Permissions Editor ───────────────────────────────────────────────
+    editorHeadline: 'Content Permissions Editor',
+    selectRolePrompt: 'Select a user group above to manage its permissions.',
+    permissionsSaved: 'Permissions saved.',
+    saveFailed: (error: string) => `Save failed: ${error}`,
+    contentNodeHeader: 'Content Node',
+    contentRoot: 'Default permissions',
+    expand: 'Expand',
+    collapse: 'Collapse',
+
+    // ── Permission dialog ─────────────────────────────────────────────────
+    dialogHeadline: (verb: string, nodeName: string) => `Set ${verb} permission for ‘${nodeName}’`,
+    descendantsSection: 'Descendants (if different)',
+    dialogInstructions: 'Set the permission for this node. By default, this also applies to all descendants. Use “Descendants (if different)” to set a different permission for descendant nodes.',
+    virtualRootInherit: 'Not set (remove entry)',
+    virtualRootAllow: 'Allow (all content)',
+    virtualRootDeny: 'Deny (all content)',
+    dialogResult: 'Result',
+    previewBothInherit: 'No permission set. Inherits from parent.',
+    previewUniform: (action: string) => `${action} on this node and all descendants.`,
+    previewNodeOnly: (action: string) => `${action} on this node only. Descendants are not affected by this rule.`,
+    previewDescOnly: (action: string) => `No explicit permission on this node. ${action} on all descendants.`,
+    previewSplit: (nodeAction: string, descAction: string) => `${nodeAction} on this node. ${descAction} on all descendants.`,
+    previewVirtualInherit: 'No default permission set.',
+    previewVirtualSet: (action: string) => `${action} by default for all content.`,
+    previewPriorityNode: 'Priority override is set on this node.',
+    previewPriorityDesc: 'Priority override is set on descendants.',
+    previewPriorityBoth: 'Priority override is set.',
+
+    // ── Priority override ─────────────────────────────────────────────────
+    priorityOverride: 'Priority override',
+    priorityOverrideTooltip: (permission: string, nodeName: string) =>
+      `A user can belong to several user groups. Normally, the effective permission follows a fixed priority order. Checking this box overrides that order, so the “${permission}” setting you choose here almost always becomes the result for “${nodeName}”, regardless of the user’s other groups. Use sparingly.`,
+    priorityOverrideBadgeTitle: 'Priority override is set on this entry',
+    priorityOverrideWonTitle: 'Resolved via priority override',
+    priorityOverrideSuppressedHeader: 'Priority override changed the result',
+    priorityOverrideSuppressedHint: 'Without it, the result would have been:',
+
+    // ── Access Viewer ─────────────────────────────────────────────────────
+    viewerHeadline: 'Access Viewer',
+    byRole: 'By User Group',
+    byUser: 'By User',
+    chooseRole: 'Choose user group',
+    chooseUser: 'Choose user',
+    selectSubjectPrompt: 'Select a user group or user to view effective permissions.',
+    legendAllow: 'Allow',
+    legendDeny: 'Deny',
+    clickForReasoning: (label: string) => `${label} — click for reasoning`,
+    subjectOr: 'or',
+
+    // ── Role picker modal ─────────────────────────────────────────────────
+    rolePickerHeadline: 'Select a user group',
+    rolePickerFilter: 'Type to filter…',
+    rolePickerNoResults: 'No user groups match the filter.',
+    rolePickerNameHeader: 'User Group',
+
+    // ── User picker modal ─────────────────────────────────────────────────
+    userPickerHeadline: 'Select a user',
+    userPickerFilter: 'Type to filter…',
+    userPickerNoResults: 'No users match the filter.',
+    userPickerNameHeader: 'User',
+
+    // ── Reasoning dialog ──────────────────────────────────────────────────
+    reasoningHeadline: (verb: string, nodeName: string) => `${verb} permission for “${nodeName}”`,
+    effectiveAllowed: (subject: string, verb: string, nodeName: string) =>
+      `${subject} has been allowed ${verb} permission for “${nodeName}”.`,
+    effectiveDenied: (subject: string, verb: string, nodeName: string) =>
+      `${subject} has been denied ${verb} permission for “${nodeName}”.`,
+    dialogSecurityHeader: 'Security',
+    defaultPermissions: 'Default permissions',
+    determiningEntry: 'This entry takes precedence',
+    noReasoningData: 'No permission data available for this verb.',
+    defaultAllowNote: 'No permissions are set, this is allowed by default.',
+    defaultDenyNote: 'No permissions are set, this is denied by default.',
+
+    // ── Granular permission redirect ──────────────────────────────────────
+    redirectMessage:
+      'Document permissions for this user group are managed by the Advanced Permissions package. Open the Permissions Editor in the Users section to configure permissions.',
+
+    // ── Doc-Type Permissions ──────────────────────────────────────────────
+    role: 'User Group',
+    pickRole: 'Pick user group',
+    user: 'User',
+    pickUser: 'Pick user',
+    node: 'Node',
+    pickNode: 'Pick node',
+    state: 'State',
+    scope: 'Scope',
+    scope_thisNodeOnly: 'This node only',
+    scope_thisNodeAndDescendants: 'This node and descendants',
+    scope_descendantsOnly: 'Descendants only',
+
+    docTypePermissions_menuLabel: 'Document Type Permissions Editor',
+    docTypePermissions_insertOptionsMenuLabel: 'Insert Options Viewer',
+    docTypePermissions_workspaceTitle: 'Document Type Permissions Editor',
+    docTypePermissions_auditTitle: 'Insert Options Viewer',
+    docTypePermissions_allDocTypes: 'All document types',
+    docTypePermissions_verbInsert: 'Insert',
+    docTypePermissions_documentType: 'Document Type',
+    chooseDocType: 'Choose document type',
+    notAnInsertOption: 'This document type is not currently an insert option on this node.',
+    notAnInsertOptionAllowedNote: 'This document type is not an insert option on this node, but it would otherwise be allowed.',
+    notAnInsertOptionDeniedNote: 'This document type is not an insert option on this node, but it would otherwise be denied.',
+    docTypePermissions_pickDocType: '— Select a document type —',
+    docTypePermissions_pickToStart: 'Pick a role and document type to start.',
+    docTypePermissions_defaultRowLabel: 'Default (applies everywhere)',
+    docTypePermissions_pendingNodeLabel: '(unsaved node)',
+    docTypePermissions_addScopeNode: 'Add scope override',
+    docTypePermissions_notSet: 'Not set',
+    docTypePermissions_noResults: 'No document types found.',
+    docTypePermissions_useRoot: 'Use root',
+    docTypePermissions_pickedNode: 'Node:',
+    docTypePermissions_rootLevel: 'Root level',
+    docTypePermissions_reasoning: 'Reasoning',
+    docTypePermissions_defaultAllow: 'Allowed by default',
+    docTypePermissions_viaDefault: 'from default row',
+  },
+} satisfies UmbLocalizationDictionary;

@@ -226,6 +226,231 @@ const manifests: Array<UmbExtensionManifest> = [
     },
     js: () => import('./localization/de.js'),
   } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.EnUs',
+    name: 'Advanced Permissions English (US) Localization',
+    meta: {
+      culture: 'en-US',
+    },
+    js: () => import('./localization/en-us.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Ar',
+    name: 'Advanced Permissions Arabic Localization',
+    meta: {
+      culture: 'ar',
+    },
+    js: () => import('./localization/ar.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Bs',
+    name: 'Advanced Permissions Bosnian Localization',
+    meta: {
+      culture: 'bs',
+    },
+    js: () => import('./localization/bs.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Cs',
+    name: 'Advanced Permissions Czech Localization',
+    meta: {
+      culture: 'cs',
+    },
+    js: () => import('./localization/cs.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Cy',
+    name: 'Advanced Permissions Welsh Localization',
+    meta: {
+      culture: 'cy',
+    },
+    js: () => import('./localization/cy.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Da',
+    name: 'Advanced Permissions Danish Localization',
+    meta: {
+      culture: 'da',
+    },
+    js: () => import('./localization/da.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Es',
+    name: 'Advanced Permissions Spanish Localization',
+    meta: {
+      culture: 'es',
+    },
+    js: () => import('./localization/es.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Fr',
+    name: 'Advanced Permissions French Localization',
+    meta: {
+      culture: 'fr',
+    },
+    js: () => import('./localization/fr.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.He',
+    name: 'Advanced Permissions Hebrew Localization',
+    meta: {
+      culture: 'he',
+    },
+    js: () => import('./localization/he.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Hr',
+    name: 'Advanced Permissions Croatian Localization',
+    meta: {
+      culture: 'hr',
+    },
+    js: () => import('./localization/hr.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.It',
+    name: 'Advanced Permissions Italian Localization',
+    meta: {
+      culture: 'it',
+    },
+    js: () => import('./localization/it.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Ja',
+    name: 'Advanced Permissions Japanese Localization',
+    meta: {
+      culture: 'ja',
+    },
+    js: () => import('./localization/ja.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Ko',
+    name: 'Advanced Permissions Korean Localization',
+    meta: {
+      culture: 'ko',
+    },
+    js: () => import('./localization/ko.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Nb',
+    name: 'Advanced Permissions Norwegian Localization',
+    meta: {
+      culture: 'nb',
+    },
+    js: () => import('./localization/nb.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Pl',
+    name: 'Advanced Permissions Polish Localization',
+    meta: {
+      culture: 'pl',
+    },
+    js: () => import('./localization/pl.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Pt',
+    name: 'Advanced Permissions Portuguese Localization',
+    meta: {
+      culture: 'pt',
+    },
+    js: () => import('./localization/pt.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.PtBr',
+    name: 'Advanced Permissions Portuguese (Brazil) Localization',
+    meta: {
+      culture: 'pt-BR',
+    },
+    js: () => import('./localization/pt-br.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Ro',
+    name: 'Advanced Permissions Romanian Localization',
+    meta: {
+      culture: 'ro',
+    },
+    js: () => import('./localization/ro.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Ru',
+    name: 'Advanced Permissions Russian Localization',
+    meta: {
+      culture: 'ru',
+    },
+    js: () => import('./localization/ru.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Sv',
+    name: 'Advanced Permissions Swedish Localization',
+    meta: {
+      culture: 'sv',
+    },
+    js: () => import('./localization/sv.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Tr',
+    name: 'Advanced Permissions Turkish Localization',
+    meta: {
+      culture: 'tr',
+    },
+    js: () => import('./localization/tr.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Uk',
+    name: 'Advanced Permissions Ukrainian Localization',
+    meta: {
+      culture: 'uk',
+    },
+    js: () => import('./localization/uk.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Vi',
+    name: 'Advanced Permissions Vietnamese Localization',
+    meta: {
+      culture: 'vi',
+    },
+    js: () => import('./localization/vi.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.Zh',
+    name: 'Advanced Permissions Chinese (Simplified) Localization',
+    meta: {
+      culture: 'zh',
+    },
+    js: () => import('./localization/zh.js'),
+  } as UmbExtensionManifest,
+  {
+    type: 'localization',
+    alias: 'UAP.Localization.ZhTw',
+    name: 'Advanced Permissions Chinese (Traditional) Localization',
+    meta: {
+      culture: 'zh-TW',
+    },
+    js: () => import('./localization/zh-tw.js'),
+  } as UmbExtensionManifest,
 ];
 
 export { manifests };

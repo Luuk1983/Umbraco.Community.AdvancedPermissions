@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, 'support/**']
+    branches: [main, '*/main']
 
 jobs:
   build-and-test:

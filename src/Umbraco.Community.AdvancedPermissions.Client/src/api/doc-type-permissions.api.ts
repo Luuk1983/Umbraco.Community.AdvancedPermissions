@@ -19,6 +19,15 @@ export async function getDocTypes(signal?: AbortSignal): Promise<DocTypeListItem
   return data as DocTypeListItem[];
 }
 
+/** Lists every element type allowed in the Library (IsElement && AllowedInLibrary). */
+export async function getElementTypes(signal?: AbortSignal): Promise<DocTypeListItem[]> {
+  const { data } = await Sdk.getLibraryElementTypes({
+    throwOnError: true,
+    ...(signal ? { signal } : {}),
+  });
+  return data as DocTypeListItem[];
+}
+
 /** Gets the stored entries for the editor's selected (role, content-type). */
 export async function getDocTypePermissions(
   roleAlias: string,

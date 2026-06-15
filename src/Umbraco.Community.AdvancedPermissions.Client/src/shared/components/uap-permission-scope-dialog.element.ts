@@ -12,6 +12,7 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { composeEntries, type PendingVerbEntries } from '../../utils/compose-entries.js';
 import type { CellInfo } from '../../utils/cell-info.js';
+import type { PermissionScope } from '../../models/permission.models.js';
 import './uap-perm-block.element.js';
 
 /**
@@ -47,6 +48,19 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
    * don't inherit through the content tree the way node-level rows do.
    */
   @property() inheritLabel = '';
+
+  /**
+   * Whether the "this node" side can be set. Defaults to true. The library editor sets this false for
+   * element-only verbs on a folder (the folder itself isn't an element, but the rule still applies to
+   * the elements inside it), collapsing the dialog to a single descendants-scoped choice.
+   */
+  @property({ type: Boolean }) nodeApplicable = true;
+
+  /**
+   * Whether the "descendants" side can be set. Defaults to true. The library editor sets this false for
+   * leaf elements (which have no descendants), collapsing the dialog to a single this-node choice.
+   */
+  @property({ type: Boolean }) descApplicable = true;
 
   /**
    * Initial state pushed from the parent each time the dialog opens. Internal state is
@@ -99,9 +113,28 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
   }
 
   /**
+   * Whether the dialog renders a single row of tiles rather than the node + descendants split. True for
+   * the virtual root and for any cell where only one side applies (a leaf element, or an element-only
+   * verb on a folder).
+   */
+  get #isSingle(): boolean {
+    return this.isVirtualRoot || !this.nodeApplicable || !this.descApplicable;
+  }
+
+  /**
+   * The scope a single-row choice maps to: the virtual root and leaf elements use
+   * <c>ThisNodeAndDescendants</c> / <c>ThisNodeOnly</c>; an element-only verb on a folder applies to the
+   * items inside, so it uses <c>DescendantsOnly</c>.
+   */
+  get #singleScope(): PermissionScope {
+    if (this.isVirtualRoot) return 'ThisNodeAndDescendants';
+    if (!this.descApplicable) return 'ThisNodeOnly';
+    return 'DescendantsOnly';
+  }
+
+  /**
    * Builds the entries the parent should persist and emits them on `uap-scope-apply`.
-   * Virtual-root rows always use `ThisNodeAndDescendants`; non-virtual rows use the standard
-   * `composeEntries` logic.
+   * Single-row layouts emit one entry with `#singleScope`; the split layout uses `composeEntries`.
    */
   #apply(): void {
     // A side's flag is only meaningful when that side has a rule. Force false otherwise.
@@ -110,16 +143,14 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
     const descFlag = descEnabled ? this._descIsPriorityOverride : false;
 
     let entries: PendingVerbEntries;
-    if (this.isVirtualRoot) {
-      if (this._nodeState === 'inherit') {
-        entries = [];
-      } else {
-        entries = [{
-          state: this._nodeState === 'allow' ? 'Allow' : 'Deny',
-          scope: 'ThisNodeAndDescendants',
-          isPriorityOverride: nodeFlag,
-        }];
-      }
+    if (this.#isSingle) {
+      entries = this._nodeState === 'inherit'
+        ? []
+        : [{
+            state: this._nodeState === 'allow' ? 'Allow' : 'Deny',
+            scope: this.#singleScope,
+            isPriorityOverride: nodeFlag,
+          }];
     } else {
       entries = composeEntries(this._nodeState, this._descState, this._sameAsNode, nodeFlag, descFlag);
     }
@@ -140,7 +171,7 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
     const descEnabled = !this._sameAsNode && this._descState !== 'inherit';
     const descOverride = descEnabled && this._descIsPriorityOverride;
 
-    if (this.isVirtualRoot) {
+    if (this.#isSingle) {
       return { split: false, nodeClass: this._nodeState, descClass: this._nodeState, nodeOverride, descOverride: nodeOverride };
     }
     const effectiveDesc = this._sameAsNode ? this._nodeState : this._descState;
@@ -158,12 +189,17 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
   #previewDescription(): string {
     const nodeOverride = this._nodeState !== 'inherit' && this._nodeIsPriorityOverride;
 
-    if (this.isVirtualRoot) {
-      if (this._nodeState === 'inherit') return this.#localize.term('uap_previewVirtualInherit');
+    if (this.#isSingle) {
+      if (this._nodeState === 'inherit') {
+        return this.#localize.term(this.isVirtualRoot ? 'uap_previewVirtualInherit' : 'uap_previewBothInherit');
+      }
       const action = this._nodeState === 'allow'
         ? this.#localize.term('uap_allow')
         : this.#localize.term('uap_deny');
-      const base = this.#localize.term('uap_previewVirtualSet', action);
+      let base: string;
+      if (this.isVirtualRoot) base = this.#localize.term('uap_previewVirtualSet', action);
+      else if (!this.descApplicable) base = this.#localize.term('uap_previewNodeOnly', action);
+      else base = this.#localize.term('uap_previewDescOnly', action);
       return this.#appendOverrideNote(base, nodeOverride, nodeOverride);
     }
 
@@ -237,21 +273,24 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
   }
 
   /**
-   * Renders the simple virtual-root layout (one row of three tiles + preview).
+   * Renders the single-row layout (one row of three tiles + preview), used by the virtual root and by
+   * cells where only one side applies. Virtual-root cells use the "(all content)" labels; other single
+   * cells use the plain Inherit/Allow/Deny labels.
    */
-  #renderVirtualRootOptions(): TemplateResult {
+  #renderSingleOptions(): TemplateResult {
+    const vr = this.isVirtualRoot;
     return html`
       <div class="dialog-options">
         <div class="perm-options">
           ${this.#renderTile('inherit', this._nodeState === 'inherit',
             () => { this._nodeState = 'inherit'; },
-            this.#localize.term('uap_virtualRootInherit'))}
+            vr ? this.#localize.term('uap_virtualRootInherit') : undefined)}
           ${this.#renderTile('allow', this._nodeState === 'allow',
             () => { this._nodeState = 'allow'; },
-            this.#localize.term('uap_virtualRootAllow'))}
+            vr ? this.#localize.term('uap_virtualRootAllow') : undefined)}
           ${this.#renderTile('deny', this._nodeState === 'deny',
             () => { this._nodeState = 'deny'; },
-            this.#localize.term('uap_virtualRootDeny'))}
+            vr ? this.#localize.term('uap_virtualRootDeny') : undefined)}
         </div>
         ${this.#renderOverrideCheckbox('node')}
       </div>
@@ -326,10 +365,10 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
       <dialog class="scope-dialog">
         <uui-dialog-layout
           headline=${this.#localize.term('uap_dialogHeadline', this.verb, this.nodeName)}>
-          ${!this.isVirtualRoot
+          ${!this.#isSingle
             ? html`<p class="dialog-instructions">${this.#localize.term('uap_dialogInstructions')}</p>`
             : nothing}
-          ${this.isVirtualRoot ? this.#renderVirtualRootOptions() : this.#renderNodeOptions()}
+          ${this.#isSingle ? this.#renderSingleOptions() : this.#renderNodeOptions()}
 
           <div slot="actions">
             <uui-button label=${this.#localize.term('uap_cancel')} look="outline" @click=${() => this._dialog.close()}>

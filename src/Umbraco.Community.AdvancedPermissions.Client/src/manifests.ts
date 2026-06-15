@@ -92,6 +92,30 @@ const manifests: Array<UmbExtensionManifest> = [
   },
   {
     type: 'menuItem',
+    alias: 'UAP.MenuItem.LibraryPermissions',
+    name: 'Library Permissions Editor Menu Item',
+    weight: 85,
+    meta: {
+      label: '#uap_library_menuLabel',
+      icon: 'icon-globe',
+      entityType: 'uap-library-permissions',
+      menus: ['UAP.Menu.Editors'],
+    },
+  },
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.ElementTypePermissions',
+    name: 'Library Element Type Permissions Menu Item',
+    weight: 80,
+    meta: {
+      label: '#uap_elementTypePermissions_menuLabel',
+      icon: 'icon-thumbnail-list',
+      entityType: 'uap-element-type-permissions',
+      menus: ['UAP.Menu.Editors'],
+    },
+  },
+  {
+    type: 'menuItem',
     alias: 'UAP.MenuItem.AccessViewer',
     name: 'Access Viewer Menu Item',
     weight: 100,
@@ -156,12 +180,34 @@ const manifests: Array<UmbExtensionManifest> = [
     alias: 'UAP.UserGranularPermission.Element.Redirect',
     name: 'Advanced Permissions Library Element Permission Redirect',
     weight: 1990,
-    element: () => import('./components/uap-granular-permission-redirect.element.js'),
+    element: () => import('./components/uap-element-granular-permission-redirect.element.js'),
     meta: {
       schemaType: 'ElementPermissionPresentationModel',
       labelKey: 'user_permissionsEntityGroup_element',
     },
   } as UmbExtensionManifest,
+
+  // ─── Workspace (Library Permissions Editor) ──────────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.LibraryPermissions',
+    name: 'Library Permissions Workspace',
+    meta: {
+      entityType: 'uap-library-permissions',
+    },
+    element: () => import('./library-permissions/uap-library-permissions-editor-root.element.js'),
+  },
+
+  // ─── Workspace (Library Element Type Permissions) ────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.ElementTypePermissions',
+    name: 'Library Element Type Permissions Workspace',
+    meta: {
+      entityType: 'uap-element-type-permissions',
+    },
+    element: () => import('./library-permissions/uap-element-type-permissions-editor-root.element.js'),
+  },
 
   // ─── Workspace (Access Viewer) ────────────────────────────────────────────
   {

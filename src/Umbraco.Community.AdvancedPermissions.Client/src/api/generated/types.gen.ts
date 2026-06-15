@@ -3636,6 +3636,33 @@ export type GetDocTypesResponses = {
 
 export type GetDocTypesResponse = GetDocTypesResponses[keyof GetDocTypesResponses];
 
+export type GetLibraryElementTypesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/element-types';
+};
+
+export type GetLibraryElementTypesErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+};
+
+export type GetLibraryElementTypesResponses = {
+    /**
+     * OK
+     */
+    200: Array<DocTypeListItemModel>;
+};
+
+export type GetLibraryElementTypesResponse = GetLibraryElementTypesResponses[keyof GetLibraryElementTypesResponses];
+
 export type GetDocTypePathEntriesData = {
     body?: never;
     path?: never;

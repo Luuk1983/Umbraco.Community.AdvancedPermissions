@@ -16,6 +16,14 @@ export interface CellInfo {
   descClass: 'allow' | 'deny' | 'inherit';
   nodeOverride?: boolean;
   descOverride?: boolean;
+  /**
+   * Marks the node (left) half as "not applicable" — rendered as a hatched N/A half. Used by the
+   * library editor for element-only verbs on a folder, where the verb can't be set on the folder
+   * itself but still applies to the items inside (the descendants half).
+   */
+  nodeNa?: boolean;
+  /** Marks the descendants (right) half as "not applicable" — the mirror of {@link nodeNa}. */
+  descNa?: boolean;
 }
 
 /**

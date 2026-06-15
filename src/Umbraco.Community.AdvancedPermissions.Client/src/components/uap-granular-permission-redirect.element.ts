@@ -3,8 +3,9 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 
 /**
- * Replaces the built-in document granular permissions UI with a message
- * directing users to the Security Editor in the Users section.
+ * Replaces a built-in granular permissions UI with a message directing users to the relevant editor
+ * in the Users section. The localization key is overridable so each permission target (documents,
+ * library elements) can show a target-specific message.
  */
 @customElement('uap-granular-permission-redirect')
 export class UapGranularPermissionRedirectElement extends UmbLitElement {
@@ -18,11 +19,17 @@ export class UapGranularPermissionRedirectElement extends UmbLitElement {
   @property({ attribute: false })
   fallbackPermissions: Array<string> = [];
 
+  /**
+   * The localization key for the redirect message. Defaults to the document message; subclasses
+   * override it to show a target-specific message (e.g. library elements).
+   */
+  protected messageKey = 'uap_redirectMessage';
+
   override render() {
     return html`
       <div id="message">
         <uui-icon name="icon-lock"></uui-icon>
-        <p>${this.#localize.term('uap_redirectMessage')}</p>
+        <p>${this.#localize.term(this.messageKey)}</p>
       </div>
     `;
   }

@@ -101,6 +101,8 @@ export default {
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:
       'Document permissions for this user group are managed by the Advanced Permissions package. Open the Permissions Editor in the Users section to configure permissions.',
+    redirectMessageElement:
+      'Library (element) permissions for this user group are managed by the Advanced Permissions package. Open the Library Permissions Editor in the Users section to configure permissions.',
 
     // ── Doc-Type Permissions ──────────────────────────────────────────────
     role: 'User Group',
@@ -139,5 +141,25 @@ export default {
     docTypePermissions_reasoning: 'Reasoning',
     docTypePermissions_defaultAllow: 'Allowed by default',
     docTypePermissions_viaDefault: 'from default row',
+
+    // ── Library (element) permissions ─────────────────────────────────────
+    library_menuLabel: 'Library Permissions Editor',
+    library_editorHeadline: 'Library Permissions Editor',
+    library_accessViewerMenuLabel: 'Library Access Viewer',
+    library_accessViewerHeadline: 'Library Access Viewer',
+    library_nodeHeader: 'Library Item',
+    library_root: 'Default permissions',
+    library_selectRolePrompt: 'Select a user group above to manage its library permissions.',
+    library_permissionsSaved: 'Library permissions saved.',
+    library_notApplicableTitle: (verb: string) => `${verb} does not apply to folders — it can still be set for the items inside.`,
+    library_folderInheritLabel: 'Items inside (descendants)',
+
+    // ── Library element-type create permissions ───────────────────────────
+    elementTypePermissions_menuLabel: 'Library Element Type Permissions',
+    elementTypePermissions_headline: 'Library Element Type Permissions',
+    elementTypePermissions_intro: 'Control which element types each user group may create in the Library. Allowed by default; switch to Deny to remove a type from the create menu.',
+    elementTypePermissions_typeHeader: 'Element Type',
+    elementTypePermissions_verbCreate: 'Create in Library',
+    elementTypePermissions_noTypes: 'No library element types found. Mark a document type as an element type and enable “Allow in Library”.',
   },
 } satisfies UmbLocalizationDictionary;

@@ -180,7 +180,13 @@ public sealed class AdvancedPermissionsDataImport(
     /// </remarks>
     private List<AdvancedPermissionEntity> ComputeGroupEntries(IUserGroup group)
     {
-        var defaults = group.Permissions.ToHashSet(StringComparer.Ordinal);
+        // Only import verbs this package manages (AllVerbs). An Umbraco user group's default permissions
+        // also include verbs outside our node-level model (e.g. Umb.Document.PropertyValue.*), which we
+        // neither resolve nor display — importing one would store a row the editor later re-sends and the
+        // save endpoint rejects. Those permissions stay natively managed by Umbraco.
+        var defaults = group.Permissions
+            .Where(verb => AdvancedPermissionsConstants.AllVerbs.Contains(verb, StringComparer.Ordinal))
+            .ToHashSet(StringComparer.Ordinal);
 
         // The in-memory view of entries the resolver will see for this group.
         // Grows as we emit, so descendants observe the effects of their ancestors' entries.

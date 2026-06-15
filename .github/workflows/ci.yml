@@ -3,6 +3,8 @@ name: CI
 on:
   pull_request:
     branches: [main, '*/main']
+  push:
+    branches: ['**/hotfix/**']
 
 jobs:
   build-and-test:

@@ -94,12 +94,14 @@ export class UapPermBlockElement extends LitElement {
       cursor: pointer;
     }
 
-    /* ── Priority-override gold theme (uniform block) ─────────────
-       Replaces the allow/deny fill with gold. The ✓/✗ icon still conveys allow vs deny. */
+    /* ── Priority-override amber theme (uniform block) ────────────
+       Replaces the allow/deny fill with the UUI warning (amber) palette so it stays
+       theme-aware in light and dark mode. The ✓/✗ icon still conveys allow vs deny.
+       A stronger tint than allow/deny keeps the override visually distinct. */
     .perm-block.uniform.override {
-      background: #f4e6bd;
-      color: #7a5c12;
-      border-color: #c8a23a;
+      background: color-mix(in srgb, var(--uui-color-warning, #af7c12) 25%, transparent);
+      color: var(--uui-color-warning-standalone, #a17700);
+      border-color: color-mix(in srgb, var(--uui-color-warning, #af7c12) 45%, transparent);
     }
 
     .perm-block:hover {
@@ -132,13 +134,13 @@ export class UapPermBlockElement extends LitElement {
 
     .perm-block.allow {
       background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
+      color: var(--uui-color-positive-standalone, #347d39);
       border-color: color-mix(in srgb, var(--uui-color-positive, #34a853) 30%, transparent);
     }
 
     .perm-block.deny {
       background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
-      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
+      color: var(--uui-color-danger-standalone, #ca3b37);
       border-color: color-mix(in srgb, var(--uui-color-danger, #ea4335) 25%, transparent);
     }
 
@@ -194,18 +196,18 @@ export class UapPermBlockElement extends LitElement {
 
     .half.allow {
       background: color-mix(in srgb, var(--uui-color-positive, #34a853) 14%, transparent);
-      color: color-mix(in srgb, var(--uui-color-positive, #1e7e34) 80%, #000);
+      color: var(--uui-color-positive-standalone, #347d39);
     }
 
     .half.deny {
       background: color-mix(in srgb, var(--uui-color-danger, #ea4335) 12%, transparent);
-      color: color-mix(in srgb, var(--uui-color-danger, #c5221f) 80%, #000);
+      color: var(--uui-color-danger-standalone, #ca3b37);
     }
 
-    /* Gold theme per half — overrides the allow/deny half colours. */
+    /* Amber theme per half — overrides the allow/deny half colours (UUI warning palette). */
     .half.override {
-      background: #f4e6bd;
-      color: #7a5c12;
+      background: color-mix(in srgb, var(--uui-color-warning, #af7c12) 25%, transparent);
+      color: var(--uui-color-warning-standalone, #a17700);
     }
   `;
 }

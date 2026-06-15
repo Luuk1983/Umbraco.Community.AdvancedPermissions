@@ -7,6 +7,7 @@ using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.AuthorizationStatus;
 using Umbraco.Extensions;
+using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 
 namespace Umbraco.Community.AdvancedPermissions.Services;
@@ -312,19 +313,34 @@ public sealed class AdvancedContentPermissionService(
     }
 
     /// <summary>
-    /// Filters the user-group default ("fallback") permissions surfaced to the backoffice UI.
+    /// Filters the user-group default ("fallback") permissions surfaced to the backoffice UI, removing only
+    /// the document node verbs this package manages and passing every other verb through unchanged.
     /// </summary>
     /// <remarks>
-    /// The Advanced Security model has no independent fallback layer: group defaults are represented as
-    /// virtual-root entries and are already resolved per-node by <see cref="GetPermissionsAsync"/>. Returning
-    /// an empty set therefore prevents the native UI from granting any document action purely on un-scoped
-    /// group defaults, leaving per-node resolution as the sole authority for content action visibility.
+    /// <para>
+    /// The Advanced Security model has no independent fallback layer for the document <em>node</em> verbs it
+    /// owns (<see cref="AdvancedPermissionsConstants.AllVerbs"/>): group defaults are represented as virtual-root
+    /// entries and are already resolved per-node by <see cref="GetPermissionsAsync"/>. Those verbs are therefore
+    /// stripped here so the native UI never grants a document action purely on an un-scoped group default —
+    /// per-node resolution stays the sole authority for content action visibility.
+    /// </para>
+    /// <para>
+    /// Verbs the package does <em>not</em> manage are passed through untouched. In Umbraco 18 these include the
+    /// property-value (<c>Umb.Document.PropertyValue.Read/Write</c>) and element (<c>Umb.Element.*</c>) permissions,
+    /// whose enforcement is driven client-side from these fallback permissions. Returning an empty set (as a
+    /// previous version did) silently disabled that native gating — hiding document property fields and locking
+    /// element editing. Passing non-managed verbs through keeps all such native behaviour working, now and for
+    /// any future verb Umbraco introduces.
+    /// </para>
     /// </remarks>
     /// <param name="user">The user whose fallback permissions are being filtered.</param>
     /// <param name="fallbackPermissions">The fallback permissions aggregated from the user's groups.</param>
-    /// <returns>An empty set — Advanced Security exposes no un-scoped fallback permissions.</returns>
+    /// <returns>The fallback permissions with this package's managed document node verbs removed.</returns>
     public Task<ISet<string>> FilterFallbackPermissionsAsync(IUser user, ISet<string> fallbackPermissions)
-        => Task.FromResult<ISet<string>>(new HashSet<string>());
+        => Task.FromResult<ISet<string>>(
+            fallbackPermissions
+                .Where(verb => !AdvancedPermissionsConstants.AllVerbs.Contains(verb, StringComparer.Ordinal))
+                .ToHashSet(StringComparer.Ordinal));
 
     /// <summary>
     /// Parses an Umbraco content path string (e.g. <c>"-1,1001,1002,1003"</c>) and returns the ordered

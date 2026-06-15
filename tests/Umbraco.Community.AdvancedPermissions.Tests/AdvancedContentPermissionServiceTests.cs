@@ -4,6 +4,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 using Umbraco.Community.AdvancedPermissions.Services;
@@ -152,16 +153,46 @@ public sealed class AdvancedContentPermissionServiceTests
     // ─── FilterFallbackPermissionsAsync ───────────────────────────────────────
 
     /// <summary>
-    /// The Advanced Permissions model has no independent "fallback" layer — group defaults are modelled as
-    /// virtual-root entries and resolved per-node through <c>GetPermissionsAsync</c>. So the fallback set our
-    /// service contributes is empty: the native UI must never grant a document action purely on un-scoped
-    /// group defaults.
+    /// Verbs the package manages (the node-level document verbs in <see cref="AdvancedPermissionsConstants.AllVerbs"/>)
+    /// are stripped from the fallback set so per-node resolution stays the sole authority for them. Every other
+    /// verb — notably the Umbraco 18 property-value (<c>Umb.Document.PropertyValue.Read/Write</c>) and element
+    /// (<c>Umb.Element.*</c>) permissions, plus any future verb — is passed through unchanged so Umbraco's native,
+    /// client-side gating for permissions we do not manage keeps working.
     /// </summary>
     [Fact]
-    public async Task FilterFallbackPermissionsAsync_ReturnsEmptySet()
+    public async Task FilterFallbackPermissionsAsync_StripsManagedVerbs_PassesThroughTheRest()
     {
         var user = StubUser(Guid.NewGuid());
-        ISet<string> fallback = new HashSet<string> { "Umb.Document.Read", "Umb.Document.Create" };
+        ISet<string> fallback = new HashSet<string>(StringComparer.Ordinal)
+        {
+            AdvancedPermissionsConstants.VerbRead,    // managed → stripped
+            AdvancedPermissionsConstants.VerbUpdate,  // managed → stripped
+            "Umb.Document.PropertyValue.Read",        // not managed → kept
+            "Umb.Document.PropertyValue.Write",       // not managed → kept
+            "Umb.Element.Create",                     // not managed → kept
+            "Some.Future.Umbraco.Verb",               // not managed → kept
+        };
+
+        var result = await _sut.FilterFallbackPermissionsAsync(user, fallback);
+
+        Assert.DoesNotContain(AdvancedPermissionsConstants.VerbRead, result);
+        Assert.DoesNotContain(AdvancedPermissionsConstants.VerbUpdate, result);
+        Assert.Contains("Umb.Document.PropertyValue.Read", result);
+        Assert.Contains("Umb.Document.PropertyValue.Write", result);
+        Assert.Contains("Umb.Element.Create", result);
+        Assert.Contains("Some.Future.Umbraco.Verb", result);
+        Assert.Equal(4, result.Count);
+    }
+
+    /// <summary>
+    /// A fallback set consisting only of verbs the package manages collapses to empty — there is nothing
+    /// to pass through to the native UI.
+    /// </summary>
+    [Fact]
+    public async Task FilterFallbackPermissionsAsync_AllManaged_ReturnsEmpty()
+    {
+        var user = StubUser(Guid.NewGuid());
+        ISet<string> fallback = new HashSet<string>(AdvancedPermissionsConstants.AllVerbs, StringComparer.Ordinal);
 
         var result = await _sut.FilterFallbackPermissionsAsync(user, fallback);
 

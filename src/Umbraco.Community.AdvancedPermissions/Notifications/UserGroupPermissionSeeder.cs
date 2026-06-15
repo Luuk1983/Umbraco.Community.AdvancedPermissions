@@ -46,8 +46,13 @@ public sealed class UserGroupPermissionSeeder(
                     continue;
                 }
 
-                // New group — seed virtual-root entries from native group permissions
+                // New group — seed virtual-root entries from native group permissions.
+                // Only seed verbs this package manages (AllVerbs): an Umbraco user group's default
+                // permissions also include verbs outside our model (e.g. Umbraco 18's
+                // Umb.Document.PropertyValue.* and Umb.Element.*), which we neither resolve nor display.
+                // Storing one would later be re-sent by the editor and rejected by the save endpoint.
                 var entriesToAdd = group.Permissions
+                    .Where(verb => AdvancedPermissionsConstants.AllVerbs.Contains(verb, StringComparer.Ordinal))
                     .Select(verb => new AdvancedPermissionEntity
                     {
                         Id = Guid.NewGuid(),

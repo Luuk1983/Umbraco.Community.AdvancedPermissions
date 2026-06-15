@@ -129,6 +129,11 @@ public sealed class AdvancedPermissionsComposer : IComposer
         // 2. Import native Umbraco permissions on first boot (runs after schema migration)
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartingNotification, AdvancedPermissionsDataImport>();
 
+        // 3. Heal installs that stored verbs the package no longer manages — e.g. after Umbraco added new
+        //    default permission verbs (Umbraco 18's Umb.Document.PropertyValue.* / Umb.Element.*) that an
+        //    earlier package version copied verbatim into our store. Idempotent; runs after schema migration.
+        builder.AddNotificationAsyncHandler<UmbracoApplicationStartingNotification, UnrecognizedVerbCleanup>();
+
         // Invalidate caches when content structure or user/group membership changes
         builder.AddNotificationHandler<ContentMovedNotification, AdvancedPermissionCacheInvalidator>();
         builder.AddNotificationHandler<ContentMovedToRecycleBinNotification, AdvancedPermissionCacheInvalidator>();

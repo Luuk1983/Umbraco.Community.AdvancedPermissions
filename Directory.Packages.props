@@ -8,18 +8,21 @@
     <!-- Umbraco — pinned to the v18 line. Each Umbraco major (v19, v20, …) requires a
          deliberate verification pass before we widen the range, so consumers on a future
          Umbraco major won't accidentally install this package against an unverified host.
-         Range syntax: [18.0.0-rc1,19.0.0) means >= 18.0.0-rc1 and < 19.0.0. The prerelease
+         Range syntax: [18.0.0-rc2,19.0.0) means >= 18.0.0-rc1 and < 19.0.0. The prerelease
          floor matches how Umbraco's own packages declare their inter-package dependencies. -->
-    <PackageVersion Include="Umbraco.Cms" Version="[18.0.0-rc1,19.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[18.0.0-rc1,19.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Core" Version="[18.0.0-rc1,19.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[18.0.0-rc1,19.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Persistence.EFCore" Version="[18.0.0-rc1,19.0.0)" />
+    <PackageVersion Include="Umbraco.Cms" Version="[18.0.0-rc2,19.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[18.0.0-rc2,19.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Core" Version="[18.0.0-rc2,19.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[18.0.0-rc2,19.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Persistence.EFCore" Version="[18.0.0-rc2,19.0.0)" />
+    <!-- uSync follows its own release cadence and has not cut an 18.0.0-rc2 yet, so its floor
+         stays at rc1 (resolves to rc1 today; the range still admits rc2+ once published). -->
     <PackageVersion Include="uSync" Version="[18.0.0-rc1,19.0.0)" />
 
-    <!-- Entity Framework Core: pinned to exactly match the version Umbraco 18.0.0-rc1 references
-         (10.0.7). Using a higher patch (e.g. 10.0.8) triggers an MSB3277 assembly-version conflict
-         with Umbraco's own EF Core reference, so we deliberately track the host version here. -->
+    <!-- Entity Framework Core: pinned to exactly match the version Umbraco 18.0.0-rc2 references
+         (10.0.7, unchanged from rc1). Using a higher patch (e.g. 10.0.8) triggers an MSB3277
+         assembly-version conflict with Umbraco's own EF Core reference, so we deliberately track
+         the host version here. -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.7" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.7" />

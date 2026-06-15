@@ -185,6 +185,37 @@ public sealed class AdvancedPermissionsDataImportTests : IAsyncLifetime
     // -------------------------------------------------------------------------
 
     /// <summary>
+    /// In Umbraco 18 a group's default permissions include verbs the package does not manage
+    /// (<c>Umb.Document.PropertyValue.Read/Write</c>, <c>Umb.Element.*</c>). The import must seed only the verbs
+    /// in <see cref="AdvancedPermissionsConstants.AllVerbs"/> and silently ignore the rest, so the package never
+    /// stores a verb it cannot resolve or surface in its editor.
+    /// </summary>
+    [Fact]
+    public async Task Handle_GroupDefaultsIncludeUnmanagedVerbs_SeedsOnlyManagedVerbs()
+    {
+        var group = BuildGroup(
+            alias: "editors",
+            defaultVerbs:
+            [
+                AdvancedPermissionsConstants.VerbRead,
+                "Umb.Document.PropertyValue.Read",
+                "Umb.Document.PropertyValue.Write",
+                "Umb.Element.Create",
+            ]);
+        GivenGroups(group);
+
+        var handler = CreateHandler();
+        await handler.HandleAsync(RunNotification(), CancellationToken.None);
+
+        var editorRows = await _dbContext.Permissions.AsNoTracking()
+            .Where(r => r.RoleAlias == "editors")
+            .ToListAsync();
+
+        var row = Assert.Single(editorRows);
+        Assert.Equal(AdvancedPermissionsConstants.VerbRead, row.Verb);
+    }
+
+    /// <summary>
     /// A group with defaults and no granular permissions produces one Allow virtual-root row per default verb
     /// and nothing else.
     /// </summary>

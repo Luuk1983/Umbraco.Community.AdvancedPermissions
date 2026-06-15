@@ -41,7 +41,8 @@ public sealed class DocTypePermissionService(
         roleAliases.AddRange(groups.Select(g => g.Alias));
         roleAliases.Add(AdvancedPermissionsConstants.EveryoneRoleAlias);
 
-        var result = await ResolveCreateForRolesAsync(roleAliases, parentPathFromRoot, contentTypeKey, cancellationToken);
+        var result = await ResolveCreateForRolesAsync(
+            roleAliases, parentPathFromRoot, contentTypeKey, cancellationToken: cancellationToken);
 
         cache.SetResolved(userKey, parentNodeKey, contentTypeKey, result);
         return result;
@@ -52,6 +53,7 @@ public sealed class DocTypePermissionService(
         IReadOnlyList<string> roleAliases,
         IReadOnlyList<Guid> parentPathFromRoot,
         Guid contentTypeKey,
+        string verb = AdvancedPermissionsConstants.VerbCreateOfType,
         CancellationToken cancellationToken = default)
     {
         var entries = await GetEntriesForRolesAndPathAsync(roleAliases, parentPathFromRoot, cancellationToken);
@@ -67,7 +69,7 @@ public sealed class DocTypePermissionService(
             RoleAliases: roleAliases,
             StoredEntries: entries);
 
-        return resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbCreateOfType);
+        return resolver.Resolve(ctx, verb);
     }
 
     /// <inheritdoc />

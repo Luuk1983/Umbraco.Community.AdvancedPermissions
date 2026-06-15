@@ -49,6 +49,44 @@ public class DocTypePermissionResolverTests
     }
 
     // ───────────────────────────────────────────────────────────────────────
+    // Verb isolation (document vs element-type create-filtering share one store)
+    // ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Element-type create entries (<c>Umb.Element.CreateOfType</c>) and document create entries
+    /// (<c>Umb.Document.CreateOfType</c>) live in the same store keyed by the same content-type. Resolving
+    /// one verb must ignore entries written for the other, so library element-type filtering never leaks
+    /// into content create-filtering and vice versa.
+    /// </summary>
+    [Fact]
+    public void Resolve_ElementTypeAndDocumentVerbs_AreIsolated()
+    {
+        var contentTypeKey = Guid.NewGuid();
+
+        // A Deny written for the ELEMENT-TYPE verb only.
+        var denyElementCreate = Entry(
+            AdvancedPermissionsConstants.VirtualRootNodeKey,
+            contentTypeKey,
+            AdvancedPermissionsConstants.EveryoneRoleAlias,
+            AdvancedPermissionsConstants.VerbElementCreateOfType,
+            PermissionState.Deny,
+            PermissionScope.ThisNodeAndDescendants);
+
+        var ctx = new DocTypePermissionResolutionContext(
+            ContentTypeKey: contentTypeKey,
+            ParentNodeKey: AdvancedPermissionsConstants.VirtualRootNodeKey,
+            PathFromRoot: [AdvancedPermissionsConstants.VirtualRootNodeKey],
+            RoleAliases: [AdvancedPermissionsConstants.EveryoneRoleAlias],
+            StoredEntries: [denyElementCreate]);
+
+        // The element-type verb sees the deny.
+        Assert.False(_resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbElementCreateOfType).IsAllowed);
+
+        // The document verb does not — it has no matching entry, so it stays at default Allow.
+        Assert.True(_resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbCreateOfType).IsAllowed);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
     // ContentTypeKey matching
     // ───────────────────────────────────────────────────────────────────────
 

@@ -53,6 +53,30 @@ public sealed class DocTypePermissionsController(
     }
 
     /// <summary>
+    /// Lists every element type that is allowed in the Library (<c>IsElement &amp;&amp; AllowedInLibrary</c>).
+    /// Used by the type editor's element-type picker for library create-filtering.
+    /// </summary>
+    /// <returns>The list of library-allowed element types.</returns>
+    [HttpGet("doc-type-permissions/element-types", Name = "GetLibraryElementTypes")]
+    [MapToApiVersion("1.0")]
+    [ProducesResponseType<IReadOnlyList<DocTypeListItemModel>>(StatusCodes.Status200OK)]
+    [EndpointSummary("Lists element types allowed in the Library.")]
+    public IActionResult GetElementTypes()
+    {
+        var items = contentTypeService.GetAll()
+            .Where(ct => ct.IsElement && ct.AllowedInLibrary)
+            .OrderBy(ct => ct.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(ct => new DocTypeListItemModel(
+                ct.Key,
+                ct.Alias,
+                ct.Name ?? ct.Alias,
+                ct.Icon))
+            .ToList();
+
+        return Ok(items);
+    }
+
+    /// <summary>
     /// Gets all stored entries for a selected (role, doc-type) combination. The editor uses these
     /// to render the tree with the current state per node.
     /// </summary>
@@ -112,12 +136,13 @@ public sealed class DocTypePermissionsController(
                 });
             }
 
-            if (!AdvancedPermissionsConstants.DocTypeVerbs.Contains(entry.Verb, StringComparer.Ordinal))
+            if (!AdvancedPermissionsConstants.DocTypeVerbs.Contains(entry.Verb, StringComparer.Ordinal)
+                && !AdvancedPermissionsConstants.ElementTypeVerbs.Contains(entry.Verb, StringComparer.Ordinal))
             {
                 return BadRequest(new ProblemDetails
                 {
                     Title = "Invalid verb",
-                    Detail = $"'{entry.Verb}' is not a recognized doc-type permission verb.",
+                    Detail = $"'{entry.Verb}' is not a recognized doc-type or element-type permission verb.",
                     Status = StatusCodes.Status400BadRequest,
                 });
             }
@@ -221,7 +246,7 @@ public sealed class DocTypePermissionsController(
                 roleAliases,
                 path,
                 ct.Key,
-                cancellationToken);
+                cancellationToken: cancellationToken);
 
             rows.Add(new DocTypeAuditForNodeRowResponseModel(
                 ContentTypeKey: ct.Key,

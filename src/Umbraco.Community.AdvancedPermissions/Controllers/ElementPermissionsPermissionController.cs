@@ -153,9 +153,11 @@ public sealed class ElementPermissionsPermissionController(
         if (path.Count > 0)
         {
             var keys = path.ToArray();
-            // Resolve names/icons across both object types (path may include folders and elements).
-            var entities = entityService.GetAll(UmbracoObjectTypes.Element, keys)
-                .Concat(entityService.GetAll(UmbracoObjectTypes.ElementContainer, keys))
+            // Resolve names/icons across both object types in one call. The multi-object-type overload
+            // queries by object-type GUID; the single-type GetAll(ElementContainer, keys) overload throws
+            // because element containers have no CLR entity type mapping.
+            var entities = entityService
+                .GetAll(new[] { UmbracoObjectTypes.Element, UmbracoObjectTypes.ElementContainer }, keys)
                 .ToDictionary(e => e.Key);
 
             foreach (var key in path)

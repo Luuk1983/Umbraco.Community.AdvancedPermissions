@@ -64,11 +64,8 @@ public sealed class AdvancedElementPermissionServiceTests
             .GetAllPaths(UmbracoObjectTypes.Element, Arg.Any<Guid[]>())
             .Returns([new TreeEntityPath { Id = 42, Key = nodeKey, Path = "-1,42" }]);
         _entityService
-            .GetAll(UmbracoObjectTypes.Element, Arg.Any<int[]>())
+            .GetAll(Arg.Any<IEnumerable<UmbracoObjectTypes>>(), Arg.Any<int[]>())
             .Returns([entity]);
-        _entityService
-            .GetAll(UmbracoObjectTypes.ElementContainer, Arg.Any<int[]>())
-            .Returns([]);
         _elementPermissionService
             .ResolveAllAsync(userKey, nodeKey, Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<IEnumerable<string>?>(), Arg.Any<CancellationToken>())
             .Returns(new Dictionary<string, EffectivePermission>
@@ -102,11 +99,8 @@ public sealed class AdvancedElementPermissionServiceTests
             .GetAllPaths(UmbracoObjectTypes.Element, Arg.Any<Guid[]>())
             .Returns([new TreeEntityPath { Id = 7, Key = knownKey, Path = "-1,7" }]);
         _entityService
-            .GetAll(UmbracoObjectTypes.Element, Arg.Any<int[]>())
+            .GetAll(Arg.Any<IEnumerable<UmbracoObjectTypes>>(), Arg.Any<int[]>())
             .Returns([entity]);
-        _entityService
-            .GetAll(UmbracoObjectTypes.ElementContainer, Arg.Any<int[]>())
-            .Returns([]);
         _elementPermissionService
             .ResolveAllAsync(userKey, knownKey, Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<IEnumerable<string>?>(), Arg.Any<CancellationToken>())
             .Returns(new Dictionary<string, EffectivePermission>

@@ -65,13 +65,13 @@ internal static class ElementTreePathResolver
         var uncachedIds = pathIds.Where(id => !idToKeyCache.ContainsKey(id)).ToArray();
         if (uncachedIds.Length > 0)
         {
-            // Elements and folders share the tree, so resolve both object types for the uncached ids.
-            foreach (var entity in entityService.GetAll(UmbracoObjectTypes.Element, uncachedIds))
-            {
-                idToKeyCache[entity.Id] = entity.Key;
-            }
-
-            foreach (var entity in entityService.GetAll(UmbracoObjectTypes.ElementContainer, uncachedIds))
+            // Elements and folders share the tree, so resolve both object types in one call. The
+            // multi-object-type overload queries by object-type GUID directly; the single-type
+            // GetAll(UmbracoObjectTypes.ElementContainer, ids) overload throws "not supported here"
+            // because element containers have no CLR entity type mapping.
+            foreach (var entity in entityService.GetAll(
+                new[] { UmbracoObjectTypes.Element, UmbracoObjectTypes.ElementContainer },
+                uncachedIds))
             {
                 idToKeyCache[entity.Id] = entity.Key;
             }

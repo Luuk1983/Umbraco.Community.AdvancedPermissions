@@ -1,4 +1,5 @@
 using NSubstitute;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
@@ -61,10 +62,13 @@ public sealed class AdvancedElementPermissionServiceTests
         var entity = StubEntity(42, nodeKey);
 
         _entityService
-            .GetAllPaths(UmbracoObjectTypes.Element, Arg.Any<Guid[]>())
+            .GetAllPaths(Arg.Any<IEnumerable<UmbracoObjectTypes>>(), Arg.Any<Guid[]>())
             .Returns([new TreeEntityPath { Id = 42, Key = nodeKey, Path = "-1,42" }]);
         _entityService
             .GetAll(Arg.Any<IEnumerable<UmbracoObjectTypes>>(), Arg.Any<int[]>())
+            .Returns([entity]);
+        _entityService
+            .GetAll(Arg.Any<IEnumerable<UmbracoObjectTypes>>(), Arg.Any<Guid[]>())
             .Returns([entity]);
         _elementPermissionService
             .ResolveAllAsync(userKey, nodeKey, Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<IEnumerable<string>?>(), Arg.Any<CancellationToken>())
@@ -96,10 +100,13 @@ public sealed class AdvancedElementPermissionServiceTests
         var entity = StubEntity(7, knownKey);
 
         _entityService
-            .GetAllPaths(UmbracoObjectTypes.Element, Arg.Any<Guid[]>())
+            .GetAllPaths(Arg.Any<IEnumerable<UmbracoObjectTypes>>(), Arg.Any<Guid[]>())
             .Returns([new TreeEntityPath { Id = 7, Key = knownKey, Path = "-1,7" }]);
         _entityService
             .GetAll(Arg.Any<IEnumerable<UmbracoObjectTypes>>(), Arg.Any<int[]>())
+            .Returns([entity]);
+        _entityService
+            .GetAll(Arg.Any<IEnumerable<UmbracoObjectTypes>>(), Arg.Any<Guid[]>())
             .Returns([entity]);
         _elementPermissionService
             .ResolveAllAsync(userKey, knownKey, Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<IEnumerable<string>?>(), Arg.Any<CancellationToken>())
@@ -115,11 +122,61 @@ public sealed class AdvancedElementPermissionServiceTests
         Assert.Empty(result.Single(r => r.NodeKey == unknownKey).Permissions);
     }
 
+    /// <summary>
+    /// Regression test for the "folders created but hidden from the Library tree" bug: the tree's permission
+    /// filter checks a folder's browse verb <c>Umb.ElementContainer.Read</c>, but permissions are stored
+    /// against the canonical <c>Umb.Element.Read</c>. <see cref="AdvancedElementPermissionService.GetPermissionsAsync"/>
+    /// must therefore return the CONTAINER verbs for a folder key, not the raw canonical element verbs.
+    /// </summary>
+    [Fact]
+    public async Task GetPermissionsAsync_FolderKey_ReturnsContainerVerbs()
+    {
+        var userKey = Guid.NewGuid();
+        var user = StubUser(userKey);
+        var folderKey = Guid.NewGuid();
+        var folder = StubFolderEntity(55, folderKey);
+
+        _entityService
+            .GetAllPaths(Arg.Any<IEnumerable<UmbracoObjectTypes>>(), Arg.Any<Guid[]>())
+            .Returns([new TreeEntityPath { Id = 55, Key = folderKey, Path = "-1,55" }]);
+        _entityService
+            .GetAll(Arg.Any<IEnumerable<UmbracoObjectTypes>>(), Arg.Any<Guid[]>())
+            .Returns([folder]);
+        _entityService
+            .GetAll(Arg.Any<IEnumerable<UmbracoObjectTypes>>(), Arg.Any<int[]>())
+            .Returns([folder]);
+        _elementPermissionService
+            .ResolveAllAsync(userKey, folderKey, Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<IEnumerable<string>?>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission>
+            {
+                [AdvancedPermissionsConstants.VerbElementRead] = new(AdvancedPermissionsConstants.VerbElementRead, IsAllowed: true, IsExplicit: false, Reasoning: []),
+                [AdvancedPermissionsConstants.VerbElementPublish] = new(AdvancedPermissionsConstants.VerbElementPublish, IsAllowed: true, IsExplicit: false, Reasoning: []),
+            });
+
+        var node = Assert.Single(await _sut.GetPermissionsAsync(user, [folderKey]));
+
+        // Read maps to the container browse verb the tree filter checks.
+        Assert.Contains(AdvancedPermissionsConstants.VerbElementContainerRead, node.Permissions);
+        // The canonical element verb itself is NOT surfaced for a folder…
+        Assert.DoesNotContain(AdvancedPermissionsConstants.VerbElementRead, node.Permissions);
+        // …and element-only verbs (Publish) have no container counterpart, so they're dropped.
+        Assert.DoesNotContain(AdvancedPermissionsConstants.VerbElementPublish, node.Permissions);
+    }
+
     private static IUser StubUser(Guid key)
     {
         var user = Substitute.For<IUser>();
         user.Key.Returns(key);
         return user;
+    }
+
+    private static IEntitySlim StubFolderEntity(int id, Guid key)
+    {
+        var entity = Substitute.For<IEntitySlim>();
+        entity.Id.Returns(id);
+        entity.Key.Returns(key);
+        entity.NodeObjectType.Returns(Constants.ObjectTypes.ElementContainer);
+        return entity;
     }
 
     private static IEntitySlim StubEntity(int id, Guid key)

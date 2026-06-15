@@ -7,6 +7,7 @@ using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.AuthorizationStatus;
 using Umbraco.Extensions;
+using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 
 namespace Umbraco.Community.AdvancedPermissions.Services;
@@ -202,16 +203,23 @@ public sealed class AdvancedElementPermissionService(
     /// Advanced Security model so the returned set reflects inheritance, scope and priority overrides.
     /// </summary>
     /// <remarks>
-    /// Exactly one <see cref="NodePermissions"/> is returned per requested key — including keys that do
-    /// not resolve to an existing element (which return an empty verb set) — keeping parity with the
-    /// content service's "200 with empty list" contract. Note that, unlike documents, Umbraco 18 does not
-    /// route the element current-user endpoint through this service, so the package's own effective API
-    /// (not this method) drives the backoffice element conditions; this method is implemented for parity
-    /// and for any consumer that does resolve through <see cref="IElementPermissionService"/>.
+    /// <para>
+    /// This is the seam the backoffice Library tree uses to decide which items a user may browse:
+    /// <c>ElementPermissionFilterService</c> calls it for every tree entity (elements <em>and</em>
+    /// folders) and keeps those whose browse verb is present. The requested keys are therefore a mix of
+    /// elements and element containers.
+    /// </para>
+    /// <para>
+    /// Permissions are stored against the canonical <c>Umb.Element.*</c> verbs. For an element key the
+    /// canonical verbs are returned as-is; for a folder key they are mapped back to the container verbs
+    /// (<c>Umb.ElementContainer.*</c>) the tree filter expects — e.g. <c>Umb.ElementContainer.Read</c>,
+    /// which the filter checks as a folder's browse permission. Exactly one <see cref="NodePermissions"/>
+    /// is returned per requested key (an unresolved key returns an empty set).
+    /// </para>
     /// </remarks>
     /// <param name="user">The user to resolve permissions for.</param>
-    /// <param name="elementKeys">The identifiers of the elements to resolve permissions for.</param>
-    /// <returns>The effective (allowed) permission verbs for each requested element.</returns>
+    /// <param name="elementKeys">The identifiers of the elements and/or folders to resolve permissions for.</param>
+    /// <returns>The effective (allowed) permission verbs for each requested element or folder.</returns>
     public async Task<IEnumerable<NodePermissions>> GetPermissionsAsync(IUser user, IEnumerable<Guid> elementKeys)
     {
         Guid[] keysArray = elementKeys.ToArray();
@@ -222,15 +230,23 @@ public sealed class AdvancedElementPermissionService(
             return result;
         }
 
+        // Resolve paths and object types across both elements and folders (the multi-object-type
+        // overloads support containers, which the single-type ones reject).
+        UmbracoObjectTypes[] objectTypes = [UmbracoObjectTypes.Element, UmbracoObjectTypes.ElementContainer];
         var pathsByKey = entityService
-            .GetAllPaths(UmbracoObjectTypes.Element, keysArray)
+            .GetAllPaths(objectTypes, keysArray)
             .ToDictionary(p => p.Key, p => p.Path);
+        var containerKeys = entityService
+            .GetAll(objectTypes, keysArray)
+            .Where(e => e.NodeObjectType == Constants.ObjectTypes.ElementContainer)
+            .Select(e => e.Key)
+            .ToHashSet();
 
         var idToKeyCache = new Dictionary<int, Guid>();
 
         foreach (Guid key in keysArray)
         {
-            var allowedVerbs = new HashSet<string>();
+            var allowedVerbs = new HashSet<string>(StringComparer.Ordinal);
 
             if (pathsByKey.TryGetValue(key, out var path))
             {
@@ -240,11 +256,28 @@ public sealed class AdvancedElementPermissionService(
                 if (pathFromRoot.Count > 0)
                 {
                     var resolved = await elementPermissionService.ResolveAllAsync(user.Key, key, pathFromRoot);
-                    foreach (var permission in resolved.Values)
+                    var allowedCanonical = resolved.Values
+                        .Where(p => p.IsAllowed)
+                        .Select(p => p.Verb)
+                        .ToHashSet(StringComparer.Ordinal);
+
+                    if (containerKeys.Contains(key))
                     {
-                        if (permission.IsAllowed)
+                        // Folder: surface the container verbs the tree filter expects, mapped from the
+                        // canonical element verbs. Element-only verbs have no container counterpart.
+                        foreach (var (containerVerb, canonical) in AdvancedPermissionsConstants.ElementContainerVerbToCanonical)
                         {
-                            allowedVerbs.Add(permission.Verb);
+                            if (allowedCanonical.Contains(canonical))
+                            {
+                                allowedVerbs.Add(containerVerb);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var verb in allowedCanonical)
+                        {
+                            allowedVerbs.Add(verb);
                         }
                     }
                 }

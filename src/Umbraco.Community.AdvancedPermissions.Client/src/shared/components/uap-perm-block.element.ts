@@ -223,6 +223,15 @@ export class UapPermBlockElement extends LitElement {
       );
       color: var(--uui-color-text-alt, #999);
     }
+
+    /* "N/A" is a short word rather than a single glyph — shrink it so it fits the cell (and
+       both halves of a split cell) without wrapping, and keep it muted so it reads as disabled. */
+    .perm-block.uniform.na,
+    .perm-block.split > .half.na {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
   `;
 }
 

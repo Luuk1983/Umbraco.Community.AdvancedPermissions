@@ -147,6 +147,22 @@ const manifests: Array<UmbExtensionManifest> = [
     },
   } as UmbExtensionManifest,
 
+  // ─── Library Element Granular Permission Redirect ────────────────────────
+  // The native Element + Element Folder permission toggles and the native element granular picker
+  // are excluded in the entry point, so the library permission boxes disappear. This redirect renders
+  // in their place (keyed on the element permission schema), directing users to the Library editor.
+  {
+    type: 'userGranularPermission',
+    alias: 'UAP.UserGranularPermission.Element.Redirect',
+    name: 'Advanced Permissions Library Element Permission Redirect',
+    weight: 1990,
+    element: () => import('./components/uap-granular-permission-redirect.element.js'),
+    meta: {
+      schemaType: 'ElementPermissionPresentationModel',
+      labelKey: 'user_permissionsEntityGroup_element',
+    },
+  } as UmbExtensionManifest,
+
   // ─── Workspace (Access Viewer) ────────────────────────────────────────────
   {
     type: 'workspace',

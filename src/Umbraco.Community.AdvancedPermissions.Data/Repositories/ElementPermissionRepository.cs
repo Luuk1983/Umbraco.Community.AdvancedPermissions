@@ -6,13 +6,13 @@ using Umbraco.Community.AdvancedPermissions.Data.Entities;
 namespace Umbraco.Community.AdvancedPermissions.Data.Repositories;
 
 /// <summary>
-/// Entity Framework Core implementation of <see cref="IAdvancedPermissionRepository"/> backed by the
-/// <c>AdvancedPermission</c> table (content-node permissions). All behaviour comes from
+/// Entity Framework Core implementation of <see cref="IElementPermissionRepository"/> backed by the
+/// <c>ElementPermission</c> table (library element and folder permissions). All behaviour comes from
 /// <see cref="NodePermissionRepositoryBase{TEntity}"/>; this type only binds it to
-/// <see cref="AdvancedPermissionEntity"/>.
+/// <see cref="ElementPermissionEntity"/>.
 /// </summary>
 /// <param name="dbContextFactory">
 /// The factory used to create <see cref="AdvancedPermissionsDbContext"/> instances.
 /// </param>
-public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermissionsDbContext> dbContextFactory)
-    : NodePermissionRepositoryBase<AdvancedPermissionEntity>(dbContextFactory), IAdvancedPermissionRepository;
+public sealed class ElementPermissionRepository(IDbContextFactory<AdvancedPermissionsDbContext> dbContextFactory)
+    : NodePermissionRepositoryBase<ElementPermissionEntity>(dbContextFactory), IElementPermissionRepository;

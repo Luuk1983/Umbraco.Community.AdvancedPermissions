@@ -43,6 +43,11 @@ public class AdvancedPermissionsDbContext : DbContext
     /// </summary>
     public DbSet<DocTypePermissionEntity> DocTypePermissions { get; set; } = null!;
 
+    /// <summary>
+    /// Gets or sets the set of library element/folder permission entries (keyed on element/folder node).
+    /// </summary>
+    public DbSet<ElementPermissionEntity> ElementPermissions { get; set; } = null!;
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -50,6 +55,7 @@ public class AdvancedPermissionsDbContext : DbContext
 
         ConfigurePermissions(modelBuilder);
         ConfigureDocTypePermissions(modelBuilder);
+        ConfigureElementPermissions(modelBuilder);
     }
 
     /// <summary>
@@ -185,6 +191,71 @@ public class AdvancedPermissionsDbContext : DbContext
             entity.HasIndex(e => new { e.NodeKey, e.ContentTypeKey, e.RoleAlias, e.Verb, e.Scope })
                 .IsUnique()
                 .HasDatabaseName("IX_DocTypePermission_Unique");
+        });
+    }
+
+    /// <summary>
+    /// Configures the <see cref="ElementPermissionEntity"/> mapping. Mirrors the
+    /// <see cref="AdvancedPermissionEntity"/> shape exactly (library elements/folders are node-keyed
+    /// just like content), in a dedicated <c>ElementPermission</c> table.
+    /// </summary>
+    /// <param name="modelBuilder">The model builder.</param>
+    private static void ConfigureElementPermissions(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ElementPermissionEntity>(entity =>
+        {
+            entity.ToTable("ElementPermission");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("Id")
+                .ValueGeneratedNever()
+                .IsRequired();
+
+            entity.Property(e => e.NodeKey)
+                .HasColumnName("NodeKey")
+                .IsRequired();
+
+            entity.Property(e => e.RoleAlias)
+                .HasColumnName("RoleAlias")
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(e => e.Verb)
+                .HasColumnName("Verb")
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(e => e.State)
+                .HasColumnName("State")
+                .IsRequired();
+
+            entity.Property(e => e.Scope)
+                .HasColumnName("Scope")
+                .IsRequired();
+
+            entity.Property(e => e.IsPriorityOverride)
+                .HasColumnName("IsPriorityOverride")
+                .HasDefaultValue(false)
+                .IsRequired();
+
+            // Index for the most common lookup: by node + role
+            entity.HasIndex(e => new { e.NodeKey, e.RoleAlias })
+                .HasDatabaseName("IX_ElementPermission_NodeKey_RoleAlias");
+
+            // Index for cache-loading by role (single query per role)
+            entity.HasIndex(e => e.RoleAlias)
+                .HasDatabaseName("IX_ElementPermission_RoleAlias");
+
+            // Index for node-level lookups (all roles for a node)
+            entity.HasIndex(e => e.NodeKey)
+                .HasDatabaseName("IX_ElementPermission_NodeKey");
+
+            // Unique constraint to prevent duplicate entries for the same node+role+verb+scope
+            entity.HasIndex(e => new { e.NodeKey, e.RoleAlias, e.Verb, e.Scope })
+                .IsUnique()
+                .HasDatabaseName("IX_ElementPermission_Unique");
         });
     }
 }

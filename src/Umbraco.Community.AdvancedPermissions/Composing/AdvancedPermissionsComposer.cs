@@ -115,6 +115,15 @@ public sealed class AdvancedPermissionsComposer : IComposer
         // Register the IContentTypeFilter that enforces doc-type create restrictions in
         // Umbraco's allowed-children / allowed-at-root pipelines.
         builder.ContentTypeFilters().Append<DocTypeCreateContentTypeFilter>();
+
+        // Library element permissions — element items and folders share one node-permission stack
+        // (the IPermissionResolver above is reused). Both Umbraco enforcement services are replaced so
+        // Advanced Security governs element and element-container access decisions.
+        builder.Services.AddSingleton<IElementPermissionRepository, ElementPermissionRepository>();
+        builder.Services.AddSingleton<ElementPermissionCache>();
+        builder.Services.AddSingleton<IElementNodePermissionService, ElementNodePermissionService>();
+        builder.Services.AddUnique<IElementPermissionService, AdvancedElementPermissionService>();
+        builder.Services.AddUnique<IElementContainerPermissionService, AdvancedElementContainerPermissionService>();
     }
 
     /// <summary>
@@ -128,6 +137,10 @@ public sealed class AdvancedPermissionsComposer : IComposer
 
         // 2. Import native Umbraco permissions on first boot (runs after schema migration)
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartingNotification, AdvancedPermissionsDataImport>();
+
+        // 2b. Seed element defaults on first boot ($everyone read + group element/folder defaults) so the
+        //     library is not locked down once element enforcement is active. Runs after schema migration.
+        builder.AddNotificationAsyncHandler<UmbracoApplicationStartingNotification, ElementPermissionsDataImport>();
 
         // 3. Heal installs that stored verbs the package no longer manages — e.g. after Umbraco added new
         //    default permission verbs (Umbraco 18's Umb.Document.PropertyValue.* / Umb.Element.*) that an
@@ -162,6 +175,19 @@ public sealed class AdvancedPermissionsComposer : IComposer
         builder.AddNotificationAsyncHandler<ContentDeletedNotification, DocTypePermissionCleanup>();
         builder.AddNotificationAsyncHandler<ContentTypeDeletedNotification, DocTypePermissionCleanup>();
         builder.AddNotificationAsyncHandler<UserGroupDeletedNotification, DocTypePermissionCleanup>();
+
+        // Element (Library) permission cache invalidation
+        builder.AddNotificationHandler<ElementMovedNotification, ElementPermissionCacheInvalidator>();
+        builder.AddNotificationHandler<ElementMovedToRecycleBinNotification, ElementPermissionCacheInvalidator>();
+        builder.AddNotificationHandler<EntityContainerMovedNotification, ElementPermissionCacheInvalidator>();
+        builder.AddNotificationHandler<EntityContainerMovedToRecycleBinNotification, ElementPermissionCacheInvalidator>();
+        builder.AddNotificationHandler<UserGroupSavedNotification, ElementPermissionCacheInvalidator>();
+        builder.AddNotificationHandler<UserSavedNotification, ElementPermissionCacheInvalidator>();
+
+        // Element (Library) permission cleanup on permanent deletion
+        builder.AddNotificationAsyncHandler<ElementDeletedNotification, ElementPermissionCleanup>();
+        builder.AddNotificationAsyncHandler<EntityContainerDeletedNotification, ElementPermissionCleanup>();
+        builder.AddNotificationAsyncHandler<UserGroupDeletedNotification, ElementPermissionCleanup>();
     }
 
     /// <summary>

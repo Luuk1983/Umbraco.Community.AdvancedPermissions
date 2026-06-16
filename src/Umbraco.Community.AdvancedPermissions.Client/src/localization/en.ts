@@ -162,9 +162,15 @@ export default {
     // ── Library element-type create permissions ───────────────────────────
     elementTypePermissions_menuLabel: 'Library Element Type Permissions',
     elementTypePermissions_headline: 'Library Element Type Permissions',
-    elementTypePermissions_intro: 'Control which element types each user group may create in the Library. Allowed by default; switch to Deny to remove a type from the create menu.',
+    elementTypePermissions_intro: 'Control which element types each user group may create in the Library. Element types are creatable by default; set Allow or Deny — with an optional priority override — to control how the choice resolves when a user belongs to several groups.',
     elementTypePermissions_typeHeader: 'Element Type',
     elementTypePermissions_verbCreate: 'Create in Library',
     elementTypePermissions_noTypes: 'No library element types found. Mark a document type as an element type and enable “Allow in Library”.',
+    elementType_dialogHeadline: (type: string) => `Create permission for ‘${type}’ in the Library`,
+    elementType_inheritLabel: 'Not set (allowed by default)',
+    elementType_allowLabel: 'Allow (creatable in the Library)',
+    elementType_denyLabel: 'Deny (hidden from the Library)',
+    elementType_previewInherit: 'No explicit rule. This element type is creatable in the Library by default.',
+    elementType_previewSet: (action: string) => `${action} creating this element type in the Library.`,
   },
 } satisfies UmbLocalizationDictionary;

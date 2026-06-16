@@ -50,6 +50,31 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
   @property() inheritLabel = '';
 
   /**
+   * Optional override for the dialog headline. When empty the standard
+   * "Set {verb} permission for '{nodeName}'" headline is used. Callers with a different framing
+   * (e.g. the library element-type editor: "Create '{type}' in the Library") supply their own.
+   */
+  @property() headlineOverride = '';
+
+  /**
+   * Optional overrides for the three single-row tile labels (single/virtual-root layout only). When empty
+   * each falls back to the virtual-root label (in virtual-root mode) or the plain Inherit/Allow/Deny label.
+   * Kept domain-agnostic: the library element-type editor passes Library-appropriate wording, but the
+   * dialog itself stays free of element-type knowledge.
+   */
+  @property() singleInheritLabel = '';
+  @property() singleAllowLabel = '';
+  @property() singleDenyLabel = '';
+
+  /**
+   * Optional overrides for the single-row result-preview text. <see cref="singlePreviewSet"/> builds the
+   * Allow/Deny description from the localized action word; <see cref="singlePreviewInherit"/> is the
+   * Inherit description. Both apply only in virtual-root single mode; empty/undefined keeps the defaults.
+   */
+  @property({ attribute: false }) singlePreviewSet: ((action: string) => string) | undefined = undefined;
+  @property() singlePreviewInherit = '';
+
+  /**
    * Whether the "this node" side can be set. Defaults to true. The library editor sets this false for
    * element-only verbs on a folder (the folder itself isn't an element, but the rule still applies to
    * the elements inside it), collapsing the dialog to a single descendants-scoped choice.
@@ -207,13 +232,15 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
     if (this.#isSingle) {
       if (this._nodeState === 'inherit') {
         if (this.#isElementOnlyFolder) return this.#localize.term('uap_previewElementFolderInherit');
+        if (this.isVirtualRoot && this.singlePreviewInherit) return this.singlePreviewInherit;
         return this.#localize.term(this.isVirtualRoot ? 'uap_previewVirtualInherit' : 'uap_previewBothInherit');
       }
       const action = this._nodeState === 'allow'
         ? this.#localize.term('uap_allow')
         : this.#localize.term('uap_deny');
       let base: string;
-      if (this.isVirtualRoot) base = this.#localize.term('uap_previewVirtualSet', action);
+      if (this.isVirtualRoot && this.singlePreviewSet) base = this.singlePreviewSet(action);
+      else if (this.isVirtualRoot) base = this.#localize.term('uap_previewVirtualSet', action);
       else if (this.#isElementOnlyFolder) base = this.#localize.term('uap_previewElementFolderSet', action);
       else if (!this.descApplicable) base = this.#localize.term('uap_previewNodeOnly', action);
       else base = this.#localize.term('uap_previewDescOnly', action);
@@ -296,18 +323,18 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
    */
   #renderSingleOptions(): TemplateResult {
     const vr = this.isVirtualRoot;
+    const inheritLabel = this.singleInheritLabel || (vr ? this.#localize.term('uap_virtualRootInherit') : undefined);
+    const allowLabel = this.singleAllowLabel || (vr ? this.#localize.term('uap_virtualRootAllow') : undefined);
+    const denyLabel = this.singleDenyLabel || (vr ? this.#localize.term('uap_virtualRootDeny') : undefined);
     return html`
       <div class="dialog-options">
         <div class="perm-options">
           ${this.#renderTile('inherit', this._nodeState === 'inherit',
-            () => { this._nodeState = 'inherit'; },
-            vr ? this.#localize.term('uap_virtualRootInherit') : undefined)}
+            () => { this._nodeState = 'inherit'; }, inheritLabel)}
           ${this.#renderTile('allow', this._nodeState === 'allow',
-            () => { this._nodeState = 'allow'; },
-            vr ? this.#localize.term('uap_virtualRootAllow') : undefined)}
+            () => { this._nodeState = 'allow'; }, allowLabel)}
           ${this.#renderTile('deny', this._nodeState === 'deny',
-            () => { this._nodeState = 'deny'; },
-            vr ? this.#localize.term('uap_virtualRootDeny') : undefined)}
+            () => { this._nodeState = 'deny'; }, denyLabel)}
         </div>
         ${this.#renderOverrideCheckbox('node')}
       </div>
@@ -419,7 +446,7 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
     return html`
       <dialog class="scope-dialog">
         <uui-dialog-layout
-          headline=${this.#localize.term('uap_dialogHeadline', this.verb, this.nodeName)}>
+          headline=${this.headlineOverride || this.#localize.term('uap_dialogHeadline', this.verb, this.nodeName)}>
           ${!this.#isSingle
             ? html`<p class="dialog-instructions">${this.#localize.term('uap_dialogInstructions')}</p>`
             : nothing}

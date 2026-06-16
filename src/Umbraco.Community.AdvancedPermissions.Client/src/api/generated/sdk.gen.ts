@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypeAuditData, GetDocTypeAuditErrors, GetDocTypeAuditResponses, GetDocTypePathEntriesData, GetDocTypePathEntriesErrors, GetDocTypePathEntriesResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PutDocTypePermissionsData, PutDocTypePermissionsErrors, PutDocTypePermissionsResponses, PutPermissionsData, PutPermissionsErrors, PutPermissionsResponses } from './types.gen';
+import type { DeleteElementPermissionData, DeleteElementPermissionErrors, DeleteElementPermissionResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypeAuditData, GetDocTypeAuditErrors, GetDocTypeAuditResponses, GetDocTypePathEntriesData, GetDocTypePathEntriesErrors, GetDocTypePathEntriesResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetElementChildrenData, GetElementChildrenErrors, GetElementChildrenResponses, GetElementEffectiveForCurrentUserData, GetElementEffectiveForCurrentUserErrors, GetElementEffectiveForCurrentUserResponses, GetElementEffectiveForRoleData, GetElementEffectiveForRoleErrors, GetElementEffectiveForRoleResponses, GetElementEffectiveForUserData, GetElementEffectiveForUserErrors, GetElementEffectiveForUserResponses, GetElementPermissionsByNodeData, GetElementPermissionsByNodeErrors, GetElementPermissionsByNodeResponses, GetElementPermissionsData, GetElementPermissionsErrors, GetElementPermissionsForPathData, GetElementPermissionsForPathErrors, GetElementPermissionsForPathResponses, GetElementPermissionsResponses, GetElementRootData, GetElementRootErrors, GetElementRootResponses, GetElementTypeAuditData, GetElementTypeAuditErrors, GetElementTypeAuditResponses, GetElementVerbsData, GetElementVerbsErrors, GetElementVerbsResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetLibraryElementTypesData, GetLibraryElementTypesErrors, GetLibraryElementTypesResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PutDocTypePermissionsData, PutDocTypePermissionsErrors, PutDocTypePermissionsResponses, PutElementPermissionsData, PutElementPermissionsErrors, PutElementPermissionsResponses, PutPermissionsData, PutPermissionsErrors, PutPermissionsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -59,6 +59,24 @@ export const getDocTypes = <ThrowOnError extends boolean = false>(options?: Opti
 });
 
 /**
+ * Lists element types allowed in the Library.
+ */
+export const getLibraryElementTypes = <ThrowOnError extends boolean = false>(options?: Options<GetLibraryElementTypesData, ThrowOnError>) => (options?.client ?? client).get<GetLibraryElementTypesResponses, GetLibraryElementTypesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/element-types',
+    ...options
+});
+
+/**
+ * Audits which library element types a subject may create (section-global).
+ */
+export const getElementTypeAudit = <ThrowOnError extends boolean = false>(options?: Options<GetElementTypeAuditData, ThrowOnError>) => (options?.client ?? client).get<GetElementTypeAuditResponses, GetElementTypeAuditErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/element-types/audit',
+    ...options
+});
+
+/**
  * Gets the inheritance path and stored doc-type entries along that path for a content-type.
  */
 export const getDocTypePathEntries = <ThrowOnError extends boolean = false>(options?: Options<GetDocTypePathEntriesData, ThrowOnError>) => (options?.client ?? client).get<GetDocTypePathEntriesResponses, GetDocTypePathEntriesErrors, ThrowOnError>({
@@ -82,6 +100,109 @@ export const getEffectiveForUser = <ThrowOnError extends boolean = false>(option
 export const getEffectiveForRole = <ThrowOnError extends boolean = false>(options?: Options<GetEffectiveForRoleData, ThrowOnError>) => (options?.client ?? client).get<GetEffectiveForRoleResponses, GetEffectiveForRoleErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/management/api/v1/advanced-permissions/effective/by-role',
+    ...options
+});
+
+/**
+ * Resolves effective element permissions for a user at a node.
+ */
+export const getElementEffectiveForUser = <ThrowOnError extends boolean = false>(options?: Options<GetElementEffectiveForUserData, ThrowOnError>) => (options?.client ?? client).get<GetElementEffectiveForUserResponses, GetElementEffectiveForUserErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/effective',
+    ...options
+});
+
+/**
+ * Resolves effective element permissions for a role at a node.
+ */
+export const getElementEffectiveForRole = <ThrowOnError extends boolean = false>(options?: Options<GetElementEffectiveForRoleData, ThrowOnError>) => (options?.client ?? client).get<GetElementEffectiveForRoleResponses, GetElementEffectiveForRoleErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/effective/by-role',
+    ...options
+});
+
+/**
+ * Resolves effective element permissions for the current user at a node.
+ */
+export const getElementEffectiveForCurrentUser = <ThrowOnError extends boolean = false>(options?: Options<GetElementEffectiveForCurrentUserData, ThrowOnError>) => (options?.client ?? client).get<GetElementEffectiveForCurrentUserResponses, GetElementEffectiveForCurrentUserErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/effective/current-user',
+    ...options
+});
+
+/**
+ * Removes a specific element permission entry (reverts to inherit).
+ */
+export const deleteElementPermission = <ThrowOnError extends boolean = false>(options?: Options<DeleteElementPermissionData, ThrowOnError>) => (options?.client ?? client).delete<DeleteElementPermissionResponses, DeleteElementPermissionErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/permissions',
+    ...options
+});
+
+/**
+ * Gets element permission entries for a node and role.
+ */
+export const getElementPermissions = <ThrowOnError extends boolean = false>(options?: Options<GetElementPermissionsData, ThrowOnError>) => (options?.client ?? client).get<GetElementPermissionsResponses, GetElementPermissionsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/permissions',
+    ...options
+});
+
+/**
+ * Saves (replaces) element permission entries for a node and role.
+ */
+export const putElementPermissions = <ThrowOnError extends boolean = false>(options: Options<PutElementPermissionsData, ThrowOnError>) => (options.client ?? client).put<PutElementPermissionsResponses, PutElementPermissionsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/permissions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Gets all element permission entries for a node (all roles).
+ */
+export const getElementPermissionsByNode = <ThrowOnError extends boolean = false>(options?: Options<GetElementPermissionsByNodeData, ThrowOnError>) => (options?.client ?? client).get<GetElementPermissionsByNodeResponses, GetElementPermissionsByNodeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/permissions/by-node',
+    ...options
+});
+
+/**
+ * Gets the inheritance path and stored element entries for a verb along that path.
+ */
+export const getElementPermissionsForPath = <ThrowOnError extends boolean = false>(options?: Options<GetElementPermissionsForPathData, ThrowOnError>) => (options?.client ?? client).get<GetElementPermissionsForPathResponses, GetElementPermissionsForPathErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/permissions/for-path',
+    ...options
+});
+
+/**
+ * Gets child library nodes with permission entries for a role.
+ */
+export const getElementChildren = <ThrowOnError extends boolean = false>(options?: Options<GetElementChildrenData, ThrowOnError>) => (options?.client ?? client).get<GetElementChildrenResponses, GetElementChildrenErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/tree/children',
+    ...options
+});
+
+/**
+ * Gets root library nodes with permission entries for a role.
+ */
+export const getElementRoot = <ThrowOnError extends boolean = false>(options?: Options<GetElementRootData, ThrowOnError>) => (options?.client ?? client).get<GetElementRootResponses, GetElementRootErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/tree/root',
+    ...options
+});
+
+/**
+ * Gets all canonical element permission verbs.
+ */
+export const getElementVerbs = <ThrowOnError extends boolean = false>(options?: Options<GetElementVerbsData, ThrowOnError>) => (options?.client ?? client).get<GetElementVerbsResponses, GetElementVerbsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/verbs',
     ...options
 });
 

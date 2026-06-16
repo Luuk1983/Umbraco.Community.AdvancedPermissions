@@ -257,7 +257,7 @@ public sealed class AdvancedContentPermissionService(
     /// native granular store knows about, and for the dedicated per-document current-user endpoint.
     /// </para>
     /// <para>
-    /// Each verb is resolved per-node via <see cref="IAdvancedPermissionService.ResolveAllAsync"/> so the
+    /// Each verb is resolved per-node via <see cref="INodePermissionService.ResolveAllAsync"/> so the
     /// returned set already reflects inheritance, scope, and priority overrides. Exactly one
     /// <see cref="NodePermissions"/> is returned per requested key — including keys that do not resolve to
     /// an existing node (e.g. an unsaved draft's pre-assigned Guid), which return an empty verb set. This

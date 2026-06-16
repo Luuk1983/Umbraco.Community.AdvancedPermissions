@@ -12,6 +12,7 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { composeEntries, type PendingVerbEntries } from '../../utils/compose-entries.js';
 import type { CellInfo } from '../../utils/cell-info.js';
+import type { PermissionScope } from '../../models/permission.models.js';
 import './uap-perm-block.element.js';
 
 /**
@@ -47,6 +48,44 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
    * don't inherit through the content tree the way node-level rows do.
    */
   @property() inheritLabel = '';
+
+  /**
+   * Optional override for the dialog headline. When empty the standard
+   * "Set {verb} permission for '{nodeName}'" headline is used. Callers with a different framing
+   * (e.g. the library element-type editor: "Create '{type}' in the Library") supply their own.
+   */
+  @property() headlineOverride = '';
+
+  /**
+   * Optional overrides for the three single-row tile labels (single/virtual-root layout only). When empty
+   * each falls back to the virtual-root label (in virtual-root mode) or the plain Inherit/Allow/Deny label.
+   * Kept domain-agnostic: the library element-type editor passes Library-appropriate wording, but the
+   * dialog itself stays free of element-type knowledge.
+   */
+  @property() singleInheritLabel = '';
+  @property() singleAllowLabel = '';
+  @property() singleDenyLabel = '';
+
+  /**
+   * Optional overrides for the single-row result-preview text. <see cref="singlePreviewSet"/> builds the
+   * Allow/Deny description from the localized action word; <see cref="singlePreviewInherit"/> is the
+   * Inherit description. Both apply only in virtual-root single mode; empty/undefined keeps the defaults.
+   */
+  @property({ attribute: false }) singlePreviewSet: ((action: string) => string) | undefined = undefined;
+  @property() singlePreviewInherit = '';
+
+  /**
+   * Whether the "this node" side can be set. Defaults to true. The library editor sets this false for
+   * element-only verbs on a folder (the folder itself isn't an element, but the rule still applies to
+   * the elements inside it), collapsing the dialog to a single descendants-scoped choice.
+   */
+  @property({ type: Boolean }) nodeApplicable = true;
+
+  /**
+   * Whether the "descendants" side can be set. Defaults to true. The library editor sets this false for
+   * leaf elements (which have no descendants), collapsing the dialog to a single this-node choice.
+   */
+  @property({ type: Boolean }) descApplicable = true;
 
   /**
    * Initial state pushed from the parent each time the dialog opens. Internal state is
@@ -99,9 +138,38 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
   }
 
   /**
+   * Whether the dialog renders a single row of tiles rather than the node + descendants split. True for
+   * the virtual root and for any cell where only one side applies (a leaf element, or an element-only
+   * verb on a folder).
+   */
+  get #isSingle(): boolean {
+    return this.isVirtualRoot || !this.nodeApplicable || !this.descApplicable;
+  }
+
+  /**
+   * The scope a single-row choice maps to: the virtual root and leaf elements use
+   * <c>ThisNodeAndDescendants</c> / <c>ThisNodeOnly</c>; an element-only verb on a folder applies to the
+   * items inside, so it uses <c>DescendantsOnly</c>.
+   */
+  get #singleScope(): PermissionScope {
+    if (this.isVirtualRoot) return 'ThisNodeAndDescendants';
+    if (!this.descApplicable) return 'ThisNodeOnly';
+    return 'DescendantsOnly';
+  }
+
+  /**
+   * True when the dialog represents an element-only verb on a folder: the verb has no meaning on the
+   * folder node itself, so the single choice applies to the elements inside it (descendants only). This
+   * drives both the two-part (N/A on the folder + chosen state on the items inside) result preview and
+   * the wording, so it doesn't read as an ordinary "no permission set on this node".
+   */
+  get #isElementOnlyFolder(): boolean {
+    return !this.isVirtualRoot && !this.nodeApplicable && this.descApplicable;
+  }
+
+  /**
    * Builds the entries the parent should persist and emits them on `uap-scope-apply`.
-   * Virtual-root rows always use `ThisNodeAndDescendants`; non-virtual rows use the standard
-   * `composeEntries` logic.
+   * Single-row layouts emit one entry with `#singleScope`; the split layout uses `composeEntries`.
    */
   #apply(): void {
     // A side's flag is only meaningful when that side has a rule. Force false otherwise.
@@ -110,16 +178,14 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
     const descFlag = descEnabled ? this._descIsPriorityOverride : false;
 
     let entries: PendingVerbEntries;
-    if (this.isVirtualRoot) {
-      if (this._nodeState === 'inherit') {
-        entries = [];
-      } else {
-        entries = [{
-          state: this._nodeState === 'allow' ? 'Allow' : 'Deny',
-          scope: 'ThisNodeAndDescendants',
-          isPriorityOverride: nodeFlag,
-        }];
-      }
+    if (this.#isSingle) {
+      entries = this._nodeState === 'inherit'
+        ? []
+        : [{
+            state: this._nodeState === 'allow' ? 'Allow' : 'Deny',
+            scope: this.#singleScope,
+            isPriorityOverride: nodeFlag,
+          }];
     } else {
       entries = composeEntries(this._nodeState, this._descState, this._sameAsNode, nodeFlag, descFlag);
     }
@@ -140,7 +206,12 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
     const descEnabled = !this._sameAsNode && this._descState !== 'inherit';
     const descOverride = descEnabled && this._descIsPriorityOverride;
 
-    if (this.isVirtualRoot) {
+    if (this.#isSingle) {
+      // Element-only verb on a folder: the result is genuinely two-part — N/A on the folder itself,
+      // the chosen state on the items inside — so mirror that here instead of a single uniform block.
+      if (this.#isElementOnlyFolder) {
+        return { split: true, nodeNa: true, nodeClass: 'inherit', descClass: this._nodeState, descOverride: nodeOverride };
+      }
       return { split: false, nodeClass: this._nodeState, descClass: this._nodeState, nodeOverride, descOverride: nodeOverride };
     }
     const effectiveDesc = this._sameAsNode ? this._nodeState : this._descState;
@@ -158,12 +229,21 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
   #previewDescription(): string {
     const nodeOverride = this._nodeState !== 'inherit' && this._nodeIsPriorityOverride;
 
-    if (this.isVirtualRoot) {
-      if (this._nodeState === 'inherit') return this.#localize.term('uap_previewVirtualInherit');
+    if (this.#isSingle) {
+      if (this._nodeState === 'inherit') {
+        if (this.#isElementOnlyFolder) return this.#localize.term('uap_previewElementFolderInherit');
+        if (this.isVirtualRoot && this.singlePreviewInherit) return this.singlePreviewInherit;
+        return this.#localize.term(this.isVirtualRoot ? 'uap_previewVirtualInherit' : 'uap_previewBothInherit');
+      }
       const action = this._nodeState === 'allow'
         ? this.#localize.term('uap_allow')
         : this.#localize.term('uap_deny');
-      const base = this.#localize.term('uap_previewVirtualSet', action);
+      let base: string;
+      if (this.isVirtualRoot && this.singlePreviewSet) base = this.singlePreviewSet(action);
+      else if (this.isVirtualRoot) base = this.#localize.term('uap_previewVirtualSet', action);
+      else if (this.#isElementOnlyFolder) base = this.#localize.term('uap_previewElementFolderSet', action);
+      else if (!this.descApplicable) base = this.#localize.term('uap_previewNodeOnly', action);
+      else base = this.#localize.term('uap_previewDescOnly', action);
       return this.#appendOverrideNote(base, nodeOverride, nodeOverride);
     }
 
@@ -237,21 +317,24 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
   }
 
   /**
-   * Renders the simple virtual-root layout (one row of three tiles + preview).
+   * Renders the single-row layout (one row of three tiles + preview), used by the virtual root and by
+   * cells where only one side applies. Virtual-root cells use the "(all content)" labels; other single
+   * cells use the plain Inherit/Allow/Deny labels.
    */
-  #renderVirtualRootOptions(): TemplateResult {
+  #renderSingleOptions(): TemplateResult {
+    const vr = this.isVirtualRoot;
+    const inheritLabel = this.singleInheritLabel || (vr ? this.#localize.term('uap_virtualRootInherit') : undefined);
+    const allowLabel = this.singleAllowLabel || (vr ? this.#localize.term('uap_virtualRootAllow') : undefined);
+    const denyLabel = this.singleDenyLabel || (vr ? this.#localize.term('uap_virtualRootDeny') : undefined);
     return html`
       <div class="dialog-options">
         <div class="perm-options">
           ${this.#renderTile('inherit', this._nodeState === 'inherit',
-            () => { this._nodeState = 'inherit'; },
-            this.#localize.term('uap_virtualRootInherit'))}
+            () => { this._nodeState = 'inherit'; }, inheritLabel)}
           ${this.#renderTile('allow', this._nodeState === 'allow',
-            () => { this._nodeState = 'allow'; },
-            this.#localize.term('uap_virtualRootAllow'))}
+            () => { this._nodeState = 'allow'; }, allowLabel)}
           ${this.#renderTile('deny', this._nodeState === 'deny',
-            () => { this._nodeState = 'deny'; },
-            this.#localize.term('uap_virtualRootDeny'))}
+            () => { this._nodeState = 'deny'; }, denyLabel)}
         </div>
         ${this.#renderOverrideCheckbox('node')}
       </div>
@@ -308,6 +391,44 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
   }
 
   /**
+   * Renders the folder + element-only-verb layout. It keeps the familiar two-panel shape, but the node
+   * (left) panel can't be set — it carries an N/A message explaining the verb doesn't apply to a folder —
+   * while the descendants (right) panel offers the direct Inherit/Allow/Deny choice that applies to the
+   * elements inside the folder. The chosen value lives in `_nodeState` (the single-choice field) and is
+   * persisted as a DescendantsOnly entry by {@link #apply}; there is no "same as node" toggle because
+   * there's no node rule for the descendants to match.
+   */
+  #renderElementFolderOptions(): TemplateResult {
+    return html`
+      <div class="dialog-sections">
+        <div class="dialog-section">
+          <h4 class="dialog-section-title" title=${this.nodeName}>${this.nodeName}</h4>
+          <div class="na-panel">
+            <span class="na-chip">${this.#localize.term('uap_naChip')}</span>
+            <p class="na-text">${this.#localize.term('uap_dialogElementFolderNote', this.verb)}</p>
+          </div>
+        </div>
+        <div class="dialog-section">
+          <h4>${this.#localize.term('uap_elementFolderDescSection')}</h4>
+          <div class="perm-options">
+            ${this.#renderTile('inherit', this._nodeState === 'inherit',
+              () => { this._nodeState = 'inherit'; })}
+            ${this.#renderTile('allow', this._nodeState === 'allow',
+              () => { this._nodeState = 'allow'; })}
+            ${this.#renderTile('deny', this._nodeState === 'deny',
+              () => { this._nodeState = 'deny'; })}
+          </div>
+          ${this.#renderOverrideCheckbox('node')}
+        </div>
+      </div>
+      <div class="dialog-result">
+        <h4>${this.#localize.term('uap_dialogResult')}</h4>
+        ${this.#renderPreview()}
+      </div>
+    `;
+  }
+
+  /**
    * Renders the preview block + description.
    */
   #renderPreview(): TemplateResult {
@@ -325,11 +446,15 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
     return html`
       <dialog class="scope-dialog">
         <uui-dialog-layout
-          headline=${this.#localize.term('uap_dialogHeadline', this.verb, this.nodeName)}>
-          ${!this.isVirtualRoot
+          headline=${this.headlineOverride || this.#localize.term('uap_dialogHeadline', this.verb, this.nodeName)}>
+          ${!this.#isSingle
             ? html`<p class="dialog-instructions">${this.#localize.term('uap_dialogInstructions')}</p>`
             : nothing}
-          ${this.isVirtualRoot ? this.#renderVirtualRootOptions() : this.#renderNodeOptions()}
+          ${this.#isElementOnlyFolder
+            ? this.#renderElementFolderOptions()
+            : this.#isSingle
+              ? this.#renderSingleOptions()
+              : this.#renderNodeOptions()}
 
           <div slot="actions">
             <uui-button label=${this.#localize.term('uap_cancel')} look="outline" @click=${() => this._dialog.close()}>
@@ -417,6 +542,44 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
       text-overflow: ellipsis;
       white-space: nowrap;
       max-width: 100%;
+    }
+
+    /* ── Not-applicable node panel (folder + element-only verb) ──
+       Replaces the option tiles on the node side: a hatched, muted panel that mirrors the N/A cell
+       treatment and explains why the verb can't be set on the folder itself. */
+    .na-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px 10px;
+      border: 1px dashed var(--uui-color-border, #ddd);
+      border-radius: 6px;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        color-mix(in srgb, var(--uui-color-text-alt, #aaa) 6%, transparent) 5px,
+        color-mix(in srgb, var(--uui-color-text-alt, #aaa) 6%, transparent) 10px
+      );
+    }
+
+    .na-chip {
+      align-self: flex-start;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--uui-color-border, #ddd);
+      background: var(--uui-color-surface, #fff);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--uui-color-text-alt, #888);
+    }
+
+    .na-text {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--uui-color-text-alt, #777);
     }
 
     /* ── Option tiles ─────────────────────────────────────────── */

@@ -1,3 +1,4 @@
+using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 
 namespace Umbraco.Community.AdvancedPermissions.Core.Interfaces;
@@ -38,13 +39,20 @@ public interface IDocTypePermissionService
     /// if appropriate.
     /// </param>
     /// <param name="parentPathFromRoot">The ordered path of node keys from root to the parent (inclusive).</param>
-    /// <param name="contentTypeKey">The candidate doc-type's key.</param>
+    /// <param name="contentTypeKey">The candidate content-type's key (a doc-type or element-type key).</param>
+    /// <param name="verb">
+    /// The create-of-type verb to resolve. Defaults to <see cref="AdvancedPermissionsConstants.VerbCreateOfType"/>
+    /// (document create-filtering). The library element-type filter passes
+    /// <see cref="AdvancedPermissionsConstants.VerbElementCreateOfType"/> so element-type entries are
+    /// resolved independently of document entries in the shared store.
+    /// </param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <returns>The effective permission.</returns>
     Task<EffectivePermission> ResolveCreateForRolesAsync(
         IReadOnlyList<string> roleAliases,
         IReadOnlyList<Guid> parentPathFromRoot,
         Guid contentTypeKey,
+        string verb = AdvancedPermissionsConstants.VerbCreateOfType,
         CancellationToken cancellationToken = default);
 
     /// <summary>

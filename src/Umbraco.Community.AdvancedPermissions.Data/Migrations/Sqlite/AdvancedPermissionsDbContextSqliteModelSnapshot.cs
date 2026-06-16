@@ -15,7 +15,7 @@ namespace Umbraco.Community.AdvancedPermissions.Data.Migrations.Sqlite
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.4");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
 
             modelBuilder.Entity("Umbraco.Community.AdvancedPermissions.Data.Entities.AdvancedPermissionEntity", b =>
                 {
@@ -130,6 +130,60 @@ namespace Umbraco.Community.AdvancedPermissions.Data.Migrations.Sqlite
                         .HasDatabaseName("IX_DocTypePermission_Unique");
 
                     b.ToTable("DocTypePermission", (string)null);
+                });
+
+            modelBuilder.Entity("Umbraco.Community.AdvancedPermissions.Data.Entities.ElementPermissionEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Id");
+
+                    b.Property<bool>("IsPriorityOverride")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsPriorityOverride");
+
+                    b.Property<Guid>("NodeKey")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("NodeKey");
+
+                    b.Property<string>("RoleAlias")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("RoleAlias");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("Scope");
+
+                    b.Property<int>("State")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("State");
+
+                    b.Property<string>("Verb")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Verb");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NodeKey")
+                        .HasDatabaseName("IX_ElementPermission_NodeKey");
+
+                    b.HasIndex("RoleAlias")
+                        .HasDatabaseName("IX_ElementPermission_RoleAlias");
+
+                    b.HasIndex("NodeKey", "RoleAlias")
+                        .HasDatabaseName("IX_ElementPermission_NodeKey_RoleAlias");
+
+                    b.HasIndex("NodeKey", "RoleAlias", "Verb", "Scope")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ElementPermission_Unique");
+
+                    b.ToTable("ElementPermission", (string)null);
                 });
 #pragma warning restore 612, 618
         }

@@ -3,6 +3,8 @@ import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
 import { client } from './api/generated/client.gen.js';
 
 const DOCUMENT_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.Document';
+const ELEMENT_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.Element';
+const ELEMENT_FOLDER_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.ElementFolder';
 
 // Native Document entityUserPermission manifests drive the "Default permissions" checkboxes
 // in the user group editor. We remove them so the section disappears entirely — document
@@ -25,15 +27,31 @@ const DOCUMENT_ENTITY_PERMISSION_ALIASES = [
   'Umb.Document.Permissions',
 ];
 
+// Native Element + Element Folder entityUserPermission manifests (the "Element permissions" /
+// "Element Folder permissions" toggles) and the native element granular permission picker. Excluding
+// them removes the native library permission UI from the user group editor so library permissions are
+// managed exclusively via our Library permissions editor.
+const ELEMENT_ENTITY_PERMISSION_ALIASES = [
+  'Umb.EntityUserPermission.Element.Read',
+  'Umb.EntityUserPermission.Element.Create',
+  'Umb.EntityUserPermission.Element.Update',
+  'Umb.EntityUserPermission.Element.Delete',
+  'Umb.EntityUserPermission.Element.Publish',
+  'Umb.EntityUserPermission.Element.Unpublish',
+  'Umb.EntityUserPermission.Element.Duplicate',
+  'Umb.EntityUserPermission.Element.Move',
+  'Umb.EntityUserPermission.Element.Rollback',
+  'Umb.EntityUserPermission.ElementFolder.Read',
+  'Umb.EntityUserPermission.ElementFolder.Create',
+  'Umb.EntityUserPermission.ElementFolder.Update',
+  'Umb.EntityUserPermission.ElementFolder.Delete',
+  'Umb.EntityUserPermission.ElementFolder.Move',
+  // Native per-element granular permission picker — replaced by our redirect (manifests.ts).
+  'Umb.UserGranularPermission.Element',
+];
+
 export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
-  // Wire our hey-api generated client through Umbraco's auth pipeline.
-  // configureClient() installs:
-  //   - an auth callback that calls #ensureTokenReady() (refreshes the session
-  //     cookie if expired) before each request;
-  //   - the default response interceptors (401 retry queue for GETs, 403, error
-  //     → ProblemDetails, umb-notifications forwarding).
-  // This is what the official Umbraco backoffice uses for its own API calls;
-  // without it, expired sessions surface as intermittent 401s in the UI.
+  // Wire our hey-api generated client through Umbraco's auth pipeline (token refresh, 401 retry).
   _host.consumeContext(UMB_AUTH_CONTEXT, (authContext) => {
     if (!authContext) return;
     authContext.configureClient(client);
@@ -50,13 +68,29 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
     api: () => import('./conditions/document-user-permission.condition.js'),
   } as UmbExtensionManifest);
 
-  // Exclude native Document entityUserPermission manifests.
-  // The user group editor's "Default permissions" section reads forEntityTypes metadata
-  // directly via byType() — overwrites only affect element rendering, not raw metadata reads.
-  // exclude() is the correct API: it removes any already-registered extension AND permanently
-  // blocks future registration, so it works regardless of whether the native manifests
-  // have already loaded or not when onInit runs.
-  for (const alias of DOCUMENT_ENTITY_PERMISSION_ALIASES) {
+  // Replace the native element + element-folder permission conditions. Unlike documents, Umbraco 18 does
+  // not route the element current-user permission path through IElementPermissionService, so these
+  // replacements resolve UI action visibility via the package's own element effective endpoint.
+  _extensionRegistry.unregister(ELEMENT_PERMISSION_CONDITION_ALIAS);
+  _extensionRegistry.register({
+    type: 'condition',
+    name: 'Advanced Permissions Element User Permission Condition',
+    alias: ELEMENT_PERMISSION_CONDITION_ALIAS,
+    api: () => import('./conditions/element-user-permission.condition.js'),
+  } as UmbExtensionManifest);
+
+  _extensionRegistry.unregister(ELEMENT_FOLDER_PERMISSION_CONDITION_ALIAS);
+  _extensionRegistry.register({
+    type: 'condition',
+    name: 'Advanced Permissions Element Folder User Permission Condition',
+    alias: ELEMENT_FOLDER_PERMISSION_CONDITION_ALIAS,
+    api: () => import('./conditions/element-folder-user-permission.condition.js'),
+  } as UmbExtensionManifest);
+
+  // Exclude native Document, Element and Element Folder entityUserPermission manifests (and the native
+  // element granular picker). exclude() removes any already-registered extension AND permanently blocks
+  // future registration, so it works regardless of load order.
+  for (const alias of [...DOCUMENT_ENTITY_PERMISSION_ALIASES, ...ELEMENT_ENTITY_PERMISSION_ALIASES]) {
     _extensionRegistry.exclude(alias);
   }
 };

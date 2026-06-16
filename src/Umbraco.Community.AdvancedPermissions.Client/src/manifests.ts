@@ -92,6 +92,30 @@ const manifests: Array<UmbExtensionManifest> = [
   },
   {
     type: 'menuItem',
+    alias: 'UAP.MenuItem.LibraryPermissions',
+    name: 'Library Permissions Editor Menu Item',
+    weight: 85,
+    meta: {
+      label: '#uap_library_menuLabel',
+      icon: 'icon-globe',
+      entityType: 'uap-library-permissions',
+      menus: ['UAP.Menu.Editors'],
+    },
+  },
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.ElementTypePermissions',
+    name: 'Library Element Type Permissions Menu Item',
+    weight: 80,
+    meta: {
+      label: '#uap_elementTypePermissions_menuLabel',
+      icon: 'icon-thumbnail-list',
+      entityType: 'uap-element-type-permissions',
+      menus: ['UAP.Menu.Editors'],
+    },
+  },
+  {
+    type: 'menuItem',
     alias: 'UAP.MenuItem.AccessViewer',
     name: 'Access Viewer Menu Item',
     weight: 100,
@@ -111,6 +135,30 @@ const manifests: Array<UmbExtensionManifest> = [
       label: '#uap_docTypePermissions_insertOptionsMenuLabel',
       icon: 'icon-eye',
       entityType: 'uap-doc-type-create-audit',
+      menus: ['UAP.Menu.Viewers'],
+    },
+  },
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.LibraryAccessViewer',
+    name: 'Library Access Viewer Menu Item',
+    weight: 80,
+    meta: {
+      label: '#uap_library_accessViewerMenuLabel',
+      icon: 'icon-eye',
+      entityType: 'uap-library-access-viewer',
+      menus: ['UAP.Menu.Viewers'],
+    },
+  },
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.LibraryInsertOptions',
+    name: 'Library Insert Viewer Menu Item',
+    weight: 70,
+    meta: {
+      label: '#uap_libraryInsertViewer_menuLabel',
+      icon: 'icon-eye',
+      entityType: 'uap-library-insert-viewer',
       menus: ['UAP.Menu.Viewers'],
     },
   },
@@ -147,6 +195,44 @@ const manifests: Array<UmbExtensionManifest> = [
     },
   } as UmbExtensionManifest,
 
+  // ─── Library Element Granular Permission Redirect ────────────────────────
+  // The native Element + Element Folder permission toggles and the native element granular picker
+  // are excluded in the entry point, so the library permission boxes disappear. This redirect renders
+  // in their place (keyed on the element permission schema), directing users to the Library editor.
+  {
+    type: 'userGranularPermission',
+    alias: 'UAP.UserGranularPermission.Element.Redirect',
+    name: 'Advanced Permissions Library Element Permission Redirect',
+    weight: 1990,
+    element: () => import('./components/uap-element-granular-permission-redirect.element.js'),
+    meta: {
+      schemaType: 'ElementPermissionPresentationModel',
+      labelKey: 'user_permissionsEntityGroup_element',
+    },
+  } as UmbExtensionManifest,
+
+  // ─── Workspace (Library Permissions Editor) ──────────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.LibraryPermissions',
+    name: 'Library Permissions Workspace',
+    meta: {
+      entityType: 'uap-library-permissions',
+    },
+    element: () => import('./library-permissions/uap-library-permissions-editor-root.element.js'),
+  },
+
+  // ─── Workspace (Library Element Type Permissions) ────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.ElementTypePermissions',
+    name: 'Library Element Type Permissions Workspace',
+    meta: {
+      entityType: 'uap-element-type-permissions',
+    },
+    element: () => import('./library-permissions/uap-element-type-permissions-editor-root.element.js'),
+  },
+
   // ─── Workspace (Access Viewer) ────────────────────────────────────────────
   {
     type: 'workspace',
@@ -156,6 +242,28 @@ const manifests: Array<UmbExtensionManifest> = [
       entityType: 'uap-access-viewer',
     },
     element: () => import('./access-viewer/uap-access-viewer-root.element.js'),
+  },
+
+  // ─── Workspace (Library Access Viewer) ────────────────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.LibraryAccessViewer',
+    name: 'Library Access Viewer Workspace',
+    meta: {
+      entityType: 'uap-library-access-viewer',
+    },
+    element: () => import('./library-permissions/uap-library-access-viewer-root.element.js'),
+  },
+
+  // ─── Workspace (Library Insert Viewer) ────────────────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.LibraryInsertViewer',
+    name: 'Library Insert Viewer Workspace',
+    meta: {
+      entityType: 'uap-library-insert-viewer',
+    },
+    element: () => import('./library-permissions/uap-library-insert-viewer-root.element.js'),
   },
 
   // ─── Workspace (Document Type Permissions Editor) ────────────────────────

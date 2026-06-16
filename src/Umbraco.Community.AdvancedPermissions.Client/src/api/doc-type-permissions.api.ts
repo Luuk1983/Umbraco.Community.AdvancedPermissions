@@ -19,6 +19,15 @@ export async function getDocTypes(signal?: AbortSignal): Promise<DocTypeListItem
   return data as DocTypeListItem[];
 }
 
+/** Lists every element type allowed in the Library (IsElement && AllowedInLibrary). */
+export async function getElementTypes(signal?: AbortSignal): Promise<DocTypeListItem[]> {
+  const { data } = await Sdk.getLibraryElementTypes({
+    throwOnError: true,
+    ...(signal ? { signal } : {}),
+  });
+  return data as DocTypeListItem[];
+}
+
 /** Gets the stored entries for the editor's selected (role, content-type). */
 export async function getDocTypePermissions(
   roleAlias: string,
@@ -61,6 +70,27 @@ export async function getDocTypeAuditForNode(
   else query.roleAlias = subject.roleAlias;
 
   const { data } = await Sdk.getDocTypeAudit({
+    throwOnError: true,
+    query,
+    ...(signal ? { signal } : {}),
+  });
+  return data as DocTypeAuditForNodeResponse;
+}
+
+/**
+ * Tree-free audit for the Library Insert Viewer: one row per library element type with whether the
+ * subject may create it (resolved section-globally at the virtual root). Reuses the per-node audit
+ * response shape; `isInAllowedChildren` is always true. Caller supplies EITHER `userKey` or `roleAlias`.
+ */
+export async function getElementTypeAudit(
+  subject: { userKey: string } | { roleAlias: string },
+  signal?: AbortSignal,
+): Promise<DocTypeAuditForNodeResponse> {
+  const query: { userKey?: string; roleAlias?: string } = {};
+  if ('userKey' in subject) query.userKey = subject.userKey;
+  else query.roleAlias = subject.roleAlias;
+
+  const { data } = await Sdk.getElementTypeAudit({
     throwOnError: true,
     query,
     ...(signal ? { signal } : {}),

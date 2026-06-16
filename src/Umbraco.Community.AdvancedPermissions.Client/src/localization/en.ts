@@ -46,6 +46,11 @@ export default {
     previewNodeOnly: (action: string) => `${action} on this node only. Descendants are not affected by this rule.`,
     previewDescOnly: (action: string) => `No explicit permission on this node. ${action} on all descendants.`,
     previewSplit: (nodeAction: string, descAction: string) => `${nodeAction} on this node. ${descAction} on all descendants.`,
+    previewElementFolderSet: (action: string) => `Does not apply to this folder. ${action} on the elements inside it.`,
+    previewElementFolderInherit: 'Does not apply to this folder. The elements inside it inherit from their parent.',
+    dialogElementFolderNote: (verb: string) => `“${verb}” doesn’t apply to a folder — only to the elements inside it.`,
+    elementFolderDescSection: 'Elements inside',
+    naChip: 'N/A',
     previewVirtualInherit: 'No default permission set.',
     previewVirtualSet: (action: string) => `${action} by default for all content.`,
     previewPriorityNode: 'Priority override is set on this node.',
@@ -101,6 +106,8 @@ export default {
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:
       'Document permissions for this user group are managed by the Advanced Permissions package. Open the Permissions Editor in the Users section to configure permissions.',
+    redirectMessageElement:
+      'Library (element) permissions for this user group are managed by the Advanced Permissions package. Open the Library Permissions Editor in the Users section to configure permissions.',
 
     // ── Doc-Type Permissions ──────────────────────────────────────────────
     role: 'User Group',
@@ -139,5 +146,36 @@ export default {
     docTypePermissions_reasoning: 'Reasoning',
     docTypePermissions_defaultAllow: 'Allowed by default',
     docTypePermissions_viaDefault: 'from default row',
+
+    // ── Library (element) permissions ─────────────────────────────────────
+    library_menuLabel: 'Library Permissions Editor',
+    library_editorHeadline: 'Library Permissions Editor',
+    library_accessViewerMenuLabel: 'Library Access Viewer',
+    library_accessViewerHeadline: 'Library Access Viewer',
+    library_nodeHeader: 'Library Item',
+    library_root: 'Default permissions',
+    library_selectRolePrompt: 'Select a user group above to manage its library permissions.',
+    library_permissionsSaved: 'Library permissions saved.',
+    library_notApplicableTitle: (verb: string) => `${verb} does not apply to folders — it can still be set for the items inside.`,
+    library_folderInheritLabel: 'Items inside (descendants)',
+
+    // ── Library Insert Viewer (element-type create audit) ─────────────────
+    libraryInsertViewer_menuLabel: 'Library Insert Viewer',
+    libraryInsertViewer_headline: 'Library Insert Viewer',
+    libraryInsertViewer_intro: 'Shows which library element types a user group or user may create, resolved across all their groups. Click a row to see the reasoning.',
+
+    // ── Library element-type create permissions ───────────────────────────
+    elementTypePermissions_menuLabel: 'Library Element Type Permissions',
+    elementTypePermissions_headline: 'Library Element Type Permissions',
+    elementTypePermissions_intro: 'Control which element types each user group may create in the Library. Element types are creatable by default; set Allow or Deny — with an optional priority override — to control how the choice resolves when a user belongs to several groups.',
+    elementTypePermissions_typeHeader: 'Element Type',
+    elementTypePermissions_verbCreate: 'Create in Library',
+    elementTypePermissions_noTypes: 'No library element types found. Mark a document type as an element type and enable “Allow in Library”.',
+    elementType_dialogHeadline: (type: string) => `Create permission for ‘${type}’ in the Library`,
+    elementType_inheritLabel: 'Not set (allowed by default)',
+    elementType_allowLabel: 'Allow (creatable in the Library)',
+    elementType_denyLabel: 'Deny (hidden from the Library)',
+    elementType_previewInherit: 'No explicit rule. This element type is creatable in the Library by default.',
+    elementType_previewSet: (action: string) => `${action} creating this element type in the Library.`,
   },
 } satisfies UmbLocalizationDictionary;

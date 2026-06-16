@@ -447,7 +447,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
                   @click=${() => void this.#toggleExpand(node)}>
                   ${node.loading ? html`<uui-loader-circle></uui-loader-circle>` : node.expanded ? '▾' : '▸'}
                 </uui-button>`
-              : html`<span class="expand-spacer"></span>`}
+              : html`<uui-button compact look="default" class="expand-spacer" disabled aria-hidden="true" label="">▸</uui-button>`}
             <umb-icon name=${node.icon ?? 'icon-document'}></umb-icon>
             <span class="node-name">${node.name}</span>
           </div>
@@ -716,7 +716,8 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
       white-space: nowrap;
       overflow: hidden;
     }
-    .expand-spacer { width: 16px; flex-shrink: 0; }
+    /* Invisible clone of the expand toggle; reserves equal width so leaf icons stay aligned. */
+    .expand-spacer { visibility: hidden; }
     .node-name { overflow: hidden; text-overflow: ellipsis; }
 
     .perm-td { padding: 3px; text-align: center; vertical-align: middle; }

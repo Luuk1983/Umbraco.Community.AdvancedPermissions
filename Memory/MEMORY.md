@@ -14,3 +14,4 @@
 ## Plans
 
 - [Initial Creation Plan](Plans/01.%20Initial%20creation.md) — original phased implementation plan
+- [Library (element) permissions](Plans/02.%20Library%20element%20permissions.md) — Umbraco 18 Library: element + element-folder item permissions, element-type create-filtering, generic applicability descriptor

@@ -38,9 +38,11 @@ public sealed class DocTypeCreateContentTypeFilter(
     public Task<IEnumerable<TItem>> FilterAllowedInLibraryAsync<TItem>(IEnumerable<TItem> contentTypes)
         where TItem : IContentTypeComposition
     {
-        // The library list has no content context either — same root-level filtering applies.
+        // Library element-type create-filtering is section-global (Umbraco supplies no parent context),
+        // so entries live on the virtual root. The candidates here are element types; resolve against the
+        // element-type verb so they are governed independently of document create-filtering in the shared store.
         var pathFromRoot = new List<Guid> { AdvancedPermissionsConstants.VirtualRootNodeKey };
-        return FilterAsync(contentTypes, pathFromRoot, ct => ct.Key);
+        return FilterAsync(contentTypes, pathFromRoot, ct => ct.Key, AdvancedPermissionsConstants.VerbElementCreateOfType);
     }
 
     /// <inheritdoc />
@@ -64,11 +66,16 @@ public sealed class DocTypeCreateContentTypeFilter(
     /// <param name="contentTypes">Candidates to filter.</param>
     /// <param name="pathFromRoot">The parent's path from root (or just virtual root for root-level creates).</param>
     /// <param name="keySelector">How to extract the candidate's content-type key.</param>
+    /// <param name="verb">
+    /// The create-of-type verb to resolve against — the document verb for content create-filtering, or
+    /// the element-type verb for library create-filtering.
+    /// </param>
     /// <returns>The filtered candidates.</returns>
     private async Task<IEnumerable<TItem>> FilterAsync<TItem>(
         IEnumerable<TItem> contentTypes,
         IReadOnlyList<Guid> pathFromRoot,
-        Func<TItem, Guid> keySelector)
+        Func<TItem, Guid> keySelector,
+        string verb = AdvancedPermissionsConstants.VerbCreateOfType)
     {
         var roleAliases = GetCurrentUserRoleAliases();
         if (roleAliases is null)
@@ -87,7 +94,8 @@ public sealed class DocTypeCreateContentTypeFilter(
                 var effective = await docTypePermissionService.ResolveCreateForRolesAsync(
                     roleAliases,
                     pathFromRoot,
-                    keySelector(candidate));
+                    keySelector(candidate),
+                    verb);
 
                 if (effective.IsAllowed)
                 {

@@ -67,10 +67,12 @@ export class UapPermBlockElement extends LitElement {
       const title = nodeOverride ? this.priorityOverrideTitle : '';
       return html`<div class="perm-block uniform ${info.nodeClass}${overrideCls}${outsideCls}${pendingCls}" title=${title}>${stateIcon(info.nodeClass)}</div>`;
     }
+    const nodeNa = info.nodeNa === true;
+    const descNa = info.descNa === true;
     return html`
       <div class="perm-block split${pendingCls}">
-        <span class="half ${info.nodeClass}${nodeOverride ? ' override' : ''}" title=${nodeOverride ? this.priorityOverrideTitle : ''}>${stateIcon(info.nodeClass)}</span>
-        <span class="half ${info.descClass}${descOverride ? ' override' : ''}" title=${descOverride ? this.priorityOverrideTitle : ''}>${stateIcon(info.descClass)}</span>
+        <span class="half ${nodeNa ? 'na' : info.nodeClass}${nodeOverride ? ' override' : ''}" title=${nodeOverride ? this.priorityOverrideTitle : ''}>${stateIcon(nodeNa ? 'na' : info.nodeClass)}</span>
+        <span class="half ${descNa ? 'na' : info.descClass}${descOverride ? ' override' : ''}" title=${descOverride ? this.priorityOverrideTitle : ''}>${stateIcon(descNa ? 'na' : info.descClass)}</span>
       </div>
     `;
   }
@@ -208,6 +210,27 @@ export class UapPermBlockElement extends LitElement {
     .half.override {
       background: color-mix(in srgb, var(--uui-color-warning, #af7c12) 25%, transparent);
       color: var(--uui-color-warning-standalone, #a17700);
+    }
+
+    /* Not-applicable half — hatched, muted (mirrors the uniform .na treatment). */
+    .half.na {
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 4px,
+        color-mix(in srgb, var(--uui-color-text-alt, #aaa) 8%, transparent) 4px,
+        color-mix(in srgb, var(--uui-color-text-alt, #aaa) 8%, transparent) 8px
+      );
+      color: var(--uui-color-text-alt, #999);
+    }
+
+    /* "N/A" is a short word rather than a single glyph — shrink it so it fits the cell (and
+       both halves of a split cell) without wrapping, and keep it muted so it reads as disabled. */
+    .perm-block.uniform.na,
+    .perm-block.split > .half.na {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
     }
   `;
 }

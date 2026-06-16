@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Services;
@@ -23,6 +24,13 @@ public sealed class ElementPermissionsTreeController(
     : AdvancedPermissionsControllerBase
 {
     /// <summary>
+    /// The object types that make up the library tree: element folders (the inheritance backbone) and
+    /// the elements they contain. Used as both the parent and child object-type set when paging children.
+    /// </summary>
+    private static readonly UmbracoObjectTypes[] LibraryObjectTypes =
+        [UmbracoObjectTypes.ElementContainer, UmbracoObjectTypes.Element];
+
+    /// <summary>
     /// Gets the root library nodes (folders and root-level elements) with stored permission entries for the role.
     /// </summary>
     /// <param name="cancellationToken">Token to support cancellation.</param>
@@ -36,9 +44,8 @@ public sealed class ElementPermissionsTreeController(
         CancellationToken cancellationToken,
         string roleAlias)
     {
-        var folders = entityService.GetRootEntities(UmbracoObjectTypes.ElementContainer);
-        var elements = entityService.GetRootEntities(UmbracoObjectTypes.Element);
-        return Ok(await MapNodesWithEntriesAsync(folders, elements, roleAlias, cancellationToken));
+        var nodes = GetLibraryChildren(Constants.System.RootKey);
+        return Ok(await MapNodesWithEntriesAsync(nodes, roleAlias, cancellationToken));
     }
 
     /// <summary>
@@ -57,60 +64,76 @@ public sealed class ElementPermissionsTreeController(
         Guid parentKey,
         string roleAlias)
     {
-        var folders = entityService.GetChildren(parentKey, UmbracoObjectTypes.ElementContainer);
-        var elements = entityService.GetChildren(parentKey, UmbracoObjectTypes.Element);
-        return Ok(await MapNodesWithEntriesAsync(folders, elements, roleAlias, cancellationToken));
+        var nodes = GetLibraryChildren(parentKey);
+        return Ok(await MapNodesWithEntriesAsync(nodes, roleAlias, cancellationToken));
     }
 
     /// <summary>
-    /// Maps folder and element entities to tree node response models, loading their permission entries in
-    /// a single batch query to avoid N+1 round trips. Folders are listed before elements.
+    /// Gets the immediate library children (folders and elements) of a parent, ordered folders-first.
     /// </summary>
-    /// <param name="folders">The folder (container) entities.</param>
-    /// <param name="elements">The element entities.</param>
+    /// <remarks>
+    /// Uses the multi-object-type paged overload rather than the single-type
+    /// <c>GetChildren(parentKey, objectType)</c>: that overload resolves the parent key <em>using the
+    /// child object type</em>, so asking for <see cref="UmbracoObjectTypes.Element"/> children under a
+    /// folder parent (an <see cref="UmbracoObjectTypes.ElementContainer"/>) resolves nothing and returns
+    /// an empty set. Querying both object types together — the same approach Umbraco's own element tree
+    /// uses — returns folders and elements. Elements are leaves and folders are the only nesting level, so
+    /// a single unbounded page mirrors the editor's load-everything behaviour.
+    /// </remarks>
+    /// <param name="parentKey">The parent folder key, or the system root key for the library root.</param>
+    /// <returns>The child entities, element folders before elements and then ordered by name.</returns>
+    private IReadOnlyList<IEntitySlim> GetLibraryChildren(Guid? parentKey)
+    {
+        var children = entityService.GetPagedChildren(
+            parentKey,
+            LibraryObjectTypes,
+            LibraryObjectTypes,
+            0,
+            int.MaxValue,
+            trashed: false,
+            out _);
+
+        return children
+            .OrderByDescending(e => e.NodeObjectType == Constants.ObjectTypes.ElementContainer)
+            .ThenBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Maps library entities to tree node response models, loading their permission entries in a single
+    /// batch query to avoid N+1 round trips. Each entity's folder/element kind is derived from its node
+    /// object type.
+    /// </summary>
+    /// <param name="nodes">The library entities (folders and elements), pre-ordered for display.</param>
     /// <param name="roleAlias">The role alias to load entries for.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
-    /// <returns>The mapped tree node models with entries, folders first.</returns>
+    /// <returns>The mapped tree node models with entries.</returns>
     private async Task<IReadOnlyList<ElementTreeNodeResponseModel>> MapNodesWithEntriesAsync(
-        IEnumerable<IEntitySlim> folders,
-        IEnumerable<IEntitySlim> elements,
+        IReadOnlyList<IEntitySlim> nodes,
         string roleAlias,
         CancellationToken cancellationToken)
     {
-        var folderList = folders.ToList();
-        var elementList = elements.ToList();
-
-        var allKeys = folderList.Select(n => n.Key).Concat(elementList.Select(n => n.Key));
-        var allEntries = await permissionService.GetEntriesByNodesAndRoleAsync(allKeys, roleAlias, cancellationToken);
+        var allEntries = await permissionService.GetEntriesByNodesAndRoleAsync(
+            nodes.Select(n => n.Key), roleAlias, cancellationToken);
         var entriesByNode = allEntries
             .GroupBy(e => e.NodeKey)
             .ToDictionary(g => g.Key, g => g.Select(MapEntry).ToList());
 
-        var result = new List<ElementTreeNodeResponseModel>(folderList.Count + elementList.Count);
-
-        // Folders first (the inheritance backbone), then leaf elements.
-        foreach (var folder in folderList)
+        var result = new List<ElementTreeNodeResponseModel>(nodes.Count);
+        foreach (var node in nodes)
         {
-            entriesByNode.TryGetValue(folder.Key, out var entries);
-            result.Add(new ElementTreeNodeResponseModel(
-                folder.Key,
-                folder.Name ?? string.Empty,
-                "icon-folder",
-                folder.HasChildren,
-                IsFolder: true,
-                entries ?? []));
-        }
+            var isFolder = node.NodeObjectType == Constants.ObjectTypes.ElementContainer;
+            var icon = isFolder
+                ? "icon-folder"
+                : node is IContentEntitySlim contentSlim ? contentSlim.ContentTypeIcon : null;
 
-        foreach (var element in elementList)
-        {
-            var icon = element is IContentEntitySlim contentSlim ? contentSlim.ContentTypeIcon : null;
-            entriesByNode.TryGetValue(element.Key, out var entries);
+            entriesByNode.TryGetValue(node.Key, out var entries);
             result.Add(new ElementTreeNodeResponseModel(
-                element.Key,
-                element.Name ?? string.Empty,
+                node.Key,
+                node.Name ?? string.Empty,
                 icon,
-                element.HasChildren,
-                IsFolder: false,
+                node.HasChildren,
+                IsFolder: isFolder,
                 entries ?? []));
         }
 

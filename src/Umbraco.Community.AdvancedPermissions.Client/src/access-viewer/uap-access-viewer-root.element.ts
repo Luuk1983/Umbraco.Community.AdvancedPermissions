@@ -459,7 +459,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
                   @click=${() => void this.#toggleExpand(node)}>
                   ${node.loading ? html`<uui-loader-circle></uui-loader-circle>` : node.expanded ? '▾' : '▸'}
                 </uui-button>`
-              : html`<span class="expand-spacer"></span>`}
+              : html`<uui-button compact look="default" class="expand-spacer" disabled aria-hidden="true" label="">▸</uui-button>`}
             <umb-icon name=${node.icon ?? 'icon-document'}></umb-icon>
             <span class="node-name">${node.name}</span>
           </div>
@@ -684,9 +684,10 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
       overflow: hidden;
     }
 
+    /* Invisible clone of the expand toggle: leaf rows reserve the exact same width as expandable
+       rows, so the node icon and label stay aligned whether or not a row has an expander. */
     .expand-spacer {
-      width: 16px;
-      flex-shrink: 0;
+      visibility: hidden;
     }
 
     .node-name {

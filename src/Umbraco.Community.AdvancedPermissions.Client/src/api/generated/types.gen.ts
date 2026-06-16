@@ -3663,6 +3663,46 @@ export type GetLibraryElementTypesResponses = {
 
 export type GetLibraryElementTypesResponse = GetLibraryElementTypesResponses[keyof GetLibraryElementTypesResponses];
 
+export type GetElementTypeAuditData = {
+    body?: never;
+    path?: never;
+    query?: {
+        userKey?: string;
+        roleAlias?: string;
+    };
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/element-types/audit';
+};
+
+export type GetElementTypeAuditErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetElementTypeAuditError = GetElementTypeAuditErrors[keyof GetElementTypeAuditErrors];
+
+export type GetElementTypeAuditResponses = {
+    /**
+     * OK
+     */
+    200: DocTypeAuditForNodeResponseModel;
+};
+
+export type GetElementTypeAuditResponse = GetElementTypeAuditResponses[keyof GetElementTypeAuditResponses];
+
 export type GetDocTypePathEntriesData = {
     body?: never;
     path?: never;

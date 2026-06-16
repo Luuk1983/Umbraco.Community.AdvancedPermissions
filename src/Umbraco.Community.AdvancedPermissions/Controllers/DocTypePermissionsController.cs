@@ -265,6 +265,100 @@ public sealed class DocTypePermissionsController(
     }
 
     /// <summary>
+    /// Audits which library element types a subject may create. Library element-type create-filtering is
+    /// section-global (Umbraco supplies no parent context for Library creates), so this resolves every
+    /// library element type (<c>IsElement &amp;&amp; AllowedInLibrary</c>) at the virtual root against the
+    /// element-type verb and returns one row per type. The response reuses the per-node audit shape with
+    /// the virtual-root key; every row is flagged as an allowed child because the candidate list is already
+    /// the library-allowed set.
+    ///
+    /// Supply EITHER <paramref name="userKey"/> (audits a user — all their groups plus <c>$everyone</c>)
+    /// or <paramref name="roleAlias"/> (audits a single role — that role plus <c>$everyone</c>).
+    /// </summary>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <param name="userKey">The user to audit. Mutually exclusive with <paramref name="roleAlias"/>.</param>
+    /// <param name="roleAlias">The role to audit. Mutually exclusive with <paramref name="userKey"/>.</param>
+    [HttpGet("doc-type-permissions/element-types/audit", Name = "GetElementTypeAudit")]
+    [MapToApiVersion("1.0")]
+    [ProducesResponseType<DocTypeAuditForNodeResponseModel>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [EndpointSummary("Audits which library element types a subject may create (section-global).")]
+    public async Task<IActionResult> ElementTypeAudit(
+        CancellationToken cancellationToken,
+        Guid? userKey = null,
+        string? roleAlias = null)
+    {
+        var hasUser = userKey.HasValue && userKey.Value != Guid.Empty;
+        var hasRole = !string.IsNullOrWhiteSpace(roleAlias);
+        if (hasUser == hasRole)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid subject",
+                Detail = "Supply exactly one of userKey or roleAlias.",
+                Status = StatusCodes.Status400BadRequest,
+            });
+        }
+
+        IReadOnlyList<string> roleAliases;
+        if (hasUser)
+        {
+            var user = await userService.GetAsync(userKey!.Value);
+            if (user is null)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Title = "User not found",
+                    Detail = $"No user with key {userKey}.",
+                    Status = StatusCodes.Status404NotFound,
+                });
+            }
+            var aliases = new List<string>(user.Groups.Count() + 1);
+            aliases.AddRange(user.Groups.Select(g => g.Alias));
+            aliases.Add(AdvancedPermissionsConstants.EveryoneRoleAlias);
+            roleAliases = aliases;
+        }
+        else
+        {
+            roleAliases = [roleAlias!, AdvancedPermissionsConstants.EveryoneRoleAlias];
+        }
+
+        // Section-global: resolve at the virtual root for every library-allowed element type.
+        IReadOnlyList<Guid> path = [AdvancedPermissionsConstants.VirtualRootNodeKey];
+
+        var candidates = contentTypeService.GetAll()
+            .Where(ct => ct.IsElement && ct.AllowedInLibrary)
+            .OrderBy(ct => ct.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var rows = new List<DocTypeAuditForNodeRowResponseModel>(candidates.Count);
+        foreach (var ct in candidates)
+        {
+            var effective = await docTypeService.ResolveCreateForRolesAsync(
+                roleAliases,
+                path,
+                ct.Key,
+                AdvancedPermissionsConstants.VerbElementCreateOfType,
+                cancellationToken);
+
+            rows.Add(new DocTypeAuditForNodeRowResponseModel(
+                ContentTypeKey: ct.Key,
+                ContentTypeAlias: ct.Alias,
+                ContentTypeName: ct.Name ?? ct.Alias,
+                ContentTypeIcon: ct.Icon,
+                IsAllowed: effective.IsAllowed,
+                IsExplicit: effective.IsExplicit,
+                IsInAllowedChildren: true,
+                Reasoning: effective.Reasoning.Select(MapReasoningItem).ToList(),
+                WasPriorityOverrideActive: effective.WasPriorityOverrideActive,
+                SuppressedReasoning: (effective.SuppressedReasoning ?? []).Select(MapReasoningItem).ToList()));
+        }
+
+        return Ok(new DocTypeAuditForNodeResponseModel(AdvancedPermissionsConstants.VirtualRootNodeKey, rows));
+    }
+
+    /// <summary>
     /// Returns the inheritance path for a node together with all stored doc-type entries along
     /// that path filtered to the supplied content-type-key. Powers the reasoning dialog of the
     /// tree-style audit.

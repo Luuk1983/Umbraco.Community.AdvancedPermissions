@@ -78,6 +78,27 @@ export async function getDocTypeAuditForNode(
 }
 
 /**
+ * Tree-free audit for the Library Insert Viewer: one row per library element type with whether the
+ * subject may create it (resolved section-globally at the virtual root). Reuses the per-node audit
+ * response shape; `isInAllowedChildren` is always true. Caller supplies EITHER `userKey` or `roleAlias`.
+ */
+export async function getElementTypeAudit(
+  subject: { userKey: string } | { roleAlias: string },
+  signal?: AbortSignal,
+): Promise<DocTypeAuditForNodeResponse> {
+  const query: { userKey?: string; roleAlias?: string } = {};
+  if ('userKey' in subject) query.userKey = subject.userKey;
+  else query.roleAlias = subject.roleAlias;
+
+  const { data } = await Sdk.getElementTypeAudit({
+    throwOnError: true,
+    query,
+    ...(signal ? { signal } : {}),
+  });
+  return data as DocTypeAuditForNodeResponse;
+}
+
+/**
  * Returns the inheritance path plus all stored doc-type entries along that path filtered to
  * one content-type. Used by the reasoning dialog of the tree-style audit.
  */

@@ -159,6 +159,11 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} does not apply to folders — it can still be set for the items inside.`,
     library_folderInheritLabel: 'Items inside (descendants)',
 
+    // ── Library Insert Viewer (element-type create audit) ─────────────────
+    libraryInsertViewer_menuLabel: 'Library Insert Viewer',
+    libraryInsertViewer_headline: 'Library Insert Viewer',
+    libraryInsertViewer_intro: 'Shows which library element types a user group or user may create, resolved across all their groups. Click a row to see the reasoning.',
+
     // ── Library element-type create permissions ───────────────────────────
     elementTypePermissions_menuLabel: 'Library Element Type Permissions',
     elementTypePermissions_headline: 'Library Element Type Permissions',

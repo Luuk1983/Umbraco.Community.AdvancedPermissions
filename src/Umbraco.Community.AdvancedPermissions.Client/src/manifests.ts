@@ -138,6 +138,30 @@ const manifests: Array<UmbExtensionManifest> = [
       menus: ['UAP.Menu.Viewers'],
     },
   },
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.LibraryAccessViewer',
+    name: 'Library Access Viewer Menu Item',
+    weight: 80,
+    meta: {
+      label: '#uap_library_accessViewerMenuLabel',
+      icon: 'icon-eye',
+      entityType: 'uap-library-access-viewer',
+      menus: ['UAP.Menu.Viewers'],
+    },
+  },
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.LibraryInsertOptions',
+    name: 'Library Insert Viewer Menu Item',
+    weight: 70,
+    meta: {
+      label: '#uap_libraryInsertViewer_menuLabel',
+      icon: 'icon-eye',
+      entityType: 'uap-library-insert-viewer',
+      menus: ['UAP.Menu.Viewers'],
+    },
+  },
 
   // ─── Workspace (Permissions Editor) ──────────────────────────────────────
   {
@@ -218,6 +242,28 @@ const manifests: Array<UmbExtensionManifest> = [
       entityType: 'uap-access-viewer',
     },
     element: () => import('./access-viewer/uap-access-viewer-root.element.js'),
+  },
+
+  // ─── Workspace (Library Access Viewer) ────────────────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.LibraryAccessViewer',
+    name: 'Library Access Viewer Workspace',
+    meta: {
+      entityType: 'uap-library-access-viewer',
+    },
+    element: () => import('./library-permissions/uap-library-access-viewer-root.element.js'),
+  },
+
+  // ─── Workspace (Library Insert Viewer) ────────────────────────────────────
+  {
+    type: 'workspace',
+    alias: 'UAP.Workspace.LibraryInsertViewer',
+    name: 'Library Insert Viewer Workspace',
+    meta: {
+      entityType: 'uap-library-insert-viewer',
+    },
+    element: () => import('./library-permissions/uap-library-insert-viewer-root.element.js'),
   },
 
   // ─── Workspace (Document Type Permissions Editor) ────────────────────────

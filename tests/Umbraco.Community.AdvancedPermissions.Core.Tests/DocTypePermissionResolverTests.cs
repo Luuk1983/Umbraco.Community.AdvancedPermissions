@@ -468,6 +468,75 @@ public class DocTypePermissionResolverTests
         Assert.True(result.WasPriorityOverrideActive);
     }
 
+    // ───────────────────────────────────────────────────────────────────────
+    // Library element-type create-filtering: section-global (virtual-root only)
+    // multi-group resolution with priority override — the scenario the Library
+    // Element Type Permissions editor's Allow/Deny/override modal exists to express.
+    // ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Across a user's groups, an Allow with priority override on the (section-global) virtual root beats
+    /// another group's Deny for the same element type. Library element-type entries are always virtual-root,
+    /// so both rules sit in the implicit tier and the flag tips the tie to Allow — this is what lets one
+    /// group re-grant an element type another group has denied.
+    /// </summary>
+    [Fact]
+    public void Resolve_ElementType_VirtualRoot_AllowOverride_BeatsDeny_AcrossGroups()
+    {
+        var elementType = Guid.NewGuid();
+
+        var denyA = Entry(
+            AdvancedPermissionsConstants.VirtualRootNodeKey, elementType, "groupA",
+            AdvancedPermissionsConstants.VerbElementCreateOfType,
+            PermissionState.Deny, PermissionScope.ThisNodeAndDescendants);
+        var allowOverrideB = Entry(
+            AdvancedPermissionsConstants.VirtualRootNodeKey, elementType, "groupB",
+            AdvancedPermissionsConstants.VerbElementCreateOfType,
+            PermissionState.Allow, PermissionScope.ThisNodeAndDescendants) with { IsPriorityOverride = true };
+
+        var ctx = new DocTypePermissionResolutionContext(
+            ContentTypeKey: elementType,
+            ParentNodeKey: AdvancedPermissionsConstants.VirtualRootNodeKey,
+            PathFromRoot: [AdvancedPermissionsConstants.VirtualRootNodeKey],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [denyA, allowOverrideB]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbElementCreateOfType);
+
+        Assert.True(result.IsAllowed);
+        Assert.True(result.WasPriorityOverrideActive);
+    }
+
+    /// <summary>
+    /// The baseline the override escapes: the same two groups without the flag — a group's Deny beats the
+    /// other group's Allow for the element type (implicit Deny precedence at the virtual root).
+    /// </summary>
+    [Fact]
+    public void Resolve_ElementType_VirtualRoot_MultiGroup_NoOverride_DenyWins()
+    {
+        var elementType = Guid.NewGuid();
+
+        var denyA = Entry(
+            AdvancedPermissionsConstants.VirtualRootNodeKey, elementType, "groupA",
+            AdvancedPermissionsConstants.VerbElementCreateOfType,
+            PermissionState.Deny, PermissionScope.ThisNodeAndDescendants);
+        var allowB = Entry(
+            AdvancedPermissionsConstants.VirtualRootNodeKey, elementType, "groupB",
+            AdvancedPermissionsConstants.VerbElementCreateOfType,
+            PermissionState.Allow, PermissionScope.ThisNodeAndDescendants);
+
+        var ctx = new DocTypePermissionResolutionContext(
+            ContentTypeKey: elementType,
+            ParentNodeKey: AdvancedPermissionsConstants.VirtualRootNodeKey,
+            PathFromRoot: [AdvancedPermissionsConstants.VirtualRootNodeKey],
+            RoleAliases: ["groupA", "groupB"],
+            StoredEntries: [denyA, allowB]);
+
+        var result = _resolver.Resolve(ctx, AdvancedPermissionsConstants.VerbElementCreateOfType);
+
+        Assert.False(result.IsAllowed);
+    }
+
     /// <summary>
     /// Default-Allow semantics still apply when no entries match the verb — the override
     /// flag changes priority logic but not the no-entries-default-state behavior.

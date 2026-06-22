@@ -26,7 +26,6 @@ import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.
 import { UAP_USER_PICKER_MODAL } from '../access-viewer/user-picker-modal.token.js';
 import type { CellInfo } from '../utils/cell-info.js';
 import { updateNode } from '../utils/tree-ops.js';
-import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
 import '../help/uap-page-intro.element.js';

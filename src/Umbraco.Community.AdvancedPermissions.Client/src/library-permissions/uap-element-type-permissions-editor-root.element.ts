@@ -11,7 +11,6 @@ import { getElementTypes, getDocTypePermissions, saveDocTypePermissions } from '
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
 import type { CellInfo } from '../utils/cell-info.js';
 import type { PendingVerbEntries } from '../utils/compose-entries.js';
-import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-permission-scope-dialog.element.js';
 import type { UapPermissionScopeDialogElement } from '../shared/components/uap-permission-scope-dialog.element.js';

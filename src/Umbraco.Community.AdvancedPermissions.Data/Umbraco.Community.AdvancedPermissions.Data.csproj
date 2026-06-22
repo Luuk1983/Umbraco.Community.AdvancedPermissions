@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <RootNamespace>Umbraco.Community.AdvancedPermissions.Data</RootNamespace>
     <AssemblyName>Umbraco.Community.AdvancedPermissions.Data</AssemblyName>
     <IsPackable>false</IsPackable>

@@ -20,7 +20,6 @@ import { decomposeEntries } from '../utils/decompose-entries.js';
 import { type PendingVerbEntries } from '../utils/compose-entries.js';
 import { getCellInfo } from '../utils/cell-info.js';
 import { updateNode, findNode } from '../utils/tree-ops.js';
-import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-permission-scope-dialog.element.js';
 import '../help/uap-page-intro.element.js';

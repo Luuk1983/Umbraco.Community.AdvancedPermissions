@@ -26,7 +26,6 @@ import type { CellInfo } from '../utils/cell-info.js';
 import { getCellInfo } from '../utils/cell-info.js';
 import { updateNode, findNode } from '../utils/tree-ops.js';
 import { LIBRARY_VERB_METAS, libraryApplicability } from './library-permission.descriptor.js';
-import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-permission-scope-dialog.element.js';
 import type { UapPermissionScopeDialogElement } from '../shared/components/uap-permission-scope-dialog.element.js';

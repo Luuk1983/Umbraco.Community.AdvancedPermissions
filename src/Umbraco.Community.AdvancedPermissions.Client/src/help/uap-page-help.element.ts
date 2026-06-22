@@ -40,7 +40,7 @@ export class UapPageHelpElement extends UmbLitElement {
     const cfg = SURFACE_HELP[this.surface];
     if (!cfg || !this.#modalManager) return;
     this.#modalManager.open(this, UAP_HELP_MODAL, {
-      data: { headline: this.headline, howToDoc: cfg.howToDoc },
+      data: { headline: this.headline, ...(cfg.howToDoc ? { howToDoc: cfg.howToDoc } : {}) },
     });
   }
 

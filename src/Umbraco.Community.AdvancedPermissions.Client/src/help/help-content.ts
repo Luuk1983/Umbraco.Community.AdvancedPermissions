@@ -8,8 +8,8 @@ export type HelpDocId = 'concepts' | 'content-permissions' | 'access-viewer';
 export interface SurfaceHelp {
   /** Localization key for the always-visible one-line description. */
   descriptionKey: string;
-  /** The per-page how-to document shown in the modal's "About this page" section. */
-  howToDoc: HelpDocId;
+  /** The per-page how-to document shown in the modal's "About this page" section. Pilots only. */
+  howToDoc?: HelpDocId;
 }
 
 /** Maps a workspace entityType to its help configuration. */
@@ -22,6 +22,12 @@ export const SURFACE_HELP: Record<string, SurfaceHelp> = {
     descriptionKey: 'uap_help_accessViewer_description',
     howToDoc: 'access-viewer',
   },
+  'uap-doc-type-permissions': { descriptionKey: 'uap_help_docTypePermissions_description' },
+  'uap-doc-type-create-audit': { descriptionKey: 'uap_help_insertOptions_description' },
+  'uap-library-permissions': { descriptionKey: 'uap_help_libraryPermissions_description' },
+  'uap-element-type-permissions': { descriptionKey: 'uap_help_elementTypePermissions_description' },
+  'uap-library-access-viewer': { descriptionKey: 'uap_help_libraryAccessViewer_description' },
+  'uap-library-insert-viewer': { descriptionKey: 'uap_help_libraryInsertViewer_description' },
 };
 
 /** The shared concepts document id, shown in the modal's "Concepts" section on every surface. */

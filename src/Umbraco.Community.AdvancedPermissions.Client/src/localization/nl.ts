@@ -26,6 +26,12 @@ export default {
     // ── Help ──────────────────────────────────────────────────────────────
     help_contentPermissions_description: 'Beheer Toestaan/Weigeren-machtigingen per gebruikersgroep over je contentboom.',
     help_accessViewer_description: 'Bekijk de effectieve machtigingen van een gebruiker of groep op elk knooppunt, met volledige redenering.',
+    help_docTypePermissions_description: 'Bepaal welke documenttypen elke gebruikersgroep mag aanmaken, en waar.',
+    help_insertOptions_description: 'Controleer welke documenttypen een gebruiker of gebruikersgroep op elk knooppunt mag aanmaken.',
+    help_libraryPermissions_description: 'Beheer Toestaan/Weigeren-machtigingen per gebruikersgroep over de Library-boom.',
+    help_elementTypePermissions_description: 'Bepaal welke elementtypen elke gebruikersgroep in de Library mag gebruiken.',
+    help_libraryAccessViewer_description: 'Bekijk de effectieve Library-machtigingen van een gebruiker of gebruikersgroep op elk knooppunt.',
+    help_libraryInsertViewer_description: 'Controleer welke elementtypen een gebruiker of gebruikersgroep in de Library mag invoegen.',
     help_learnMore: 'Meer informatie',
     help_modalTitle: 'Help',
     help_tabAbout: 'Over deze pagina',

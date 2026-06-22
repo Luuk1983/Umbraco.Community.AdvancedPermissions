@@ -26,6 +26,12 @@ export default {
     // ── Help ──────────────────────────────────────────────────────────────
     help_contentPermissions_description: 'Manage Allow/Deny permissions per user group across your content tree.',
     help_accessViewer_description: 'See the effective permissions a user or group has at any node, with full reasoning.',
+    help_docTypePermissions_description: 'Decide which document types each user group can create, and where.',
+    help_insertOptions_description: 'Audit which document types a user or user group can create at each node.',
+    help_libraryPermissions_description: 'Manage Allow/Deny permissions per user group across the Library tree.',
+    help_elementTypePermissions_description: 'Control which element types each user group can use in the Library.',
+    help_libraryAccessViewer_description: 'See the effective Library permissions a user or user group has at each node.',
+    help_libraryInsertViewer_description: 'Audit which element types a user or user group can insert in the Library.',
     help_learnMore: 'Learn more',
     help_modalTitle: 'Help',
     help_tabAbout: 'About this page',

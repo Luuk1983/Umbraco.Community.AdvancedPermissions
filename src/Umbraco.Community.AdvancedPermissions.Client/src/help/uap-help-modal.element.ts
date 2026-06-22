@@ -56,6 +56,30 @@ export class UapHelpModalElement extends UmbLitElement {
   }
 
   /**
+   * Intercepts clicks on relative `.md` links inside the rendered Markdown. Such links
+   * resolve correctly on GitHub but would navigate the backoffice to a non-existent route.
+   * A link to the concepts doc switches to the Concepts tab (honoring any `#anchor`);
+   * any other relative `.md` link is simply neutralized.
+   *
+   * @param e The click event from the Markdown container.
+   */
+  #onContentClick(e: Event): void {
+    const anchor = e
+      .composedPath()
+      .find((el): el is HTMLAnchorElement => el instanceof HTMLAnchorElement);
+    if (!anchor) return;
+    const href = anchor.getAttribute('href') ?? '';
+    if (href.includes('concepts.md') || href.includes('concepts#')) {
+      e.preventDefault();
+      this._tab = 'concepts';
+      const hash = href.includes('#') ? href.split('#')[1] ?? '' : '';
+      if (hash) void this.updateComplete.then(() => this.#scrollToConcept(hash));
+    } else if (href.endsWith('.md') || /\.md#/.test(href)) {
+      e.preventDefault();
+    }
+  }
+
+  /**
    * Scrolls the rendered concepts content to the anchor with the given id.
    *
    * @param id The concept anchor id (matches an `<a id="…">` in concepts.md).
@@ -95,7 +119,7 @@ export class UapHelpModalElement extends UmbLitElement {
         <uui-box>
           ${this._loading
             ? html`<div class="center"><uui-loader></uui-loader></div>`
-            : html`<div class="md">
+            : html`<div class="md" @click=${this.#onContentClick}>
                 ${unsafeHTML(this._tab === 'about' ? this._aboutHtml : this._conceptsHtml)}
               </div>`}
         </uui-box>

@@ -11,8 +11,8 @@ export interface HelpModalData {
   scrollToConcept?: string;
 }
 
-/** The help modal returns no value. */
-export type HelpModalValue = never;
+/** The help modal returns no value (dismiss-only). */
+export type HelpModalValue = undefined;
 
 /** Modal token for the Advanced Permissions help modal. */
 export const UAP_HELP_MODAL = new UmbModalToken<HelpModalData, HelpModalValue>(

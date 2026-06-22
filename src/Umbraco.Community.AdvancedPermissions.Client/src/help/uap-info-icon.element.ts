@@ -44,7 +44,7 @@ export class UapInfoIconElement extends UmbLitElement {
     return html`
       <button
         type="button"
-        class="info"
+        class="info ${this.concept ? 'clickable' : ''}"
         title=${this.text}
         aria-label=${this.text}
         @click=${this.#onClick}>
@@ -72,6 +72,7 @@ export class UapInfoIconElement extends UmbLitElement {
       padding: 0;
       cursor: help;
     }
+    .info.clickable { cursor: pointer; }
     .info:hover {
       background: var(--uui-color-default, #3544b1);
       color: var(--uui-color-default-contrast, #fff);

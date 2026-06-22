@@ -22,6 +22,9 @@ import { UMB_DOCUMENT_TYPE_PICKER_MODAL } from '@umbraco-cms/backoffice/document
 import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-permission-scope-dialog.element.js';
+import '../help/uap-page-intro.element.js';
+import '../help/uap-selection-panel.element.js';
+import type { UapSelectorGroup } from '../help/uap-selection-panel.element.js';
 import type { UapPermissionScopeDialogElement } from '../shared/components/uap-permission-scope-dialog.element.js';
 
 /** The single verb v1 ships for doc-type permissions. */
@@ -413,6 +416,28 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
     return getCellInfo(entries);
   }
 
+  // ── Selection panel ──────────────────────────────────────────────────────
+
+  get #selectionGroups(): UapSelectorGroup[] {
+    return [
+      {
+        options: [
+          { id: 'group', label: this.#localize.term('uap_chooseRole'), icon: 'icon-users', ...(this._selectedRole ? { selectedName: this._selectedRole.name } : {}) },
+        ],
+      },
+      {
+        options: [
+          { id: 'docType', label: this.#localize.term('uap_chooseDocType'), icon: this._selectedDocType?.icon ?? 'icon-document', ...(this._selectedDocType ? { selectedName: this._selectedDocType.name } : {}) },
+        ],
+      },
+    ];
+  }
+
+  #onSelectorClick(id: string): void {
+    if (id === 'group') void this.#openRolePicker();
+    else if (id === 'docType') void this.#openDocTypePicker();
+  }
+
   // ── Rendering ────────────────────────────────────────────────────────────
 
   #renderRows(nodes: TreeNodeState[], depth: number): TemplateResult[] {
@@ -461,41 +486,34 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
       : (this._pickerNode?.name ?? '');
 
     return html`
-      <umb-body-layout headline=${this.#localize.term('uap_docTypePermissions_workspaceTitle')}>
-        <div class="toolbar">
-          <uap-picker-button
-            label=${this.#localize.term('uap_chooseRole')}
-            .selectedName=${this._selectedRole?.name ?? ''}
-            icon="icon-users"
-            @click=${() => void this.#openRolePicker()}>
-          </uap-picker-button>
+      <uap-page-intro
+        surface="uap-doc-type-permissions"
+        headline=${this.#localize.term('uap_docTypePermissions_workspaceTitle')}>
+      </uap-page-intro>
 
-          <uap-picker-button
-            label=${this.#localize.term('uap_chooseDocType')}
-            .selectedName=${this._selectedDocType?.name ?? ''}
-            icon=${this._selectedDocType?.icon ?? 'icon-document'}
-            @click=${() => void this.#openDocTypePicker()}>
-          </uap-picker-button>
+      <uap-selection-panel
+        .groups=${this.#selectionGroups}
+        promptText=${this.#localize.term('uap_docTypePermissions_pickToStart')}
+        ctaIcon="icon-document"
+        @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
 
-          ${hasPending
-            ? html`
+        ${hasPending
+          ? html`
+              <div slot="actions">
                 <uui-button label=${this.#localize.term('uap_saveChanges')} look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#saveChanges()}>
                   ${this.#localize.term('uap_saveChanges')}
                 </uui-button>
                 <uui-button label=${this.#localize.term('uap_discard')} look="outline" @click=${() => { this._pendingChanges = new Map(); }}>
                   ${this.#localize.term('uap_discard')}
                 </uui-button>
-              `
-            : nothing}
-        </div>
+              </div>
+            `
+          : nothing}
 
         ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
         ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
-        ${!this._selectedRole || !this._selectedDocType
-          ? html`<p class="empty-msg">${this.#localize.term('uap_docTypePermissions_pickToStart')}</p>`
-          : nothing}
 
-        ${this._selectedRole && this._selectedDocType && !this._loading && this._treeNodes.length > 0
+        ${!this._loading && this._treeNodes.length > 0
           ? html`
               <div class="table-wrap">
                 <table>
@@ -513,7 +531,7 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
               </div>
             `
           : nothing}
-      </umb-body-layout>
+      </uap-selection-panel>
 
       <uap-permission-scope-dialog
         .verb=${pickerVerbLabel}
@@ -533,19 +551,8 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
   static override styles = css`
     :host { display: block; height: 100%; }
 
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: var(--uui-size-4, 12px);
-      padding: var(--uui-size-3, 9px) var(--uui-size-6, 18px);
-      background: var(--uui-color-surface, #fff);
-      border-bottom: 1px solid var(--uui-color-border, #e0e0e0);
-      flex-wrap: wrap;
-    }
-
     .loading { display: flex; justify-content: center; padding: 32px; }
     .error-msg { padding: 12px 18px; color: var(--uui-color-danger, #b91c1c); }
-    .empty-msg { padding: 32px 18px; color: var(--uui-color-text-alt, #888); }
 
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }

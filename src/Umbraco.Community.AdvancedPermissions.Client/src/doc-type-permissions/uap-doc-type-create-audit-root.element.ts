@@ -28,6 +28,9 @@ import { UMB_DOCUMENT_TYPE_PICKER_MODAL } from '@umbraco-cms/backoffice/document
 import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
+import '../help/uap-page-intro.element.js';
+import '../help/uap-selection-panel.element.js';
+import type { UapSelectorGroup } from '../help/uap-selection-panel.element.js';
 import type {
   UapReasoningDialogElement,
   ReasoningRoleEntries,
@@ -427,6 +430,30 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     this._dialogShowStars = false;
   };
 
+  // ── Selection panel ──────────────────────────────────────────────────────
+
+  get #selectionGroups(): UapSelectorGroup[] {
+    return [
+      {
+        options: [
+          { id: 'group', label: this.#localize.term('uap_chooseRole'), icon: 'icon-users', ...(this._activeSubject === 'role' && this._selectedRole ? { selectedName: this._selectedRole.name } : {}) },
+          { id: 'user', label: this.#localize.term('uap_chooseUser'), icon: 'icon-user', ...(this._activeSubject === 'user' && this._selectedUser ? { selectedName: this._selectedUser.name } : {}) },
+        ],
+      },
+      {
+        options: [
+          { id: 'docType', label: this.#localize.term('uap_chooseDocType'), icon: this._selectedDocType?.icon ?? 'icon-document', ...(this._selectedDocType ? { selectedName: this._selectedDocType.name } : {}) },
+        ],
+      },
+    ];
+  }
+
+  #onSelectorClick(id: string): void {
+    if (id === 'group') void this.#openRolePicker();
+    else if (id === 'user') void this.#openUserPicker();
+    else if (id === 'docType') void this.#openDocTypePicker();
+  }
+
   // ── Rendering ────────────────────────────────────────────────────────────
 
   #renderRows(nodes: AuditTreeNode[], depth: number): TemplateResult[] {
@@ -564,44 +591,23 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   }
 
   override render(): TemplateResult {
-    const subject = this.#subject;
-    const docTypeSelected = this._selectedDocType !== null;
     return html`
-      <umb-body-layout headline=${this.#localize.term('uap_docTypePermissions_auditTitle')}>
-        <div class="toolbar">
-          <uap-picker-button
-            label=${this.#localize.term('uap_chooseRole')}
-            .selectedName=${this._selectedRole?.name ?? ''}
-            icon="icon-users"
-            @click=${() => void this.#openRolePicker()}>
-          </uap-picker-button>
-          <span class="picker-or">${this.#localize.term('uap_subjectOr')}</span>
-          <uap-picker-button
-            label=${this.#localize.term('uap_chooseUser')}
-            .selectedName=${this._selectedUser?.name ?? ''}
-            icon="icon-user"
-            @click=${() => void this.#openUserPicker()}>
-          </uap-picker-button>
+      <uap-page-intro
+        surface="uap-doc-type-create-audit"
+        headline=${this.#localize.term('uap_docTypePermissions_auditTitle')}>
+      </uap-page-intro>
 
-          <span class="toolbar-divider"></span>
-
-          <uap-picker-button
-            label=${this.#localize.term('uap_chooseDocType')}
-            .selectedName=${this._selectedDocType?.name ?? ''}
-            icon=${this._selectedDocType?.icon ?? 'icon-document'}
-            @click=${() => void this.#openDocTypePicker()}>
-          </uap-picker-button>
-        </div>
+      <uap-selection-panel
+        .groups=${this.#selectionGroups}
+        promptText=${this.#localize.term('uap_docTypePermissions_pickToStart')}
+        ctaIcon="icon-eye"
+        orLabel=${this.#localize.term('uap_subjectOr')}
+        @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
 
         ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
         ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
-        ${!subject
-          ? html`<p class="empty-msg">${this.#localize.term('uap_selectSubjectPrompt')}</p>`
-          : !docTypeSelected
-            ? html`<p class="empty-msg">${this.#localize.term('uap_docTypePermissions_pickToStart')}</p>`
-            : nothing}
 
-        ${subject && docTypeSelected && !this._loading && this._treeNodes.length > 0
+        ${!this._loading && this._treeNodes.length > 0
           ? html`
               <div class="table-wrap">
                 <table>
@@ -620,7 +626,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
               </div>
             `
           : nothing}
-      </umb-body-layout>
+      </uap-selection-panel>
 
       <uap-reasoning-dialog
         .path=${this._dialogPath}
@@ -642,35 +648,8 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   static override styles = css`
     :host { display: block; height: 100%; }
 
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: var(--uui-size-4, 12px);
-      padding: var(--uui-size-3, 9px) var(--uui-size-6, 18px);
-      background: var(--uui-color-surface, #fff);
-      border-bottom: 1px solid var(--uui-color-border, #e0e0e0);
-      flex-wrap: wrap;
-    }
-
-    .picker-or {
-      font-size: 12px;
-      color: var(--uui-color-text-alt, #888);
-      text-align: center;
-      align-self: center;
-    }
-
-    /* Vertical rule splitting the [user group · or · user] subject group from the
-       Document Type "and" section, like sections of a toolbar. */
-    .toolbar-divider {
-      width: 1px;
-      align-self: stretch;
-      margin: 4px 4px;
-      background: var(--uui-color-border, #e0e0e0);
-    }
-
     .loading { display: flex; justify-content: center; padding: 32px; }
     .error-msg { padding: 12px 18px; color: var(--uui-color-danger, #b91c1c); }
-    .empty-msg { padding: 32px 18px; color: var(--uui-color-text-alt, #888); }
 
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }

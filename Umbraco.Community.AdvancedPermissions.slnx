@@ -11,12 +11,14 @@
     <Project Path="src/Umbraco.Community.AdvancedPermissions.Core/Umbraco.Community.AdvancedPermissions.Core.csproj" />
     <Project Path="src/Umbraco.Community.AdvancedPermissions.Data/Umbraco.Community.AdvancedPermissions.Data.csproj" />
     <Project Path="src/Umbraco.Community.AdvancedPermissions/Umbraco.Community.AdvancedPermissions.csproj" />
+    <Project Path="src/Umbraco.Community.AdvancedPermissions.AI/Umbraco.Community.AdvancedPermissions.AI.csproj" />
     <Project Path="src/Umbraco.Community.AdvancedPermissions.Client/Umbraco.Community.AdvancedPermissions.Client.esproj">
       <Build />
       <Deploy />
     </Project>
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Umbraco.Community.AdvancedPermissions.AI.Tests/Umbraco.Community.AdvancedPermissions.AI.Tests.csproj" />
     <Project Path="tests/Umbraco.Community.AdvancedPermissions.Core.Tests/Umbraco.Community.AdvancedPermissions.Core.Tests.csproj" />
     <Project Path="tests/Umbraco.Community.AdvancedPermissions.Data.Tests/Umbraco.Community.AdvancedPermissions.Data.Tests.csproj" />
     <Project Path="tests/Umbraco.Community.AdvancedPermissions.Tests/Umbraco.Community.AdvancedPermissions.Tests.csproj" />

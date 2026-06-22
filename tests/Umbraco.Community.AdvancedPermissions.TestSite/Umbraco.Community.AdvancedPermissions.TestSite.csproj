@@ -9,12 +9,27 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Umbraco.Community.AdvancedPermissions\Umbraco.Community.AdvancedPermissions.csproj" />
+    <ProjectReference Include="..\..\src\Umbraco.Community.AdvancedPermissions.AI\Umbraco.Community.AdvancedPermissions.AI.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Umbraco.AI.Agent" />
+    <PackageReference Include="Umbraco.AI.OpenAI" />
     <PackageReference Include="Umbraco.Cms" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="uSync" />
+  </ItemGroup>
+
+  <!--
+    Umbraco AI runtime + copilot chat UI, for manual verification of the AI companion package.
+    Umbraco.AI is the runtime meta-package (also referenced by the AI companion project);
+    Umbraco.AI.Agent.Copilot adds the backoffice copilot chat UI and transitively pulls in
+    Umbraco.AI.Agent + Umbraco.AI.Core. A human must still add a provider package and key
+    before the copilot can run.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Umbraco.AI" />
+    <PackageReference Include="Umbraco.AI.Agent.Copilot" />
   </ItemGroup>
 
   <!--
@@ -25,6 +40,18 @@
   -->
   <ItemGroup>
     <PackageReference Include="MailKit" />
+  </ItemGroup>
+
+  <!--
+    Transient dependency version override: forces a non-vulnerable native SQLite binary.
+    Pulled in transitively via Microsoft.EntityFrameworkCore.Sqlite -> SQLitePCLRaw.bundle_e_sqlite3.
+    Fixes GHSA-2m69-gcr7-jv3q / CVE-2025-6965 (high) in SQLitePCLRaw.lib.e_sqlite3 <= 2.1.11;
+    3.50.3 bundles SQLite >= 3.50.2. See Directory.Packages.props for the version pin and rationale.
+    This top-level reference (and the corresponding PackageVersion in Directory.Packages.props)
+    can be deleted once the transient dependency is fixed upstream.
+  -->
+  <ItemGroup>
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
   </ItemGroup>
 
 </Project>

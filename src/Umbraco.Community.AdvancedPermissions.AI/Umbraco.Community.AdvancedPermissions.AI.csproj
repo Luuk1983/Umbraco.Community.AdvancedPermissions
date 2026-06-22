@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Only audit direct dependencies; transitive vulnerability warnings from Umbraco's
+         dependencies are not actionable here. -->
+    <NuGetAuditMode>direct</NuGetAuditMode>
+    <RootNamespace>Umbraco.Community.AdvancedPermissions.AI</RootNamespace>
+    <AssemblyName>Umbraco.Community.AdvancedPermissions.AI</AssemblyName>
+
+    <!-- NuGet package metadata -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Umbraco.Community.AdvancedPermissions.AI</PackageId>
+    <Title>Advanced Permissions for Umbraco — AI Copilot Tools</Title>
+    <Authors>Luuk Peters</Authors>
+    <Copyright>Copyright (c) Luuk Peters</Copyright>
+    <Description>Optional AI companion for Umbraco.Community.AdvancedPermissions. Exposes Umbraco AI copilot tools that explain effective permissions, find which user groups can access a node, and audit permission configuration.</Description>
+    <PackageTags>umbraco;permissions;cms;ai;copilot;umbraco-marketplace</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>package_logo_128x128.png</PackageIcon>
+
+    <!-- Versioning: MinVer derives version from git tags (e.g. v1.0.0) -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerAutoIncrement>minor</MinVerAutoIncrement>
+    <MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
+
+    <!-- Symbols package + SourceLink: lets consumers debug into the package source from
+         GitHub at the exact commit the package was built from. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DeterministicSourcePaths Condition="'$(GITHUB_ACTIONS)' == 'true'">true</DeterministicSourcePaths>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="..\Umbraco.Community.AdvancedPermissions\package_logo_128x128.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Real dependency: flows through to the NuGet package as a package dependency
+         (no PrivateAssets — the main package must be installed alongside this one). -->
+    <ProjectReference Include="..\Umbraco.Community.AdvancedPermissions\Umbraco.Community.AdvancedPermissions.csproj" />
+    <!-- Compile-time access to Core domain types. The main package references Core with
+         PrivateAssets="all", so Core does not flow transitively here. PrivateAssets="all"
+         keeps Core out of this package's NuGet dependencies too — the Core DLL bundled in the
+         main package is used at runtime. -->
+    <ProjectReference Include="..\Umbraco.Community.AdvancedPermissions.Core\Umbraco.Community.AdvancedPermissions.Core.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
+    <PackageReference Include="Umbraco.AI" />
+  </ItemGroup>
+
+</Project>

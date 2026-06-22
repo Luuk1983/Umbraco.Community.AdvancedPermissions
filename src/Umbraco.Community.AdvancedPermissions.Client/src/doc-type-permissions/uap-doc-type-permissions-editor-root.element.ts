@@ -449,7 +449,6 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
   #renderRow(node: TreeNodeState, depth: number): TemplateResult {
     const hasPending = this._pendingChanges.has(node.key);
     const info = this.#getDisplayInfo(node);
-    const isPending = this._pendingChanges.has(node.key);
     return html`
       <tr class=${hasPending ? 'row-pending' : ''}>
         <td class="node-cell">
@@ -468,7 +467,7 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
         <td class="perm-td" @click=${() => this.#openPicker(node)}>
           <uap-perm-block
             .info=${info}
-            ?pending=${isPending}
+            ?pending=${hasPending}
             priority-override-title=${this.#localize.term('uap_priorityOverrideBadgeTitle')}></uap-perm-block>
         </td>
       </tr>
@@ -485,6 +484,7 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
       : (this._pickerNode?.name ?? '');
 
     return html`
+      <umb-body-layout headline=${this.#localize.term('uap_docTypePermissions_workspaceTitle')}>
       <uap-page-intro
         surface="uap-doc-type-permissions"
         headline=${this.#localize.term('uap_docTypePermissions_workspaceTitle')}>
@@ -494,6 +494,7 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
         .groups=${this.#selectionGroups}
         promptText=${this.#localize.term('uap_docTypePermissions_pickToStart')}
         ctaIcon="icon-document"
+        orLabel=${this.#localize.term('uap_subjectOr')}
         @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
 
         ${hasPending
@@ -531,6 +532,7 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
             `
           : nothing}
       </uap-selection-panel>
+      </umb-body-layout>
 
       <uap-permission-scope-dialog
         .verb=${pickerVerbLabel}

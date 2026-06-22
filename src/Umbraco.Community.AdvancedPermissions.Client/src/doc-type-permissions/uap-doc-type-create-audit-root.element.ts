@@ -591,6 +591,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
 
   override render(): TemplateResult {
     return html`
+      <umb-body-layout headline=${this.#localize.term('uap_docTypePermissions_auditTitle')}>
       <uap-page-intro
         surface="uap-doc-type-create-audit"
         headline=${this.#localize.term('uap_docTypePermissions_auditTitle')}>
@@ -626,6 +627,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
             `
           : nothing}
       </uap-selection-panel>
+      </umb-body-layout>
 
       <uap-reasoning-dialog
         .path=${this._dialogPath}

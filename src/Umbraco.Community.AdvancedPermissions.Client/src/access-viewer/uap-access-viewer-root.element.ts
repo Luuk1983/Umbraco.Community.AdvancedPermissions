@@ -21,6 +21,8 @@ import { updateNode } from '../utils/tree-ops.js';
 import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
+import '../help/uap-page-help.element.js';
+import '../help/uap-info-icon.element.js';
 import type { UapReasoningDialogElement } from '../shared/components/uap-reasoning-dialog.element.js';
 
 /** Client-side tree node with effective permissions for all verbs. */
@@ -498,6 +500,9 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   override render() {
     return html`
       <umb-body-layout headline=${this.#localize.term('uap_viewerHeadline')}>
+        <uap-page-help
+          surface="uap-access-viewer"
+          headline=${this.#localize.term('uap_viewerHeadline')}></uap-page-help>
         <div class="toolbar">
           <uap-picker-button
             label=${this.#localize.term('uap_chooseRole')}
@@ -512,6 +517,9 @@ export class UapAccessViewerRootElement extends UmbLitElement {
             icon="icon-user"
             @click=${() => void this.#openUserPicker()}>
           </uap-picker-button>
+          <uap-info-icon
+            text=${this.#localize.term('uap_help_concept_reasoning_tip')}
+            concept="resolution"></uap-info-icon>
         </div>
 
 ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}

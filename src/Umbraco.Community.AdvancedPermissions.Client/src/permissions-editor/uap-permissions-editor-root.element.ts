@@ -23,6 +23,8 @@ import { updateNode, findNode } from '../utils/tree-ops.js';
 import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-permission-scope-dialog.element.js';
+import '../help/uap-page-help.element.js';
+import '../help/uap-info-icon.element.js';
 import type { UapPermissionScopeDialogElement } from '../shared/components/uap-permission-scope-dialog.element.js';
 
 /** Map of verb → pending entries for a single node. */
@@ -492,6 +494,9 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
 
     return html`
       <umb-body-layout headline=${this.#localize.term('uap_editorHeadline')}>
+        <uap-page-help
+          surface="uap-permissions-editor"
+          headline=${this.#localize.term('uap_editorHeadline')}></uap-page-help>
         <div class="toolbar">
           <uap-picker-button
             label=${this.#localize.term('uap_chooseRole')}
@@ -499,6 +504,9 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
             icon="icon-users"
             @click=${() => void this.#openRolePicker()}>
           </uap-picker-button>
+          <uap-info-icon
+            text=${this.#localize.term('uap_help_concept_allowDeny_tip')}
+            concept="allow-deny"></uap-info-icon>
           ${hasPending
             ? html`
                 <uui-button label=${this.#localize.term('uap_saveChanges')} look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#saveChanges()}>

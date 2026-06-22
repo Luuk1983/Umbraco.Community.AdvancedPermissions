@@ -288,7 +288,6 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
           ctaIcon="icon-eye"
           orLabel=${this.#localize.term('uap_subjectOr')}
           @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
-          <p class="intro">${this.#localize.term('uap_libraryInsertViewer_intro')}</p>
           ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
           ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
           ${!this._loading
@@ -342,7 +341,6 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
 
   static override styles = css`
     :host { display: block; height: 100%; }
-    .intro { padding: 12px 18px 0; color: var(--uui-color-text-alt, #666); margin: 0; line-height: 1.4; }
     .loading { display: flex; justify-content: center; padding: 32px; }
     .error-msg { padding: 12px 18px; color: var(--uui-color-danger, #b91c1c); }
     .empty-msg { padding: 32px 18px; color: var(--uui-color-text-alt, #888); }

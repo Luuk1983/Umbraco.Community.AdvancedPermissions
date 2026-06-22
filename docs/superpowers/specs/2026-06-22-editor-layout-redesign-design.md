@@ -105,9 +105,11 @@ Inferred from the surfaces; **verify each against its current element during imp
 | Document Type Permissions Editor (`uap-doc-type-permissions`) | [ group ], [ document type ] |
 | Insert Options Viewer (`uap-doc-type-create-audit`) | [ group **or** user ], [ document type ] |
 | Library Permissions Editor (`uap-library-permissions`) | [ group ] |
-| Library Element Type Permissions (`uap-element-type-permissions`) | [ group ], [ element type ] |
+| Library Element Type Permissions (`uap-element-type-permissions`) | [ group ] — element type is a per-row cell, not a toolbar picker |
 | Library Access Viewer (`uap-library-access-viewer`) | [ group **or** user ] |
-| Library Insert Viewer (`uap-library-insert-viewer`) | [ group **or** user ], [ element type ] |
+| Library Insert Viewer (`uap-library-insert-viewer`) | [ group **or** user ] |
+
+*(Verified against each element on 2026-06-22.)*
 
 ## Registry & localization
 

@@ -15,6 +15,9 @@ import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-permission-scope-dialog.element.js';
 import type { UapPermissionScopeDialogElement } from '../shared/components/uap-permission-scope-dialog.element.js';
+import '../help/uap-page-intro.element.js';
+import '../help/uap-selection-panel.element.js';
+import type { UapSelectorGroup } from '../help/uap-selection-panel.element.js';
 
 /** The element-type create-of-type verb stored in the doc-type table. */
 const ELEMENT_CREATE_OF_TYPE = 'Umb.Element.CreateOfType';
@@ -162,46 +165,62 @@ export class UapElementTypePermissionsEditorRootElement extends UmbLitElement {
     }
   }
 
+  // ── Selection panel ──────────────────────────────────────────────────────
+
+  get #selectionGroups(): UapSelectorGroup[] {
+    return [
+      {
+        options: [
+          {
+            id: 'group',
+            label: this.#localize.term('uap_chooseRole'),
+            icon: 'icon-users',
+            ...(this._selectedRole ? { selectedName: this._selectedRole.name } : {}),
+          },
+        ],
+      },
+    ];
+  }
+
+  #onSelectorClick(id: string): void {
+    if (id === 'group') void this.#openRolePicker();
+  }
+
   override render(): TemplateResult {
-    const hasPending = this._pending.size > 0;
     return html`
       <umb-body-layout headline=${this.#localize.term('uap_elementTypePermissions_headline')}>
-        <div class="toolbar">
-          <uap-picker-button
-            label=${this.#localize.term('uap_chooseRole')}
-            .selectedName=${this._selectedRole?.name ?? ''}
-            icon="icon-users"
-            @click=${() => void this.#openRolePicker()}>
-          </uap-picker-button>
-          ${hasPending
-            ? html`
+        <uap-page-intro surface="uap-element-type-permissions" headline=${this.#localize.term('uap_elementTypePermissions_headline')}></uap-page-intro>
+        <uap-selection-panel
+          .groups=${this.#selectionGroups}
+          promptText=${this.#localize.term('uap_library_selectRolePrompt')}
+          ctaIcon="icon-thumbnail-list"
+          orLabel=${this.#localize.term('uap_subjectOr')}
+          @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
+          ${this._pending.size > 0
+            ? html`<div slot="actions">
                 <uui-button label=${this.#localize.term('uap_saveChanges')} look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#save()}>
                   ${this.#localize.term('uap_saveChanges')}
                 </uui-button>
                 <uui-button label=${this.#localize.term('uap_discard')} look="outline" @click=${() => { this._pending = new Set(); void this.#load(); }}>
                   ${this.#localize.term('uap_discard')}
-                </uui-button>`
+                </uui-button>
+              </div>`
             : nothing}
-        </div>
-
-        <p class="intro">${this.#localize.term('uap_elementTypePermissions_intro')}</p>
-
-        ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
-        ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
-        ${!this._selectedRole ? html`<p class="empty-msg">${this.#localize.term('uap_library_selectRolePrompt')}</p>` : nothing}
-
-        ${this._selectedRole && !this._loading
-          ? (this._types.length > 0
-              ? html`
-                  <div class="type-list">
-                    <div class="type-header">
-                      <span class="type-name">${this.#localize.term('uap_elementTypePermissions_typeHeader')}</span>
-                      <span class="type-cell">${this.#localize.term('uap_elementTypePermissions_verbCreate')}</span>
-                    </div>
-                    ${this._types.map((t) => this.#renderType(t))}
-                  </div>`
-              : html`<p class="empty-msg">${this.#localize.term('uap_elementTypePermissions_noTypes')}</p>`)
-          : nothing}
+          ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
+          ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
+          ${!this._loading
+            ? (this._types.length > 0
+                ? html`
+                    <div class="type-list">
+                      <div class="type-header">
+                        <span class="type-name">${this.#localize.term('uap_elementTypePermissions_typeHeader')}</span>
+                        <span class="type-cell">${this.#localize.term('uap_elementTypePermissions_verbCreate')}</span>
+                      </div>
+                      ${this._types.map((t) => this.#renderType(t))}
+                    </div>`
+                : html`<p class="empty-msg">${this.#localize.term('uap_elementTypePermissions_noTypes')}</p>`)
+            : nothing}
+        </uap-selection-panel>
       </umb-body-layout>
 
       ${this.#renderDialog()}
@@ -253,16 +272,6 @@ export class UapElementTypePermissionsEditorRootElement extends UmbLitElement {
 
   static override styles = css`
     :host { display: block; height: 100%; }
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: var(--uui-size-4, 12px);
-      padding: var(--uui-size-3, 9px) var(--uui-size-6, 18px);
-      background: var(--uui-color-surface, #fff);
-      border-bottom: 1px solid var(--uui-color-border, #e0e0e0);
-      flex-wrap: wrap;
-    }
-    .intro { padding: 12px 18px 0; color: var(--uui-color-text-alt, #666); margin: 0; line-height: 1.4; }
     .loading { display: flex; justify-content: center; padding: 32px; }
     .error-msg { padding: 12px 18px; color: var(--uui-color-danger, #b91c1c); }
     .empty-msg { padding: 32px 18px; color: var(--uui-color-text-alt, #888); }

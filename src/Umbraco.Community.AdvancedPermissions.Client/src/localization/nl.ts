@@ -23,6 +23,18 @@ export default {
     deny: 'Weigeren',
     umbracoUsers: 'Alle gebruikers',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Beheer Toestaan/Weigeren-machtigingen per gebruikersgroep over je contentboom.',
+    help_accessViewer_description: 'Bekijk de effectieve machtigingen van een gebruiker of groep op elk knooppunt, met volledige redenering.',
+    help_learnMore: 'Meer informatie',
+    help_modalTitle: 'Help',
+    help_tabAbout: 'Over deze pagina',
+    help_tabConcepts: 'Concepten',
+    help_concept_scope_tip: 'Bereik bepaalt hoe ver een regel reikt: dit knooppunt, dit knooppunt en onderliggende, of alleen onderliggende.',
+    help_concept_priorityOverride_tip: 'Prioriteitsoverschrijving laat deze invoer winnen boven de normale oplosvolgorde.',
+    help_concept_allowDeny_tip: 'Toestaan verleent de machtiging, Weigeren trekt die in, en niet instellen erft van de dichtstbijzijnde bovenliggende.',
+    help_concept_reasoning_tip: 'Klik op een cel om te zien hoe de machtiging precies is opgelost.',
+
     // ── Machtigingeneditor ───────────────────────────────────────────────
     editorHeadline: 'Inhoudsmachtigingen-editor',
     selectRolePrompt: 'Selecteer hierboven een gebruikersgroep om de machtigingen te beheren.',

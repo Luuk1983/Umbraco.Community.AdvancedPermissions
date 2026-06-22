@@ -23,8 +23,9 @@ import { updateNode, findNode } from '../utils/tree-ops.js';
 import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-permission-scope-dialog.element.js';
-import '../help/uap-page-help.element.js';
-import '../help/uap-info-icon.element.js';
+import '../help/uap-page-intro.element.js';
+import '../help/uap-selection-panel.element.js';
+import type { UapSelectorGroup } from '../help/uap-selection-panel.element.js';
 import type { UapPermissionScopeDialogElement } from '../shared/components/uap-permission-scope-dialog.element.js';
 
 /** Map of verb → pending entries for a single node. */
@@ -415,6 +416,27 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     return node.entries.filter((e) => e.verb === verb);
   }
 
+  // ── Selection panel ──────────────────────────────────────────────────────
+
+  get #selectionGroups(): UapSelectorGroup[] {
+    return [
+      {
+        options: [
+          {
+            id: 'group',
+            label: this.#localize.term('uap_chooseRole'),
+            icon: 'icon-users',
+            ...(this._selectedRole ? { selectedName: this._selectedRole.name } : {}),
+          },
+        ],
+      },
+    ];
+  }
+
+  #onSelectorClick(id: string): void {
+    if (id === 'group') void this.#openRolePicker();
+  }
+
   // ── Rendering ─────────────────────────────────────────────────────────────
 
   #renderRows(nodes: TreeNodeState[], depth: number): TemplateResult[] {
@@ -489,58 +511,48 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       </uap-permission-scope-dialog>
     `;
   }
-  override render() {
-    const hasPending = this._pendingChanges.size > 0;
 
+  override render() {
     return html`
       <umb-body-layout headline=${this.#localize.term('uap_editorHeadline')}>
-        <uap-page-help
-          surface="uap-permissions-editor"
-          headline=${this.#localize.term('uap_editorHeadline')}></uap-page-help>
-        <div class="toolbar">
-          <uap-picker-button
-            label=${this.#localize.term('uap_chooseRole')}
-            .selectedName=${this._selectedRole?.name ?? ''}
-            icon="icon-users"
-            @click=${() => void this.#openRolePicker()}>
-          </uap-picker-button>
-          <uap-info-icon
-            text=${this.#localize.term('uap_help_concept_allowDeny_tip')}
-            concept="allow-deny"></uap-info-icon>
-          ${hasPending
-            ? html`
+        <uap-page-intro surface="uap-permissions-editor" headline=${this.#localize.term('uap_editorHeadline')}></uap-page-intro>
+        <uap-selection-panel
+          .groups=${this.#selectionGroups}
+          promptText=${this.#localize.term('uap_selectRolePrompt')}
+          ctaIcon="icon-lock"
+          orLabel=${this.#localize.term('uap_subjectOr')}
+          @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
+          ${this._pendingChanges.size > 0
+            ? html`<div slot="actions">
                 <uui-button label=${this.#localize.term('uap_saveChanges')} look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#saveChanges()}>
                   ${this.#localize.term('uap_saveChanges')}
                 </uui-button>
                 <uui-button label=${this.#localize.term('uap_discard')} look="outline" @click=${() => { this._pendingChanges = new Map(); }}>
                   ${this.#localize.term('uap_discard')}
                 </uui-button>
+              </div>`
+            : nothing}
+          ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
+          ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
+          ${!this._loading && this._treeNodes.length > 0
+            ? html`
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th class="node-header">${this.#localize.term('uap_contentNodeHeader')}</th>
+                        ${this._verbs.map((v) => html`<th class="verb-header" title=${v.verb}>${v.displayName}</th>`)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this.#renderRow(this._treeNodes[0], 0)}
+                      ${this.#renderRows(this._treeNodes.slice(1), 1)}
+                    </tbody>
+                  </table>
+                </div>
               `
             : nothing}
-        </div>
-
-        ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
-        ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
-        ${!this._selectedRole ? html`<p class="empty-msg">${this.#localize.term('uap_selectRolePrompt')}</p>` : nothing}
-
-        ${this._selectedRole && !this._loading && this._treeNodes.length > 0
-          ? html`
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th class="node-header">${this.#localize.term('uap_contentNodeHeader')}</th>
-                      ${this._verbs.map((v) => html`<th class="verb-header" title=${v.verb}>${v.displayName}</th>`)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${this.#renderRow(this._treeNodes[0], 0)}
-                    ${this.#renderRows(this._treeNodes.slice(1), 1)}
-                  </tbody>
-                </table>
-              </div>
-            `
-          : nothing}
+        </uap-selection-panel>
       </umb-body-layout>
 
       <!-- Permission dialog — rendered outside umb-body-layout so it always layers on top -->
@@ -554,18 +566,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
       height: 100%;
     }
 
-    /* ── Toolbar ──────────────────────────────────────────────── */
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: var(--uui-size-4, 12px);
-      padding: var(--uui-size-3, 9px) var(--uui-size-6, 18px);
-      background: var(--uui-color-surface, #fff);
-      border-bottom: 1px solid var(--uui-color-border, #e0e0e0);
-      flex-wrap: wrap;
-    }
-
-.loading {
+    .loading {
       display: flex;
       justify-content: center;
       padding: 32px;
@@ -574,11 +575,6 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     .error-msg {
       padding: 12px 18px;
       color: var(--uui-color-danger, #b91c1c);
-    }
-
-    .empty-msg {
-      padding: 32px 18px;
-      color: var(--uui-color-text-alt, #888);
     }
 
     /* ── Table ────────────────────────────────────────────────── */

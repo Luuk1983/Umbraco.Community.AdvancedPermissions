@@ -23,9 +23,23 @@ export default {
     deny: 'Deny',
     umbracoUsers: 'All Users',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Manage Allow/Deny permissions per user group across your content tree.',
+    help_accessViewer_description: 'See the effective permissions a user or group has at any node, with full reasoning.',
+    help_docTypePermissions_description: 'Decide which document types each user group can create, and where.',
+    help_insertOptions_description: 'Audit which document types a user or user group can create at each node.',
+    help_learnMore: 'Learn more',
+    help_modalTitle: 'Help',
+    help_tabAbout: 'About this page',
+    help_tabConcepts: 'Concepts',
+    help_concept_scope_tip: 'Scope controls how far a rule reaches: this node, this node and its descendants, or descendants only.',
+    help_concept_priorityOverride_tip: 'Priority override forces this entry to win over the normal resolution order.',
+    help_concept_allowDeny_tip: 'Allow grants the permission, Deny revokes it, and leaving it unset inherits from the nearest ancestor.',
+    help_concept_reasoning_tip: 'Click any cell to see exactly how the permission was resolved.',
+
     // ── Permissions Editor ───────────────────────────────────────────────
     editorHeadline: 'Content Permissions Editor',
-    selectRolePrompt: 'Select a user group above to manage its permissions.',
+    selectRolePrompt: 'Select a user group to manage its permissions.',
     permissionsSaved: 'Permissions saved.',
     saveFailed: (error: string) => `Save failed: ${error}`,
     contentNodeHeader: 'Content Node',

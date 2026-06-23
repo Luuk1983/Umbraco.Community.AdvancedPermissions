@@ -23,6 +23,20 @@ export default {
     deny: 'מנע',
     umbracoUsers: 'כל המשתמשים',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'נהל הרשאות אפשר/מנע לכל קבוצת משתמשים על פני עץ התוכן שלך.',
+    help_accessViewer_description: 'ראה את ההרשאות האפקטיביות של משתמש או קבוצה בכל צומת, עם הנמקה מלאה.',
+    help_docTypePermissions_description: 'החלט אילו סוגי מסמכים כל קבוצת משתמשים יכולה ליצור, והיכן.',
+    help_insertOptions_description: 'בדוק אילו סוגי מסמכים משתמש או קבוצת משתמשים יכולים ליצור בכל צומת.',
+    help_learnMore: 'למידע נוסף',
+    help_modalTitle: 'עזרה',
+    help_tabAbout: 'אודות עמוד זה',
+    help_tabConcepts: 'מושגים',
+    help_concept_scope_tip: 'היקף קובע עד כמה רחוק מגיע כלל: צומת זה, צומת זה והצאצאים שלו, או צאצאים בלבד.',
+    help_concept_priorityOverride_tip: 'עקיפת עדיפות מאלצת ערך זה לגבור על סדר ההכרעה הרגיל.',
+    help_concept_allowDeny_tip: 'אפשר מעניק את ההרשאה, מנע שולל אותה, והשארתה לא מוגדרת יורשת מהאב הקדמון הקרוב ביותר.',
+    help_concept_reasoning_tip: 'לחץ על כל תא כדי לראות בדיוק כיצד ההרשאה הוכרעה.',
+
     // ── עורך ההרשאות ──────────────────────────────────────────────────────
     editorHeadline: 'עורך הרשאות תוכן',
     selectRolePrompt: 'בחר קבוצת משתמשים למעלה כדי לנהל את ההרשאות שלה.',

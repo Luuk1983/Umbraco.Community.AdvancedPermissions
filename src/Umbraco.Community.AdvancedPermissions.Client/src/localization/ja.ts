@@ -23,6 +23,20 @@ export default {
     deny: '拒否',
     umbracoUsers: 'すべてのユーザー',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'コンテンツツリー全体で、ユーザーグループごとに許可／拒否のアクセス権限を管理します。',
+    help_accessViewer_description: '任意のノードでユーザーまたはグループが持つ有効なアクセス権限を、完全な根拠とともに確認します。',
+    help_docTypePermissions_description: '各ユーザーグループがどのドキュメントタイプを、どこで作成できるかを決定します。',
+    help_insertOptions_description: '各ノードでユーザーまたはユーザーグループが作成できるドキュメントタイプを監査します。',
+    help_learnMore: '詳細を見る',
+    help_modalTitle: 'ヘルプ',
+    help_tabAbout: 'このページについて',
+    help_tabConcepts: '概念',
+    help_concept_scope_tip: '適用範囲は、ルールがどこまで及ぶかを制御します：このノード、このノードと子孫、または子孫のみ。',
+    help_concept_priorityOverride_tip: '優先オーバーライドは、このエントリが通常の解決順序よりも優先されるように強制します。',
+    help_concept_allowDeny_tip: '許可はアクセス権限を付与し、拒否はそれを取り消します。未設定のままにすると最も近い上位ノードから継承します。',
+    help_concept_reasoning_tip: '任意のセルをクリックすると、アクセス権限がどのように解決されたかを正確に確認できます。',
+
     // ── Permissions Editor ───────────────────────────────────────────────
     editorHeadline: 'コンテンツアクセス権限エディタ',
     selectRolePrompt: '上部でユーザーグループを選択して、そのアクセス権限を管理します。',

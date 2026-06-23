@@ -23,6 +23,20 @@ export default {
     deny: 'Verweigern',
     umbracoUsers: 'Alle Benutzer',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Verwalten Sie Erlauben/Verweigern-Berechtigungen pro Benutzergruppe \u00fcber Ihren Inhaltsbaum hinweg.',
+    help_accessViewer_description: 'Sehen Sie die effektiven Berechtigungen, die ein Benutzer oder eine Benutzergruppe an einem beliebigen Knoten hat, mit vollst\u00e4ndiger Begr\u00fcndung.',
+    help_docTypePermissions_description: 'Legen Sie fest, welche Dokumenttypen jede Benutzergruppe erstellen darf und wo.',
+    help_insertOptions_description: 'Pr\u00fcfen Sie, welche Dokumenttypen ein Benutzer oder eine Benutzergruppe an jedem Knoten erstellen kann.',
+    help_learnMore: 'Mehr erfahren',
+    help_modalTitle: 'Hilfe',
+    help_tabAbout: '\u00dcber diese Seite',
+    help_tabConcepts: 'Konzepte',
+    help_concept_scope_tip: 'Der Bereich steuert, wie weit eine Regel reicht: dieser Knoten, dieser Knoten und seine Unterknoten oder nur die Unterknoten.',
+    help_concept_priorityOverride_tip: 'Die Priorit\u00e4ts-\u00dcberschreibung zwingt diesen Eintrag, sich gegen\u00fcber der normalen Aufl\u00f6sungsreihenfolge durchzusetzen.',
+    help_concept_allowDeny_tip: 'Erlauben gew\u00e4hrt die Berechtigung, Verweigern entzieht sie, und wenn nichts festgelegt ist, wird vom n\u00e4chstgelegenen \u00fcbergeordneten Knoten geerbt.',
+    help_concept_reasoning_tip: 'Klicken Sie auf eine beliebige Zelle, um genau zu sehen, wie die Berechtigung aufgel\u00f6st wurde.',
+
     // ── Berechtigungseditor ──────────────────────────────────────────────
     editorHeadline: 'Inhaltsberechtigungs-Editor',
     selectRolePrompt: 'W\u00e4hlen Sie oben eine Benutzergruppe aus, um deren Berechtigungen zu verwalten.',

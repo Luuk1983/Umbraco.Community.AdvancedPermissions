@@ -23,6 +23,20 @@ export default {
     deny: 'Từ chối',
     umbracoUsers: 'Tất cả người dùng',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Quản lý quyền Cho phép/Từ chối cho từng nhóm người dùng trên toàn bộ cây nội dung của bạn.',
+    help_accessViewer_description: 'Xem quyền hiệu lực mà một người dùng hoặc nhóm có tại bất kỳ nút nào, kèm theo lý giải đầy đủ.',
+    help_docTypePermissions_description: 'Quyết định loại tài liệu nào mà mỗi nhóm người dùng có thể tạo, và ở đâu.',
+    help_insertOptions_description: 'Kiểm tra loại tài liệu nào mà một người dùng hoặc nhóm người dùng có thể tạo tại mỗi nút.',
+    help_learnMore: 'Tìm hiểu thêm',
+    help_modalTitle: 'Trợ giúp',
+    help_tabAbout: 'Về trang này',
+    help_tabConcepts: 'Khái niệm',
+    help_concept_scope_tip: 'Phạm vi kiểm soát mức độ áp dụng của một quy tắc: chỉ nút này, nút này và các nút con cháu của nó, hoặc chỉ các nút con cháu.',
+    help_concept_priorityOverride_tip: 'Ghi đè ưu tiên buộc mục này thắng so với thứ tự giải quyết thông thường.',
+    help_concept_allowDeny_tip: 'Cho phép cấp quyền, Từ chối thu hồi quyền, và để trống sẽ kế thừa từ nút tổ tiên gần nhất.',
+    help_concept_reasoning_tip: 'Nhấp vào bất kỳ ô nào để xem chính xác quyền đã được giải quyết như thế nào.',
+
     // ── Permissions Editor ───────────────────────────────────────────────
     editorHeadline: 'Trình chỉnh sửa quyền nội dung',
     selectRolePrompt: 'Chọn một nhóm người dùng ở trên để quản lý quyền của nhóm đó.',

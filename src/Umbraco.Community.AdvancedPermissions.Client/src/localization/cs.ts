@@ -23,6 +23,20 @@ export default {
     deny: 'Zakázat',
     umbracoUsers: 'Všichni uživatelé',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Spravujte oprávnění Povolit/Zakázat pro jednotlivé uživatelské skupiny napříč stromem obsahu.',
+    help_accessViewer_description: 'Zobrazte výsledná oprávnění, která má uživatel nebo skupina na libovolném uzlu, včetně úplného zdůvodnění.',
+    help_docTypePermissions_description: 'Určete, které typy dokumentů může každá uživatelská skupina vytvářet a kde.',
+    help_insertOptions_description: 'Zkontrolujte, které typy dokumentů může uživatel nebo uživatelská skupina vytvořit na každém uzlu.',
+    help_learnMore: 'Zjistit více',
+    help_modalTitle: 'Nápověda',
+    help_tabAbout: 'O této stránce',
+    help_tabConcepts: 'Pojmy',
+    help_concept_scope_tip: 'Rozsah určuje, jak daleko pravidlo dosahuje: tento uzel, tento uzel a jeho potomci, nebo pouze potomci.',
+    help_concept_priorityOverride_tip: 'Přepsání priority vynutí, aby tento záznam zvítězil nad běžným pořadím vyhodnocení.',
+    help_concept_allowDeny_tip: 'Povolit oprávnění udělí, Zakázat jej odebere, a ponechání nenastaveného se dědí z nejbližšího nadřazeného uzlu.',
+    help_concept_reasoning_tip: 'Klikněte na libovolnou buňku a uvidíte přesně, jak bylo oprávnění vyhodnoceno.',
+
     // ── Editor oprávnění ──────────────────────────────────────────────
     editorHeadline: 'Editor oprávnění obsahu',
     selectRolePrompt: 'Vyberte výše uživatelskou skupinu pro správu jejích oprávnění.',

@@ -23,6 +23,20 @@ export default {
     deny: 'Odmów',
     umbracoUsers: 'Wszyscy użytkownicy',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Zarządzaj uprawnieniami Zezwól/Odmów dla każdej grupy użytkowników w całym drzewie treści.',
+    help_accessViewer_description: 'Zobacz efektywne uprawnienia, jakie użytkownik lub grupa ma w dowolnym węźle, wraz z pełnym uzasadnieniem.',
+    help_docTypePermissions_description: 'Zdecyduj, które typy dokumentów może tworzyć każda grupa użytkowników i gdzie.',
+    help_insertOptions_description: 'Sprawdź, które typy dokumentów użytkownik lub grupa użytkowników może tworzyć w każdym węźle.',
+    help_learnMore: 'Dowiedz się więcej',
+    help_modalTitle: 'Pomoc',
+    help_tabAbout: 'O tej stronie',
+    help_tabConcepts: 'Pojęcia',
+    help_concept_scope_tip: 'Zakres określa, jak daleko sięga reguła: ten węzeł, ten węzeł i jego elementy podrzędne lub tylko elementy podrzędne.',
+    help_concept_priorityOverride_tip: 'Nadpisanie priorytetu wymusza, aby ten wpis miał pierwszeństwo nad zwykłą kolejnością rozstrzygania.',
+    help_concept_allowDeny_tip: 'Zezwól przyznaje uprawnienie, Odmów je odbiera, a pozostawienie go nieustawionego powoduje dziedziczenie od najbliższego elementu nadrzędnego.',
+    help_concept_reasoning_tip: 'Kliknij dowolną komórkę, aby zobaczyć dokładnie, jak zostało rozstrzygnięte uprawnienie.',
+
     // ── Edytor uprawnień ─────────────────────────────────────────────────
     editorHeadline: 'Edytor uprawnień do treści',
     selectRolePrompt: 'Wybierz powyżej grupę użytkowników, aby zarządzać jej uprawnieniami.',

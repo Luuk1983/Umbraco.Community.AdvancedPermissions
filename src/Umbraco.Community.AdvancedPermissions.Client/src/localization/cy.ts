@@ -23,6 +23,20 @@ export default {
     deny: 'Gwrthod',
     umbracoUsers: 'Pob Defnyddiwr',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Rheoli hawliau Caniatáu/Gwrthod fesul grŵp defnyddiwr ar draws eich coeden gynnwys.',
+    help_accessViewer_description: 'Gweld yr hawliau effeithiol sydd gan ddefnyddiwr neu grŵp ar unrhyw nod, gyda rhesymu llawn.',
+    help_docTypePermissions_description: 'Penderfynu pa fathau o ddogfen y gall pob grŵp defnyddiwr eu creu, a ble.',
+    help_insertOptions_description: 'Archwilio pa fathau o ddogfen y gall defnyddiwr neu grŵp defnyddiwr eu creu ar bob nod.',
+    help_learnMore: 'Dysgu mwy',
+    help_modalTitle: 'Cymorth',
+    help_tabAbout: 'Am y dudalen hon',
+    help_tabConcepts: 'Cysyniadau',
+    help_concept_scope_tip: 'Mae cwmpas yn rheoli pa mor bell y mae rheol yn cyrraedd: y nod hwn, y nod hwn a’i ddisgynyddion, neu ddisgynyddion yn unig.',
+    help_concept_priorityOverride_tip: 'Mae diystyriad blaenoriaeth yn gorfodi’r cofnod hwn i ennill dros y drefn ddatrys arferol.',
+    help_concept_allowDeny_tip: 'Mae Caniatáu yn rhoi’r hawl, mae Gwrthod yn ei dynnu’n ôl, ac mae ei adael heb ei osod yn etifeddu o’r hynafiad agosaf.',
+    help_concept_reasoning_tip: 'Cliciwch ar unrhyw gell i weld yn union sut y datryswyd yr hawl.',
+
     // ── Golygydd Hawliau ─────────────────────────────────────────────────
     editorHeadline: 'Golygydd Hawliau Cynnwys',
     selectRolePrompt: 'Dewiswch grŵp defnyddiwr uchod i reoli ei hawliau.',

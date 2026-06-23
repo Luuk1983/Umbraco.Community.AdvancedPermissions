@@ -23,6 +23,20 @@ export default {
     deny: 'Zabrani',
     umbracoUsers: 'Svi korisnici',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Upravljajte dozvolama Dozvoli/Zabrani po grupi korisnika kroz vaše stablo sadržaja.',
+    help_accessViewer_description: 'Pogledajte efektivne dozvole koje korisnik ili grupa ima na bilo kojem čvoru, s potpunim obrazloženjem.',
+    help_docTypePermissions_description: 'Odredite koje tipove dokumenata svaka grupa korisnika može kreirati i gdje.',
+    help_insertOptions_description: 'Provjerite koje tipove dokumenata korisnik ili grupa korisnika može kreirati na svakom čvoru.',
+    help_learnMore: 'Saznajte više',
+    help_modalTitle: 'Pomoć',
+    help_tabAbout: 'O ovoj stranici',
+    help_tabConcepts: 'Koncepti',
+    help_concept_scope_tip: 'Opseg kontroliše koliko daleko pravilo doseže: ovaj čvor, ovaj čvor i njegovi potomci, ili samo potomci.',
+    help_concept_priorityOverride_tip: 'Prioritetno nadjačavanje prisiljava ovu stavku da pobijedi nad uobičajenim redoslijedom razrješavanja.',
+    help_concept_allowDeny_tip: 'Dozvoli odobrava dozvolu, Zabrani je opoziva, a ostavljanje nepostavljenim nasljeđuje od najbližeg pretka.',
+    help_concept_reasoning_tip: 'Kliknite na bilo koju ćeliju da vidite tačno kako je dozvola razriješena.',
+
     // ── Uređivač dozvola ─────────────────────────────────────────────────
     editorHeadline: 'Uređivač dozvola za sadržaj',
     selectRolePrompt: 'Odaberite grupu korisnika iznad za upravljanje njenim dozvolama.',

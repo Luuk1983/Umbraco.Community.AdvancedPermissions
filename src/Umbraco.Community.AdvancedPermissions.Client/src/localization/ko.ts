@@ -23,6 +23,20 @@ export default {
     deny: '거부',
     umbracoUsers: '모든 사용자',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: '콘텐츠 트리 전반에서 사용자 그룹별 허용/거부 권한을 관리합니다.',
+    help_accessViewer_description: '사용자 또는 그룹이 임의의 노드에서 갖는 유효 권한을 전체 근거와 함께 확인합니다.',
+    help_docTypePermissions_description: '각 사용자 그룹이 생성할 수 있는 문서 유형과 생성 위치를 결정합니다.',
+    help_insertOptions_description: '사용자 또는 사용자 그룹이 각 노드에서 생성할 수 있는 문서 유형을 감사합니다.',
+    help_learnMore: '자세히 알아보기',
+    help_modalTitle: '도움말',
+    help_tabAbout: '이 페이지 정보',
+    help_tabConcepts: '개념',
+    help_concept_scope_tip: '범위는 규칙이 미치는 범위를 제어합니다: 이 노드, 이 노드 및 하위 항목, 또는 하위 항목만.',
+    help_concept_priorityOverride_tip: '우선순위 재정의는 일반적인 결정 순서보다 이 항목이 우선하도록 강제합니다.',
+    help_concept_allowDeny_tip: '허용은 권한을 부여하고, 거부는 권한을 취소하며, 설정하지 않으면 가장 가까운 상위 항목에서 상속합니다.',
+    help_concept_reasoning_tip: '셀을 클릭하면 권한이 어떻게 결정되었는지 정확히 확인할 수 있습니다.',
+
     // ── Permissions Editor ───────────────────────────────────────────────
     editorHeadline: '콘텐츠 권한 편집기',
     selectRolePrompt: '권한을 관리하려면 위에서 사용자 그룹을 선택하세요.',

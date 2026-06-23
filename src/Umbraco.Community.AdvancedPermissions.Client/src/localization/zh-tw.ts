@@ -23,6 +23,20 @@ export default {
     deny: '拒絕',
     umbracoUsers: '所有使用者',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: '依使用者群組管理整個內容樹狀結構的允許/拒絕權限。',
+    help_accessViewer_description: '檢視使用者或群組在任一節點上的有效權限，並提供完整原因說明。',
+    help_docTypePermissions_description: '決定每個使用者群組可以建立哪些文檔類型，以及可在何處建立。',
+    help_insertOptions_description: '稽核使用者或使用者群組在每個節點上可建立哪些文檔類型。',
+    help_learnMore: '了解更多',
+    help_modalTitle: '說明',
+    help_tabAbout: '關於此頁面',
+    help_tabConcepts: '概念',
+    help_concept_scope_tip: '範圍控制規則的適用範圍：僅此節點、此節點及其子孫節點，或僅子孫節點。',
+    help_concept_priorityOverride_tip: '優先權覆寫會強制此項目勝過正常的解析順序。',
+    help_concept_allowDeny_tip: '允許會授予權限，拒絕會撤銷權限，而保持未設定則會從最近的上層節點繼承。',
+    help_concept_reasoning_tip: '點選任一儲存格即可確切了解權限是如何解析出來的。',
+
     // ── 權限編輯器 ───────────────────────────────────────────────────────
     editorHeadline: '內容權限編輯器',
     selectRolePrompt: '請在上方選擇使用者群組以管理其權限。',

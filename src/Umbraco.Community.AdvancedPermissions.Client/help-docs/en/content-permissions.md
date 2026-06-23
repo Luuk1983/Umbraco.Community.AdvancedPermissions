@@ -14,7 +14,7 @@ Decide exactly what each user group may do on each content node — and how far 
 4. **Choose the state** for this node and, if it should differ, a separate state for descendants. Optionally flag Priority Override.
 5. **Save** your changes.
 
-See [Permission concepts](concepts.md) for Allow/Deny, scope, the Default permissions row, the All Users Group, and Priority Override.
+See the **Concepts** tab for Allow/Deny, scope, the Default permissions row, the All Users Group, and Priority Override.
 
 ## Examples
 

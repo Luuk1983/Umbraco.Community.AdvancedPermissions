@@ -13,4 +13,4 @@ The Access Viewer shows the **effective** (fully resolved) permission for any us
 3. **Click a cell** to open its reasoning chain: which group contributed, from which node, and whether it was explicit or inherited.
 4. When a **Priority Override** changed the outcome, the reasoning shows what the result would have been without it.
 
-See [Permission concepts](concepts.md) for how permissions are resolved.
+See the **Concepts** tab for how permissions are resolved.

@@ -13,4 +13,4 @@ De Access Viewer toont de **effectieve** (volledig opgeloste) machtiging voor el
 3. **Klik op een cel** om de redeneerketen te openen: welke groep bijdroeg, vanaf welk knooppunt, en of het expliciet of geërfd was.
 4. Wanneer een **Prioriteitsoverschrijving** het resultaat veranderde, toont de redenering wat het zonder die overschrijving zou zijn geweest.
 
-Zie [Machtigingsconcepten](concepts.md) voor hoe machtigingen worden opgelost.
+Zie het tabblad **Concepten** voor hoe machtigingen worden opgelost.

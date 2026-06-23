@@ -14,7 +14,7 @@ Bepaal precies wat elke gebruikersgroep op elk contentknooppunt mag — en hoe v
 4. **Kies de status** voor dit knooppunt en, indien afwijkend, een aparte status voor onderliggende. Markeer eventueel Prioriteitsoverschrijving.
 5. **Sla** je wijzigingen op.
 
-Zie [Machtigingsconcepten](concepts.md) voor Toestaan/Weigeren, bereik, de rij Standaardmachtigingen, de groep Alle gebruikers en Prioriteitsoverschrijving.
+Zie het tabblad **Concepten** voor Toestaan/Weigeren, bereik, de rij Standaardmachtigingen, de groep Alle gebruikers en Prioriteitsoverschrijving.
 
 ## Voorbeelden
 

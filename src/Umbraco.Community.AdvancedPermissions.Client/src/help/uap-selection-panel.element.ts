@@ -49,6 +49,15 @@ export class UapSelectionPanelElement extends UmbLitElement {
     return this.groups.length > 0 && this.groups.every((g) => g.options.some((o) => !!o.selectedName));
   }
 
+  /**
+   * True when the call-to-action should stack each group on its own row: only for a genuine
+   * and/or mix — more than one group AND at least one group is mutually exclusive (has an "or").
+   * Simple cases (a single group, or several both-required single-option groups) stay inline.
+   */
+  get #stacked(): boolean {
+    return this.groups.length > 1 && this.groups.some((g) => g.options.length > 1);
+  }
+
   /** Emits the selector-click event for the host to open the matching picker. */
   #click(id: string): void {
     this.dispatchEvent(new CustomEvent('uap-selector-click', { detail: { id }, bubbles: true, composed: true }));
@@ -88,7 +97,9 @@ export class UapSelectionPanelElement extends UmbLitElement {
           <div class="cta">
             <umb-icon name=${this.ctaIcon} class="cta-icon"></umb-icon>
             <p class="cta-text">${this.promptText}</p>
-            <div class="cta-ctrls">${this.groups.map((g) => this.#groupControls(g))}</div>
+            <div class="cta-ctrls ${this.#stacked ? 'stacked' : ''}">
+              ${this.groups.map((g) => html`<div class="cta-slot">${this.#groupControls(g)}</div>`)}
+            </div>
           </div>
         </uui-box>
       `;
@@ -122,6 +133,14 @@ export class UapSelectionPanelElement extends UmbLitElement {
     .cta-icon { font-size: 2rem; color: var(--uui-color-text-alt); }
     .cta-text { margin: 0; color: var(--uui-color-text); max-width: 44ch; }
     .cta-ctrls {
+      display: flex;
+      align-items: center;
+      gap: var(--uui-size-space-3, 9px);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .cta-ctrls.stacked { flex-direction: column; }
+    .cta-slot {
       display: flex;
       align-items: center;
       gap: var(--uui-size-space-3, 9px);

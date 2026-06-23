@@ -25,7 +25,7 @@ export default {
 
     // ── Permissions Editor ───────────────────────────────────────────────
     editorHeadline: 'Content Permissions Editor',
-    selectRolePrompt: 'Select a user group above to manage its permissions.',
+    selectRolePrompt: 'Select a user group to manage its permissions.',
     permissionsSaved: 'Permissions saved.',
     saveFailed: (error: string) => `Save failed: ${error}`,
     contentNodeHeader: 'Content Node',

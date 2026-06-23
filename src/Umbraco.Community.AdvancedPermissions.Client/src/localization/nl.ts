@@ -43,7 +43,7 @@ export default {
 
     // ── Machtigingeneditor ───────────────────────────────────────────────
     editorHeadline: 'Inhoudsmachtigingen-editor',
-    selectRolePrompt: 'Selecteer hierboven een gebruikersgroep om de machtigingen te beheren.',
+    selectRolePrompt: 'Selecteer een gebruikersgroep om de machtigingen te beheren.',
     permissionsSaved: 'Machtigingen opgeslagen.',
     saveFailed: (error: string) => `Opslaan mislukt: ${error}`,
     contentNodeHeader: 'Contentpagina',

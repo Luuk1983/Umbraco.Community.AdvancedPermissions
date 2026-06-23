@@ -43,7 +43,7 @@ export default {
 
     // ── Permissions Editor ───────────────────────────────────────────────
     editorHeadline: 'Content Permissions Editor',
-    selectRolePrompt: 'Select a user group above to manage its permissions.',
+    selectRolePrompt: 'Select a user group to manage its permissions.',
     permissionsSaved: 'Permissions saved.',
     saveFailed: (error: string) => `Save failed: ${error}`,
     contentNodeHeader: 'Content Node',
@@ -172,7 +172,7 @@ export default {
     library_accessViewerHeadline: 'Library Access Viewer',
     library_nodeHeader: 'Library Item',
     library_root: 'Default permissions',
-    library_selectRolePrompt: 'Select a user group above to manage its library permissions.',
+    library_selectRolePrompt: 'Select a user group to manage its library permissions.',
     library_permissionsSaved: 'Library permissions saved.',
     library_notApplicableTitle: (verb: string) => `${verb} does not apply to folders — it can still be set for the items inside.`,
     library_folderInheritLabel: 'Items inside (descendants)',

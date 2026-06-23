@@ -6,9 +6,6 @@
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- Only audit direct dependencies; transitive vulnerability warnings from Umbraco's
-         dependencies (System.Net.Http, System.Text.Encodings.Web) are not actionable here. -->
-    <NuGetAuditMode>direct</NuGetAuditMode>
     <RootNamespace>Umbraco.Community.AdvancedPermissions</RootNamespace>
     <AssemblyName>Umbraco.Community.AdvancedPermissions</AssemblyName>
     <!-- Serve wwwroot content at the web root (/) rather than the default /_content/{assembly}/ path.

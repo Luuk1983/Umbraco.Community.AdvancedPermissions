@@ -7,8 +7,8 @@ import { UAP_HELP_MODAL } from './uap-help-modal.token.js';
 
 /**
  * One-sentence page description rendered as native dashboard-style intro copy at the top of
- * an editor/viewer. When the surface has a how-to doc (pilot surfaces), a trailing "Learn more"
- * link opens the help modal.
+ * an editor/viewer. When the surface has a how-to doc (pilot surfaces), a right-aligned
+ * "Learn more" button opens the help modal.
  */
 @customElement('uap-page-intro')
 export class UapPageIntroElement extends UmbLitElement {
@@ -43,32 +43,38 @@ export class UapPageIntroElement extends UmbLitElement {
     const cfg = SURFACE_HELP[this.surface];
     if (!cfg) return nothing;
     return html`
-      <p class="intro">
-        ${this.#localize.term(cfg.descriptionKey)}${cfg.howToDoc
-          ? html` <button type="button" class="learn" @click=${this.#openModal}>
+      <div class="intro">
+        <span class="desc">${this.#localize.term(cfg.descriptionKey)}</span>
+        ${cfg.howToDoc
+          ? html`<uui-button
+              class="learn"
+              look="secondary"
+              compact
+              label=${this.#localize.term('uap_help_learnMore')}
+              @click=${this.#openModal}>
+              <umb-icon name="icon-help"></umb-icon>
               ${this.#localize.term('uap_help_learnMore')}
-            </button>`
+            </uui-button>`
           : nothing}
-      </p>
+      </div>
     `;
   }
 
   static override styles = css`
     :host { display: block; }
     .intro {
+      display: flex;
+      align-items: center;
+      gap: var(--uui-size-space-4, 12px);
       margin: 0 0 var(--uui-size-space-4, 12px);
+    }
+    .desc {
+      flex: 1;
       color: var(--uui-color-text-alt);
       line-height: 1.5;
     }
-    .learn {
-      border: none;
-      background: none;
-      padding: 0;
-      font: inherit;
-      color: var(--uui-color-interactive);
-      cursor: pointer;
-    }
-    .learn:hover { text-decoration: underline; }
+    .learn { flex-shrink: 0; }
+    .learn umb-icon { margin-right: var(--uui-size-space-1, 3px); }
   `;
 }
 

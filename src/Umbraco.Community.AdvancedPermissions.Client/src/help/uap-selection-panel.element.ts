@@ -81,12 +81,22 @@ export class UapSelectionPanelElement extends UmbLitElement {
     `;
   }
 
-  /** Renders a group: its selected pill, or its option buttons joined by the "or" separator. */
+  /**
+   * Renders a group's controls. When nothing is selected, every option is a "Choose …" button
+   * joined by the "or" separator. When an option IS selected, its pill is shown — plus, for a
+   * mutually-exclusive group, the remaining option(s) as "Choose …" buttons so the user can still
+   * switch type (e.g. swap a chosen user for a user group) in both the empty and the results view.
+   */
   #groupControls(g: UapSelectorGroup): TemplateResult {
     const selected = g.options.find((o) => o.selectedName);
-    if (selected) return this.#pill(selected);
-    return html`${g.options.map(
-      (o, i) => html`${i > 0 ? html`<span class="or">${this.orLabel}</span>` : nothing}${this.#placeholder(o)}`,
+    if (!selected) {
+      return html`${g.options.map(
+        (o, i) => html`${i > 0 ? html`<span class="or">${this.orLabel}</span>` : nothing}${this.#placeholder(o)}`,
+      )}`;
+    }
+    const others = g.options.filter((o) => o !== selected);
+    return html`${this.#pill(selected)}${others.map(
+      (o) => html`<span class="or">${this.orLabel}</span>${this.#placeholder(o)}`,
     )}`;
   }
 
@@ -108,10 +118,7 @@ export class UapSelectionPanelElement extends UmbLitElement {
       <uui-box>
         <div class="bar">
           <div class="pills">
-            ${this.groups.map((g) => {
-              const s = g.options.find((o) => o.selectedName);
-              return s ? this.#pill(s) : nothing;
-            })}
+            ${this.groups.map((g) => this.#groupControls(g))}
           </div>
           <div class="actions"><slot name="actions"></slot></div>
         </div>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -6,11 +6,12 @@
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- Only audit direct dependencies; transitive vulnerability warnings from Umbraco's
-         dependencies are not actionable here. -->
-    <NuGetAuditMode>direct</NuGetAuditMode>
     <RootNamespace>Umbraco.Community.AdvancedPermissions.AI</RootNamespace>
     <AssemblyName>Umbraco.Community.AdvancedPermissions.AI</AssemblyName>
+    <!-- Serve wwwroot content at the web root (/) rather than the default /_content/{assembly}/ path.
+         This allows App_Plugins files to be accessible at /App_Plugins/... as Umbraco expects.
+         Mirrors the main Umbraco.Community.AdvancedPermissions package. -->
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
 
     <!-- NuGet package metadata -->
     <IsPackable>true</IsPackable>
@@ -62,5 +63,33 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
     <PackageReference Include="Umbraco.AI" />
   </ItemGroup>
+
+  <!-- Sync umbraco-package.json version with the MinVer-derived version at build time.
+       The source file keeps "0.0.0" as a placeholder; this target replaces it.
+       Mirrors the main Umbraco.Community.AdvancedPermissions package. -->
+  <UsingTask TaskName="SetJsonVersion"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <FilePath ParameterType="System.String" Required="true" />
+      <VersionValue ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+var text = System.IO.File.ReadAllText(FilePath);
+text = System.Text.RegularExpressions.Regex.Replace(
+    text, @"""version"":\s*""[^""]*""", $@"""version"": ""{VersionValue}""");
+System.IO.File.WriteAllText(FilePath, text);
+Log.LogMessage(MessageImportance.High, $"Set version in {FilePath} to {VersionValue}");
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="SyncUmbracoPackageVersion" AfterTargets="MinVer"
+          Condition="'$(MinVerVersion)' != ''">
+    <SetJsonVersion
+      FilePath="$(ProjectDir)wwwroot\App_Plugins\Umbraco.Community.AdvancedPermissions.AI\umbraco-package.json"
+      VersionValue="$(MinVerVersion)" />
+  </Target>
 
 </Project>

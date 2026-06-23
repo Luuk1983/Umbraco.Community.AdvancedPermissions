@@ -25,19 +25,6 @@
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
-  <!--
-    Transient dependency version override: forces a non-vulnerable native SQLite binary.
-    Pulled in transitively via the AI project reference -> Umbraco.AI -> Umbraco.Cms.Infrastructure
-    -> Microsoft.EntityFrameworkCore.Sqlite -> SQLitePCLRaw.bundle_e_sqlite3.
-    Fixes GHSA-2m69-gcr7-jv3q / CVE-2025-6965 (high) in SQLitePCLRaw.lib.e_sqlite3 <= 2.1.11;
-    3.50.3 bundles SQLite >= 3.50.2. See Directory.Packages.props for the version pin and rationale.
-    This top-level reference (and the corresponding PackageVersion in Directory.Packages.props)
-    can be deleted once the transient dependency is fixed upstream.
-  -->
-  <ItemGroup>
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
-  </ItemGroup>
-
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>

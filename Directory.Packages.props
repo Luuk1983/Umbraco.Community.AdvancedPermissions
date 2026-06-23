@@ -40,23 +40,5 @@
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
-    <!--
-      Transient dependency version overrides: force non-vulnerable versions of packages
-      pulled in transitively via Umbraco/ASP.NET/EF Core. Paired with top-level PackageReference
-      entries in the affected projects. These entries (and the corresponding PackageReferences)
-      can be deleted once the transient dependencies are fixed upstream.
-      - MailKit: GHSA-9j88-vvj5-vhgr (moderate) in < 4.16.0
-      - System.Security.Cryptography.Xml: GHSA-37gx-xxp4-5rgx, GHSA-w3x6-4m5h-cxqf (high) in < 10.0.6
-      - SQLitePCLRaw.lib.e_sqlite3: GHSA-2m69-gcr7-jv3q / CVE-2025-6965 (high) in <= 2.1.11.
-        Pulled in via Microsoft.EntityFrameworkCore.Sqlite -> SQLitePCLRaw.bundle_e_sqlite3.
-        Only the native-lib package is flagged (it ships the SQLite binary); the advisory does
-        NOT cover the managed wrappers (core/bundle/provider). From 3.x the native-lib package
-        is versioned by the bundled SQLite version, so 3.50.3 carries the SQLite >= 3.50.2 fix.
-        The 2.1.11 wrappers declare a ">= 2.1.11" (minimum, not exact) dependency on it, so they
-        float up to 3.50.3 without needing to be bumped to the 3.0.x wrapper line.
-    -->
-    <PackageVersion Include="MailKit" Version="4.16.0" />
-    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.6" />
-    <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.50.3" />
   </ItemGroup>
 </Project>

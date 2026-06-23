@@ -48,11 +48,11 @@ export class UapPageIntroElement extends UmbLitElement {
         ${cfg.howToDoc
           ? html`<uui-button
               class="learn"
-              look="secondary"
+              look="outline"
               compact
               label=${this.#localize.term('uap_help_learnMore')}
               @click=${this.#openModal}>
-              <umb-icon name="icon-help"></umb-icon>
+              <umb-icon name="icon-help-alt"></umb-icon>
               ${this.#localize.term('uap_help_learnMore')}
             </uui-button>`
           : nothing}

@@ -23,6 +23,20 @@ export default {
     deny: 'Refuser',
     umbracoUsers: 'Tous les utilisateurs',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Gérez les permissions Autoriser/Refuser par groupe d’utilisateurs dans votre arborescence de contenu.',
+    help_accessViewer_description: 'Visualisez les permissions effectives d’un utilisateur ou d’un groupe sur n’importe quel nœud, avec une justification complète.',
+    help_docTypePermissions_description: 'Décidez quels types de document chaque groupe d’utilisateurs peut créer, et où.',
+    help_insertOptions_description: 'Auditez quels types de document un utilisateur ou un groupe d’utilisateurs peut créer sur chaque nœud.',
+    help_learnMore: 'En savoir plus',
+    help_modalTitle: 'Aide',
+    help_tabAbout: 'À propos de cette page',
+    help_tabConcepts: 'Concepts',
+    help_concept_scope_tip: 'La portée détermine jusqu’où une règle s’applique : ce nœud, ce nœud et ses descendants, ou les descendants uniquement.',
+    help_concept_priorityOverride_tip: 'Le remplacement prioritaire force cette entrée à l’emporter sur l’ordre de résolution normal.',
+    help_concept_allowDeny_tip: 'Autoriser accorde la permission, Refuser la révoque, et la laisser non définie en hérite de l’ancêtre le plus proche.',
+    help_concept_reasoning_tip: 'Cliquez sur n’importe quelle cellule pour voir exactement comment la permission a été résolue.',
+
     // ── Éditeur de permissions ───────────────────────────────────────────
     editorHeadline: 'Éditeur de permissions de contenu',
     selectRolePrompt: 'Sélectionnez un groupe d’utilisateurs ci-dessus pour gérer ses permissions.',

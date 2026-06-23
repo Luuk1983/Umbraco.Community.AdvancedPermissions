@@ -23,6 +23,20 @@ export default {
     deny: 'Nekt',
     umbracoUsers: 'Alle brukere',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Administrer Tillat/Nekt-tillatelser per brukergruppe på tvers av innholdstreet.',
+    help_accessViewer_description: 'Se de effektive tillatelsene en bruker eller gruppe har på en hvilken som helst node, med full begrunnelse.',
+    help_docTypePermissions_description: 'Bestem hvilke dokumenttyper hver brukergruppe kan opprette, og hvor.',
+    help_insertOptions_description: 'Revider hvilke dokumenttyper en bruker eller brukergruppe kan opprette på hver node.',
+    help_learnMore: 'Lær mer',
+    help_modalTitle: 'Hjelp',
+    help_tabAbout: 'Om denne siden',
+    help_tabConcepts: 'Begreper',
+    help_concept_scope_tip: 'Omfang styrer hvor langt en regel rekker: denne noden, denne noden og dens underordnede, eller kun underordnede.',
+    help_concept_priorityOverride_tip: 'Prioritetsoverstyring tvinger denne oppføringen til å vinne over den normale rekkefølgen for løsning.',
+    help_concept_allowDeny_tip: 'Tillat gir tillatelsen, Nekt opphever den, og hvis den ikke angis arves den fra nærmeste overordnede node.',
+    help_concept_reasoning_tip: 'Klikk på en hvilken som helst celle for å se nøyaktig hvordan tillatelsen ble løst.',
+
     // ── Editor for tillatelser ───────────────────────────────────────────
     editorHeadline: 'Editor for innholdstillatelser',
     selectRolePrompt: 'Velg en brukergruppe ovenfor for å administrere tillatelsene.',

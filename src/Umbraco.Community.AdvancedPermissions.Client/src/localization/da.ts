@@ -23,6 +23,20 @@ export default {
     deny: 'Nægt',
     umbracoUsers: 'Alle brugere',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Administrér Tillad/Nægt-tilladelser pr. brugergruppe på tværs af dit indholdstræ.',
+    help_accessViewer_description: 'Se de effektive tilladelser, en bruger eller gruppe har på en hvilken som helst node, med fuld begrundelse.',
+    help_docTypePermissions_description: 'Bestem, hvilke dokumenttyper hver brugergruppe kan oprette, og hvor.',
+    help_insertOptions_description: 'Gennemgå, hvilke dokumenttyper en bruger eller brugergruppe kan oprette på hver node.',
+    help_learnMore: 'Læs mere',
+    help_modalTitle: 'Hjælp',
+    help_tabAbout: 'Om denne side',
+    help_tabConcepts: 'Begreber',
+    help_concept_scope_tip: 'Omfang styrer, hvor langt en regel rækker: denne node, denne node og dens undernoder, eller kun undernoder.',
+    help_concept_priorityOverride_tip: 'Prioritetstilsidesættelse tvinger denne post til at vinde over den normale opløsningsrækkefølge.',
+    help_concept_allowDeny_tip: 'Tillad giver tilladelsen, Nægt fjerner den, og hvis den ikke er angivet, nedarves den fra den nærmeste overordnede node.',
+    help_concept_reasoning_tip: 'Klik på en celle for at se nøjagtigt, hvordan tilladelsen blev løst.',
+
     // ── Tilladelseseditor ─────────────────────────────────────────────────
     editorHeadline: 'Editor til indholdstilladelser',
     selectRolePrompt: 'Vælg en brugergruppe ovenfor for at administrere dens tilladelser.',

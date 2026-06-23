@@ -23,6 +23,20 @@ export default {
     deny: 'Negar',
     umbracoUsers: 'Todos os usuários',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Gerencie permissões de Permitir/Negar por grupo de usuários em toda a sua árvore de conteúdo.',
+    help_accessViewer_description: 'Veja as permissões efetivas que um usuário ou grupo tem em qualquer nó, com o raciocínio completo.',
+    help_docTypePermissions_description: 'Decida quais tipos de documento cada grupo de usuários pode criar, e onde.',
+    help_insertOptions_description: 'Audite quais tipos de documento um usuário ou grupo de usuários pode criar em cada nó.',
+    help_learnMore: 'Saiba mais',
+    help_modalTitle: 'Ajuda',
+    help_tabAbout: 'Sobre esta página',
+    help_tabConcepts: 'Conceitos',
+    help_concept_scope_tip: 'O escopo controla até onde uma regra alcança: este nó, este nó e seus descendentes, ou apenas os descendentes.',
+    help_concept_priorityOverride_tip: 'A substituição de prioridade força esta entrada a prevalecer sobre a ordem de resolução normal.',
+    help_concept_allowDeny_tip: 'Permitir concede a permissão, Negar a revoga, e deixá-la indefinida herda do ancestral mais próximo.',
+    help_concept_reasoning_tip: 'Clique em qualquer célula para ver exatamente como a permissão foi resolvida.',
+
     // ── Editor de permissões ─────────────────────────────────────────────
     editorHeadline: 'Editor de Permissões de Conteúdo',
     selectRolePrompt: 'Selecione um grupo de usuários acima para gerenciar suas permissões.',

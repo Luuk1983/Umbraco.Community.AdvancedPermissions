@@ -6,6 +6,13 @@
          file-scoped namespaces, var-for-built-in-types, and primary constructors
          hard build requirements rather than editor-only suggestions. -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Audit only the dependencies we declare directly, not the whole transitive graph.
+         These are library projects: the consuming application owns its dependency graph and
+         is responsible for remediating transitive vulnerabilities (and can do so against its
+         own resolved versions). Auditing transitively here only produces warnings we can't
+         act on without force-pinning packages we don't use onto consumers — which we avoid. -->
+    <NuGetAuditMode>direct</NuGetAuditMode>
   </PropertyGroup>
 
 </Project>

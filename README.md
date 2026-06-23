@@ -156,6 +156,28 @@ These are planned directions, not commitments and in no particular order. Feedba
 
 Have an idea? [Open an issue](https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions/issues) and let's talk about it.
 
+## Documentation
+
+In-depth help is available both inside the backoffice (a description bar and a help modal on each editor/viewer) and as Markdown you can read here:
+
+- [Permission concepts](src/Umbraco.Community.AdvancedPermissions.Client/help-docs/en/concepts.md) — Allow/Deny, scope, inheritance, the All Users Group, and Priority Override.
+
+**Editors**
+
+- [Content Permissions Editor](src/Umbraco.Community.AdvancedPermissions.Client/help-docs/en/content-permissions.md)
+- [Document Type Permissions Editor](src/Umbraco.Community.AdvancedPermissions.Client/help-docs/en/doc-type-permissions.md)
+- [Library Permissions Editor](src/Umbraco.Community.AdvancedPermissions.Client/help-docs/en/library-permissions.md)
+- [Library Element Type Permissions](src/Umbraco.Community.AdvancedPermissions.Client/help-docs/en/element-type-permissions.md)
+
+**Viewers**
+
+- [Access Viewer](src/Umbraco.Community.AdvancedPermissions.Client/help-docs/en/access-viewer.md)
+- [Insert Options Viewer](src/Umbraco.Community.AdvancedPermissions.Client/help-docs/en/insert-options-viewer.md)
+- [Library Access Viewer](src/Umbraco.Community.AdvancedPermissions.Client/help-docs/en/library-access-viewer.md)
+- [Library Insert Viewer](src/Umbraco.Community.AdvancedPermissions.Client/help-docs/en/library-insert-viewer.md)
+
+Dutch translations live alongside, under `help-docs/nl/`. These files are the single source of truth for both the in-app help and this documentation.
+
 ## Feedback
 
 Found a bug or have a feature request? Please [open an issue](https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions/issues) on GitHub.

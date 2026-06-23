@@ -14,6 +14,7 @@ import { composeEntries, type PendingVerbEntries } from '../../utils/compose-ent
 import type { CellInfo } from '../../utils/cell-info.js';
 import type { PermissionScope } from '../../models/permission.models.js';
 import './uap-perm-block.element.js';
+import '../../help/uap-info-icon.element.js';
 
 /**
  * Tri-state choice on a single scope row.
@@ -365,7 +366,10 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
           ${this.#renderOverrideCheckbox('node')}
         </div>
         <div class="dialog-section">
-          <h4>${this.#localize.term('uap_descendantsSection')}</h4>
+          <h4>
+            ${this.#localize.term('uap_descendantsSection')}
+            <uap-info-icon text=${this.#localize.term('uap_help_concept_scope_tip')}></uap-info-icon>
+          </h4>
           <div class="perm-options">
             ${this.#renderTile('inherit', descSelected === 'inherit', () => {
               if (descSelected === 'inherit') { this._sameAsNode = true; }
@@ -493,7 +497,7 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
               else { this._descIsPriorityOverride = value; }
             }} />
           <span class="po-label">${this.#localize.term('uap_priorityOverride')}</span>
-          <span class="po-help" title=${this.#localize.term('uap_priorityOverrideTooltip', this.verb, this.nodeName)}>?</span>
+          <uap-info-icon text=${this.#localize.term('uap_help_concept_priorityOverride_tip')}></uap-info-icon>
         </label>
       </div>
     `;

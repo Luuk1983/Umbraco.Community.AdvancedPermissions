@@ -532,7 +532,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
         <uap-selection-panel
           .groups=${this.#selectionGroups}
           promptText=${this.#localize.term('uap_selectSubjectPrompt')}
-          ctaIcon="icon-eye"
+          ctaIcon="icon-document"
           orLabel=${this.#localize.term('uap_subjectOr')}
           @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
           ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}

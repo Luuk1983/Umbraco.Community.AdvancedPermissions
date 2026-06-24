@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Permissions avancées',
+    group_content: 'Permissions de contenu',
+    group_documentTypes: 'Permissions de type de document',
+    group_library: 'Permissions Library',
+    group_libraryElementTypes: 'Permissions de type d’élément Library',
+    menuItem_permissionsEditor: 'Éditeur de permissions',
+    menuItem_accessViewer: 'Visionneuse d’accès',
     editorsSectionLabel: 'Éditeurs',
     viewersSectionLabel: 'Visionneuses',
     permissionsEditor: 'Éditeur de permissions de contenu',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Sans lui, le résultat aurait été :',
 
     // ── Visionneuse d’accès ──────────────────────────────────────────────
-    viewerHeadline: 'Visionneuse d’accès',
+    viewerHeadline: 'Visionneuse d’accès au contenu',
     byRole: 'Par groupe d’utilisateurs',
     byUser: 'Par utilisateur',
     chooseRole: 'Choisir un groupe d’utilisateurs',
@@ -100,7 +106,7 @@ export default {
 
     // ── Message de redirection des permissions granulaires ────────────────
     redirectMessage:
-      'Les permissions de document pour ce groupe d’utilisateurs sont gérées par le package Advanced Permissions. Ouvrez l’Éditeur de permissions dans la section Utilisateurs pour configurer les permissions.',
+      'Les permissions de document pour ce groupe d’utilisateurs sont gérées par le package Advanced Permissions. Ouvrez l’Éditeur de permissions de contenu dans la section Utilisateurs pour configurer les permissions.',
 
     // ── Permissions de type de document ───────────────────────────────────
     role: 'Groupe d’utilisateurs',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Éditeur de permissions de type de document',
     docTypePermissions_insertOptionsMenuLabel: 'Visionneuse des options d’insertion',
     docTypePermissions_workspaceTitle: 'Éditeur de permissions de type de document',
-    docTypePermissions_auditTitle: 'Visionneuse des options d’insertion',
+    docTypePermissions_auditTitle: 'Visionneuse d’accès par type de document',
     docTypePermissions_allDocTypes: 'Tous les types de document',
     docTypePermissions_verbInsert: 'Insérer',
     docTypePermissions_documentType: 'Type de document',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} ne s’applique pas aux dossiers — il peut tout de même être défini pour les éléments qu’ils contiennent.`,
     library_folderInheritLabel: 'Éléments à l’intérieur (descendants)',
     libraryInsertViewer_menuLabel: 'Visionneuse d’insertion Library',
-    libraryInsertViewer_headline: 'Visionneuse d’insertion Library',
+    libraryInsertViewer_headline: 'Visionneuse d’accès par type d’élément Library',
     libraryInsertViewer_intro: 'Affiche quels types d’élément Library un groupe d’utilisateurs ou un utilisateur peut créer, résolu sur l’ensemble de ses groupes. Cliquez sur une ligne pour voir la justification.',
     elementTypePermissions_menuLabel: 'Permissions de type d’élément Library',
-    elementTypePermissions_headline: 'Permissions de type d’élément Library',
+    elementTypePermissions_headline: 'Éditeur de permissions de type d’élément Library',
     elementTypePermissions_intro: 'Contrôlez quels types d’élément chaque groupe d’utilisateurs peut créer dans la Library. Les types d’élément sont créables par défaut ; définissez Autoriser ou Refuser — avec un remplacement prioritaire optionnel — pour contrôler la façon dont le choix se résout lorsqu’un utilisateur appartient à plusieurs groupes.',
     elementTypePermissions_typeHeader: 'Type d’élément',
     elementTypePermissions_verbCreate: 'Créer dans la Library',

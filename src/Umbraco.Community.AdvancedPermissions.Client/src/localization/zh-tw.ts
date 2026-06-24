@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── 導覽 ──────────────────────────────────────────────────────────────
     sectionLabel: '進階權限',
+    group_content: '內容權限',
+    group_documentTypes: '文檔類型權限',
+    group_library: 'Library 權限',
+    group_libraryElementTypes: 'Library 元素類型權限',
+    menuItem_permissionsEditor: '權限編輯器',
+    menuItem_accessViewer: '存取檢視器',
     editorsSectionLabel: '編輯器',
     viewersSectionLabel: '檢視器',
     permissionsEditor: '內容權限編輯器',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: '若未使用，結果原本會是：',
 
     // ── 存取檢視器 ─────────────────────────────────────────────────────────
-    viewerHeadline: '存取檢視器',
+    viewerHeadline: '內容存取檢視器',
     byRole: '依使用者群組',
     byUser: '依使用者',
     chooseRole: '選擇使用者群組',
@@ -100,7 +106,7 @@ export default {
 
     // ── 細部權限重新導向 ──────────────────────────────────────────────────
     redirectMessage:
-      '此使用者群組的文件權限由 Advanced Permissions 套件管理。請在「使用者」區段中開啟權限編輯器以設定權限。',
+      '此使用者群組的文件權限由 Advanced Permissions 套件管理。請在「使用者」區段中開啟「內容權限編輯器」以設定權限。',
 
     // ── 文檔類型權限 ──────────────────────────────────────────────────────
     role: '使用者群組',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: '文檔類型權限編輯器',
     docTypePermissions_insertOptionsMenuLabel: '插入選項檢視器',
     docTypePermissions_workspaceTitle: '文檔類型權限編輯器',
-    docTypePermissions_auditTitle: '插入選項檢視器',
+    docTypePermissions_auditTitle: '文檔類型存取檢視器',
     docTypePermissions_allDocTypes: '所有文檔類型',
     docTypePermissions_verbInsert: '插入',
     docTypePermissions_documentType: '文檔類型',
@@ -162,7 +168,7 @@ export default {
     elementFolderDescSection: '其中的元素',
     naChip: '不適用',
     redirectMessageElement:
-      '此使用者群組的 Library（元素）權限由 Advanced Permissions 套件管理。請在「使用者」區段中開啟 Library 權限編輯器以設定權限。',
+      '此使用者群組的 Library（元素）權限由 Advanced Permissions 套件管理。請在「使用者」區段中開啟「Library 權限編輯器」以設定權限。',
     library_menuLabel: 'Library 權限編輯器',
     library_editorHeadline: 'Library 權限編輯器',
     library_accessViewerMenuLabel: 'Library 存取檢視器',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb}不適用於資料夾——但仍可為其中的項目設定。`,
     library_folderInheritLabel: '其中的項目（子孫節點）',
     libraryInsertViewer_menuLabel: 'Library 插入檢視器',
-    libraryInsertViewer_headline: 'Library 插入檢視器',
+    libraryInsertViewer_headline: 'Library 元素類型存取檢視器',
     libraryInsertViewer_intro: '顯示使用者群組或使用者可建立哪些 Library 元素類型，並跨其所屬的所有群組進行解析。點選列即可檢視原因。',
     elementTypePermissions_menuLabel: 'Library 元素類型權限',
-    elementTypePermissions_headline: 'Library 元素類型權限',
+    elementTypePermissions_headline: 'Library 元素類型權限編輯器',
     elementTypePermissions_intro: '控制每個使用者群組可以在 Library 中建立哪些元素類型。元素類型預設可建立；設定允許或拒絕——並可選擇性地搭配優先權覆寫——以控制當使用者同時屬於多個群組時如何解析此選擇。',
     elementTypePermissions_typeHeader: '元素類型',
     elementTypePermissions_verbCreate: '在 Library 中建立',

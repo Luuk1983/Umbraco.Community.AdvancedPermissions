@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigare ──────────────────────────────────────────────────────────
     sectionLabel: 'Permisiuni avansate',
+    group_content: 'Permisiuni pentru conținut',
+    group_documentTypes: 'Permisiuni pe tip de document',
+    group_library: 'Permisiuni Library',
+    group_libraryElementTypes: 'Permisiuni pe tip de element Library',
+    menuItem_permissionsEditor: 'Editor de permisiuni',
+    menuItem_accessViewer: 'Vizualizator de acces',
     editorsSectionLabel: 'Editori',
     viewersSectionLabel: 'Vizualizatoare',
     permissionsEditor: 'Editor de permisiuni pentru conținut',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Fără ea, rezultatul ar fi fost:',
 
     // ── Vizualizator de acces ─────────────────────────────────────────────
-    viewerHeadline: 'Vizualizator de acces',
+    viewerHeadline: 'Vizualizator de acces la conținut',
     byRole: 'După grup de utilizatori',
     byUser: 'După utilizator',
     chooseRole: 'Alegeți un grup de utilizatori',
@@ -100,7 +106,7 @@ export default {
 
     // ── Mesaj de redirecționare pentru permisiuni granulare ───────────────
     redirectMessage:
-      'Permisiunile pentru documente ale acestui grup de utilizatori sunt gestionate de pachetul Advanced Permissions. Deschideți Editorul de permisiuni din secțiunea Utilizatori pentru a configura permisiunile.',
+      'Permisiunile pentru documente ale acestui grup de utilizatori sunt gestionate de pachetul Advanced Permissions. Deschideți Editorul de permisiuni pentru conținut din secțiunea Utilizatori pentru a configura permisiunile.',
 
     // ── Permisiuni pe tip de document ─────────────────────────────────────
     role: 'Grup de utilizatori',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Editor de permisiuni pe tip de document',
     docTypePermissions_insertOptionsMenuLabel: 'Vizualizator opțiuni de inserare',
     docTypePermissions_workspaceTitle: 'Editor de permisiuni pe tip de document',
-    docTypePermissions_auditTitle: 'Vizualizator opțiuni de inserare',
+    docTypePermissions_auditTitle: 'Vizualizator de acces pe tip de document',
     docTypePermissions_allDocTypes: 'Toate tipurile de documente',
     docTypePermissions_verbInsert: 'Inserare',
     docTypePermissions_documentType: 'Tip de document',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} nu se aplică folderelor — poate fi totuși setat pentru elementele din interior.`,
     library_folderInheritLabel: 'Elementele din interior (descendenți)',
     libraryInsertViewer_menuLabel: 'Vizualizator de inserare Library',
-    libraryInsertViewer_headline: 'Vizualizator de inserare Library',
+    libraryInsertViewer_headline: 'Vizualizator de acces pe tip de element Library',
     libraryInsertViewer_intro: 'Arată ce tipuri de elemente Library poate crea un grup de utilizatori sau un utilizator, rezolvate pe toate grupurile sale. Faceți clic pe un rând pentru a vedea justificarea.',
     elementTypePermissions_menuLabel: 'Permisiuni pe tip de element Library',
-    elementTypePermissions_headline: 'Permisiuni pe tip de element Library',
+    elementTypePermissions_headline: 'Editor de permisiuni pe tip de element Library',
     elementTypePermissions_intro: 'Controlați ce tipuri de elemente poate crea fiecare grup de utilizatori în Library. Tipurile de elemente pot fi create în mod implicit; setați Permite sau Refuză — cu o suprascriere de prioritate opțională — pentru a controla cum se rezolvă alegerea atunci când un utilizator aparține mai multor grupuri.',
     elementTypePermissions_typeHeader: 'Tip de element',
     elementTypePermissions_verbCreate: 'Creare în Library',

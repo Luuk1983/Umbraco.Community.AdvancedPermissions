@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navegação ─────────────────────────────────────────────────────────
     sectionLabel: 'Permissões avançadas',
+    group_content: 'Permissões de conteúdo',
+    group_documentTypes: 'Permissões de tipo de documento',
+    group_library: 'Permissões da Library',
+    group_libraryElementTypes: 'Permissões de tipo de elemento da Library',
+    menuItem_permissionsEditor: 'Editor de permissões',
+    menuItem_accessViewer: 'Visualizador de acessos',
     editorsSectionLabel: 'Editores',
     viewersSectionLabel: 'Visualizadores',
     permissionsEditor: 'Editor de permissões de conteúdo',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Sem ela, o resultado teria sido:',
 
     // ── Visualizador de acessos ───────────────────────────────────────────
-    viewerHeadline: 'Visualizador de acessos',
+    viewerHeadline: 'Visualizador de acessos ao conteúdo',
     byRole: 'Por grupo de utilizadores',
     byUser: 'Por utilizador',
     chooseRole: 'Escolher grupo de utilizadores',
@@ -100,7 +106,7 @@ export default {
 
     // ── Mensagem de redirecionamento de permissões granulares ─────────────
     redirectMessage:
-      'As permissões de documento para este grupo de utilizadores são geridas pelo pacote Advanced Permissions. Abra o Editor de permissões na secção Utilizadores para configurar as permissões.',
+      'As permissões de documento para este grupo de utilizadores são geridas pelo pacote Advanced Permissions. Abra o Editor de permissões de conteúdo na secção Utilizadores para configurar as permissões.',
 
     // ── Permissões de tipo de documento ───────────────────────────────────
     role: 'Grupo de utilizadores',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Editor de permissões de tipo de documento',
     docTypePermissions_insertOptionsMenuLabel: 'Visualizador de opções de inserção',
     docTypePermissions_workspaceTitle: 'Editor de permissões de tipo de documento',
-    docTypePermissions_auditTitle: 'Visualizador de opções de inserção',
+    docTypePermissions_auditTitle: 'Visualizador de acessos por tipo de documento',
     docTypePermissions_allDocTypes: 'Todos os tipos de documento',
     docTypePermissions_verbInsert: 'Inserir',
     docTypePermissions_documentType: 'Tipo de Documento',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} não se aplica a pastas — pode, ainda assim, ser definido para os itens contidos nelas.`,
     library_folderInheritLabel: 'Itens contidos (descendentes)',
     libraryInsertViewer_menuLabel: 'Visualizador de inserção da Library',
-    libraryInsertViewer_headline: 'Visualizador de inserção da Library',
+    libraryInsertViewer_headline: 'Visualizador de acessos por tipo de elemento da Library',
     libraryInsertViewer_intro: 'Mostra quais os tipos de elemento da Library que um grupo de utilizadores ou utilizador pode criar, resolvidos em todos os seus grupos. Clique numa linha para ver a justificação.',
     elementTypePermissions_menuLabel: 'Permissões de tipo de elemento da Library',
-    elementTypePermissions_headline: 'Permissões de tipo de elemento da Library',
+    elementTypePermissions_headline: 'Editor de permissões de tipo de elemento da Library',
     elementTypePermissions_intro: 'Controle quais os tipos de elemento que cada grupo de utilizadores pode criar na Library. Os tipos de elemento são criáveis por predefinição; defina Permitir ou Negar — com uma substituição de prioridade opcional — para controlar como a escolha é resolvida quando um utilizador pertence a vários grupos.',
     elementTypePermissions_typeHeader: 'Tipo de elemento',
     elementTypePermissions_verbCreate: 'Criar na Library',

@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigasjon ────────────────────────────────────────────────────────
     sectionLabel: 'Avanserte tillatelser',
+    group_content: 'Innholdstillatelser',
+    group_documentTypes: 'Dokumenttype-tillatelser',
+    group_library: 'Library-tillatelser',
+    group_libraryElementTypes: 'Library-elementtype-tillatelser',
+    menuItem_permissionsEditor: 'Editor for tillatelser',
+    menuItem_accessViewer: 'Tilgangsvisning',
     editorsSectionLabel: 'Redigering',
     viewersSectionLabel: 'Visning',
     permissionsEditor: 'Editor for innholdstillatelser',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Uten den ville resultatet vært:',
 
     // ── Tilgangsvisning ───────────────────────────────────────────────────
-    viewerHeadline: 'Tilgangsvisning',
+    viewerHeadline: 'Tilgangsvisning for innhold',
     byRole: 'Etter brukergruppe',
     byUser: 'Etter bruker',
     chooseRole: 'Velg brukergruppe',
@@ -100,7 +106,7 @@ export default {
 
     // ── Omdirigeringsmelding for granulære tillatelser ────────────────────
     redirectMessage:
-      'Dokumenttillatelser for denne brukergruppen administreres av Advanced Permissions-pakken. Åpne editoren for tillatelser i Brukere-seksjonen for å konfigurere tillatelser.',
+      'Dokumenttillatelser for denne brukergruppen administreres av Advanced Permissions-pakken. Åpne Editor for innholdstillatelser i Brukere-seksjonen for å konfigurere tillatelser.',
 
     // ── Dokumenttype-tillatelser ──────────────────────────────────────────
     role: 'Brukergruppe',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Editor for dokumenttype-tillatelser',
     docTypePermissions_insertOptionsMenuLabel: 'Visning av innsettingsalternativer',
     docTypePermissions_workspaceTitle: 'Editor for dokumenttype-tillatelser',
-    docTypePermissions_auditTitle: 'Visning av innsettingsalternativer',
+    docTypePermissions_auditTitle: 'Tilgangsvisning for dokumenttyper',
     docTypePermissions_allDocTypes: 'Alle dokumenttyper',
     docTypePermissions_verbInsert: 'Sett inn',
     docTypePermissions_documentType: 'Dokumenttype',
@@ -162,7 +168,7 @@ export default {
     elementFolderDescSection: 'Elementer inni',
     naChip: 'I/A',
     redirectMessageElement:
-      'Library-tillatelser (elementer) for denne brukergruppen administreres av Advanced Permissions-pakken. Åpne editoren for Library-tillatelser i Brukere-seksjonen for å konfigurere tillatelser.',
+      'Library-tillatelser (elementer) for denne brukergruppen administreres av Advanced Permissions-pakken. Åpne Editor for Library-tillatelser i Brukere-seksjonen for å konfigurere tillatelser.',
     library_menuLabel: 'Editor for Library-tillatelser',
     library_editorHeadline: 'Editor for Library-tillatelser',
     library_accessViewerMenuLabel: 'Tilgangsvisning for Library',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} gjelder ikke for mapper — det kan likevel angis for elementene inni.`,
     library_folderInheritLabel: 'Elementer inni (underordnede)',
     libraryInsertViewer_menuLabel: 'Innsettingsvisning for Library',
-    libraryInsertViewer_headline: 'Innsettingsvisning for Library',
+    libraryInsertViewer_headline: 'Tilgangsvisning for Library-elementtyper',
     libraryInsertViewer_intro: 'Viser hvilke Library-elementtyper en brukergruppe eller bruker kan opprette, løst på tvers av alle gruppene deres. Klikk på en rad for å se begrunnelsen.',
     elementTypePermissions_menuLabel: 'Library-tillatelser for elementtyper',
-    elementTypePermissions_headline: 'Library-tillatelser for elementtyper',
+    elementTypePermissions_headline: 'Editor for Library-elementtype-tillatelser',
     elementTypePermissions_intro: 'Styr hvilke elementtyper hver brukergruppe kan opprette i Library. Elementtyper kan opprettes som standard; angi Tillat eller Nekt — med en valgfri prioritetsoverstyring — for å styre hvordan valget løses når en bruker tilhører flere grupper.',
     elementTypePermissions_typeHeader: 'Elementtype',
     elementTypePermissions_verbCreate: 'Opprett i Library',

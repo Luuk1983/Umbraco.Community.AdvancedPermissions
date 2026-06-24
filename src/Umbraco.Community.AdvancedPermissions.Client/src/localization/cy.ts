@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Llywio ────────────────────────────────────────────────────────────
     sectionLabel: 'Hawliau Uwch',
+    group_content: 'Hawliau Cynnwys',
+    group_documentTypes: 'Hawliau Math o Ddogfen',
+    group_library: 'Hawliau Library',
+    group_libraryElementTypes: 'Hawliau Math o Elfen Library',
+    menuItem_permissionsEditor: 'Golygydd Hawliau',
+    menuItem_accessViewer: 'Gwelydd Mynediad',
     editorsSectionLabel: 'Golygyddion',
     viewersSectionLabel: 'Gwelyddion',
     permissionsEditor: 'Golygydd Hawliau Cynnwys',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Hebddo, byddai’r canlyniad wedi bod:',
 
     // ── Gwelydd Mynediad ──────────────────────────────────────────────────
-    viewerHeadline: 'Gwelydd Mynediad',
+    viewerHeadline: 'Gwelydd Mynediad Cynnwys',
     byRole: 'Yn ôl Grŵp Defnyddiwr',
     byUser: 'Yn ôl Defnyddiwr',
     chooseRole: 'Dewis grŵp defnyddiwr',
@@ -100,7 +106,7 @@ export default {
 
     // ── Neges ailgyfeirio hawliau gronynnog ─────────────────────────────────
     redirectMessage:
-      'Rheolir hawliau dogfennau ar gyfer y grŵp defnyddiwr hwn gan y pecyn Advanced Permissions. Agorwch y Golygydd Hawliau yn yr adran Defnyddwyr i ffurfweddu hawliau.',
+      'Rheolir hawliau dogfennau ar gyfer y grŵp defnyddiwr hwn gan y pecyn Advanced Permissions. Agorwch y Golygydd Hawliau Cynnwys yn yr adran Defnyddwyr i ffurfweddu hawliau.',
 
     // ── Hawliau Math o Ddogfen ──────────────────────────────────────────────
     role: 'Grŵp Defnyddiwr',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Golygydd Hawliau Math o Ddogfen',
     docTypePermissions_insertOptionsMenuLabel: 'Gwelydd Opsiynau Mewnosod',
     docTypePermissions_workspaceTitle: 'Golygydd Hawliau Math o Ddogfen',
-    docTypePermissions_auditTitle: 'Gwelydd Opsiynau Mewnosod',
+    docTypePermissions_auditTitle: 'Gwelydd Mynediad Math o Ddogfen',
     docTypePermissions_allDocTypes: 'Pob math o ddogfen',
     docTypePermissions_verbInsert: 'Mewnosod',
     docTypePermissions_documentType: 'Math o Ddogfen',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `Nid yw ${verb} yn gymwys i ffolderi — gellir ei osod o hyd ar gyfer yr eitemau y tu mewn.`,
     library_folderInheritLabel: 'Eitemau y tu mewn (disgynyddion)',
     libraryInsertViewer_menuLabel: 'Gwelydd Mewnosod Library',
-    libraryInsertViewer_headline: 'Gwelydd Mewnosod Library',
+    libraryInsertViewer_headline: 'Gwelydd Mynediad Math o Elfen Library',
     libraryInsertViewer_intro: 'Yn dangos pa fathau o elfen library y gall grŵp defnyddiwr neu ddefnyddiwr eu creu, wedi’u datrys ar draws eu holl grwpiau. Cliciwch ar res i weld y rhesymu.',
     elementTypePermissions_menuLabel: 'Hawliau Math o Elfen Library',
-    elementTypePermissions_headline: 'Hawliau Math o Elfen Library',
+    elementTypePermissions_headline: 'Golygydd Hawliau Math o Elfen Library',
     elementTypePermissions_intro: 'Rheoli pa fathau o elfen y gall pob grŵp defnyddiwr eu creu yn y Library. Mae mathau o elfen yn greadwy yn ddiofyn; gosodwch Caniatáu neu Wrthod — gyda diystyriad blaenoriaeth dewisol — i reoli sut y datryswyd y dewis pan fydd defnyddiwr yn perthyn i sawl grŵp.',
     elementTypePermissions_typeHeader: 'Math o Elfen',
     elementTypePermissions_verbCreate: 'Creu yn y Library',

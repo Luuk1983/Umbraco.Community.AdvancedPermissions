@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigace ──────────────────────────────────────────────────────────
     sectionLabel: 'Pokročilá oprávnění',
+    group_content: 'Oprávnění obsahu',
+    group_documentTypes: 'Oprávnění typu dokumentu',
+    group_library: 'Oprávnění knihovny Library',
+    group_libraryElementTypes: 'Oprávnění typů elementů knihovny Library',
+    menuItem_permissionsEditor: 'Editor oprávnění',
+    menuItem_accessViewer: 'Zobrazení přístupu',
     editorsSectionLabel: 'Editory',
     viewersSectionLabel: 'Zobrazení',
     permissionsEditor: 'Editor oprávnění obsahu',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Bez něj by výsledek byl:',
 
     // ── Zobrazení přístupu ──────────────────────────────────────────────
-    viewerHeadline: 'Zobrazení přístupu',
+    viewerHeadline: 'Zobrazení přístupu k obsahu',
     byRole: 'Podle uživatelské skupiny',
     byUser: 'Podle uživatele',
     chooseRole: 'Vyberte uživatelskou skupinu',
@@ -100,7 +106,7 @@ export default {
 
     // ── Zpráva o přesměrování granulárních oprávnění ───────────────
     redirectMessage:
-      'Oprávnění k dokumentům pro tuto uživatelskou skupinu spravuje balíček Advanced Permissions. Otevřete Editor oprávnění v sekci Uživatelé pro konfiguraci oprávnění.',
+      'Oprávnění k dokumentům pro tuto uživatelskou skupinu spravuje balíček Advanced Permissions. Otevřete Editor oprávnění obsahu v sekci Uživatelé pro konfiguraci oprávnění.',
 
     // ── Oprávnění typu dokumentu ──────────────────────────────────────
     role: 'Uživatelská skupina',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Editor oprávnění typu dokumentu',
     docTypePermissions_insertOptionsMenuLabel: 'Zobrazení možností vkládání',
     docTypePermissions_workspaceTitle: 'Editor oprávnění typu dokumentu',
-    docTypePermissions_auditTitle: 'Zobrazení možností vkládání',
+    docTypePermissions_auditTitle: 'Zobrazení přístupu typu dokumentu',
     docTypePermissions_allDocTypes: 'Všechny typy dokumentů',
     docTypePermissions_verbInsert: 'Vložit',
     docTypePermissions_documentType: 'Typ dokumentu',
@@ -175,10 +181,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} se nevztahuje na složky — stále jej lze nastavit pro položky uvnitř.`,
     library_folderInheritLabel: 'Položky uvnitř (potomci)',
     libraryInsertViewer_menuLabel: 'Zobrazení vkládání knihovny Library',
-    libraryInsertViewer_headline: 'Zobrazení vkládání knihovny Library',
+    libraryInsertViewer_headline: 'Zobrazení přístupu typů elementů knihovny Library',
     libraryInsertViewer_intro: 'Zobrazuje, které typy elementů knihovny Library může uživatelská skupina nebo uživatel vytvořit, vyhodnoceno napříč všemi jejich skupinami. Klikněte na řádek pro zobrazení zdůvodnění.',
     elementTypePermissions_menuLabel: 'Oprávnění typů elementů knihovny Library',
-    elementTypePermissions_headline: 'Oprávnění typů elementů knihovny Library',
+    elementTypePermissions_headline: 'Editor oprávnění typů elementů knihovny Library',
     elementTypePermissions_intro: 'Řiďte, které typy elementů může každá uživatelská skupina vytvářet v knihovně Library. Typy elementů jsou ve výchozím nastavení vytvořitelné; nastavte Povolit nebo Zakázat — s volitelným přepsáním priority — pro řízení, jak se volba vyhodnotí, když uživatel patří do několika skupin.',
     elementTypePermissions_typeHeader: 'Typ elementu',
     elementTypePermissions_verbCreate: 'Vytvořit v knihovně Library',

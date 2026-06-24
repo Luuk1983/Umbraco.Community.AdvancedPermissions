@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Gezinme ───────────────────────────────────────────────────────────
     sectionLabel: 'Gelişmiş İzinler',
+    group_content: 'İçerik İzinleri',
+    group_documentTypes: 'Belge Türü İzinleri',
+    group_library: 'Library İzinleri',
+    group_libraryElementTypes: 'Library Öğe Türü İzinleri',
+    menuItem_permissionsEditor: 'İzin Düzenleyicisi',
+    menuItem_accessViewer: 'Erişim Görüntüleyici',
     editorsSectionLabel: 'Düzenleyiciler',
     viewersSectionLabel: 'Görüntüleyiciler',
     permissionsEditor: 'İçerik İzinleri Düzenleyicisi',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Bu olmadan sonuç şöyle olurdu:',
 
     // ── Erişim Görüntüleyici ──────────────────────────────────────────────
-    viewerHeadline: 'Erişim Görüntüleyici',
+    viewerHeadline: 'İçerik Erişim Görüntüleyici',
     byRole: 'Kullanıcı grubuna göre',
     byUser: 'Kullanıcıya göre',
     chooseRole: 'Kullanıcı grubu seçin',
@@ -100,7 +106,7 @@ export default {
 
     // ── Ayrıntılı izinler yönlendirme mesajı ──────────────────────────────
     redirectMessage:
-      'Bu kullanıcı grubu için belge izinleri Advanced Permissions paketi tarafından yönetilir. İzinleri yapılandırmak için Kullanıcılar bölümündeki İzin Düzenleyicisini açın.',
+      'Bu kullanıcı grubu için belge izinleri Advanced Permissions paketi tarafından yönetilir. İzinleri yapılandırmak için Kullanıcılar bölümündeki İçerik İzinleri Düzenleyicisini açın.',
 
     // ── Belge Türü İzinleri ───────────────────────────────────────────────
     role: 'Kullanıcı Grubu',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Belge Türü İzinleri Düzenleyicisi',
     docTypePermissions_insertOptionsMenuLabel: 'Ekleme Seçenekleri Görüntüleyici',
     docTypePermissions_workspaceTitle: 'Belge Türü İzinleri Düzenleyicisi',
-    docTypePermissions_auditTitle: 'Ekleme Seçenekleri Görüntüleyici',
+    docTypePermissions_auditTitle: 'Belge Türü Erişim Görüntüleyici',
     docTypePermissions_allDocTypes: 'Tüm belge türleri',
     docTypePermissions_verbInsert: 'Ekle',
     docTypePermissions_documentType: 'Belge Türü',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} klasörler için geçerli değildir — yine de içindeki öğeler için ayarlanabilir.`,
     library_folderInheritLabel: 'İçindeki öğeler (alt düğümler)',
     libraryInsertViewer_menuLabel: 'Library Ekleme Görüntüleyici',
-    libraryInsertViewer_headline: 'Library Ekleme Görüntüleyici',
+    libraryInsertViewer_headline: 'Library Öğe Türü Erişim Görüntüleyici',
     libraryInsertViewer_intro: 'Bir kullanıcı grubunun veya kullanıcının hangi Library öğe türlerini oluşturabileceğini, tüm gruplarına göre çözümlenmiş olarak gösterir. Gerekçeyi görmek için bir satıra tıklayın.',
     elementTypePermissions_menuLabel: 'Library Öğe Türü İzinleri',
-    elementTypePermissions_headline: 'Library Öğe Türü İzinleri',
+    elementTypePermissions_headline: 'Library Öğe Türü İzinleri Düzenleyicisi',
     elementTypePermissions_intro: 'Her kullanıcı grubunun Library içinde hangi öğe türlerini oluşturabileceğini denetleyin. Öğe türleri varsayılan olarak oluşturulabilir; bir kullanıcı birden fazla gruba ait olduğunda seçimin nasıl çözümleneceğini denetlemek için İzin ver veya Reddet ayarlayın — isteğe bağlı bir öncelik geçersiz kılmasıyla birlikte.',
     elementTypePermissions_typeHeader: 'Öğe Türü',
     elementTypePermissions_verbCreate: 'Library içinde oluştur',

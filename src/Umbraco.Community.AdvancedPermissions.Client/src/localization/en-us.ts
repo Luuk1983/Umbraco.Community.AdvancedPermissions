@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Advanced Permissions',
+    group_content: 'Content Permissions',
+    group_documentTypes: 'Document Type Permissions',
+    group_library: 'Library Permissions',
+    group_libraryElementTypes: 'Library Element Type Permissions',
+    menuItem_permissionsEditor: 'Permissions Editor',
+    menuItem_accessViewer: 'Access Viewer',
     editorsSectionLabel: 'Editors',
     viewersSectionLabel: 'Viewers',
     permissionsEditor: 'Content Permissions Editor',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Without it, the result would have been:',
 
     // ── Access Viewer ─────────────────────────────────────────────────────
-    viewerHeadline: 'Access Viewer',
+    viewerHeadline: 'Content Access Viewer',
     byRole: 'By User Group',
     byUser: 'By User',
     chooseRole: 'Choose user group',
@@ -100,7 +106,7 @@ export default {
 
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:
-      'Document permissions for this user group are managed by the Advanced Permissions package. Open the Permissions Editor in the Users section to configure permissions.',
+      'Document permissions for this user group are managed by the Advanced Permissions package. Open the Content Permissions Editor in the Users section to configure permissions.',
 
     // ── Doc-Type Permissions ──────────────────────────────────────────────
     role: 'User Group',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Document Type Permissions Editor',
     docTypePermissions_insertOptionsMenuLabel: 'Insert Options Viewer',
     docTypePermissions_workspaceTitle: 'Document Type Permissions Editor',
-    docTypePermissions_auditTitle: 'Insert Options Viewer',
+    docTypePermissions_auditTitle: 'Document Type Access Viewer',
     docTypePermissions_allDocTypes: 'All document types',
     docTypePermissions_verbInsert: 'Insert',
     docTypePermissions_documentType: 'Document Type',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} does not apply to folders — it can still be set for the items inside.`,
     library_folderInheritLabel: 'Items inside (descendants)',
     libraryInsertViewer_menuLabel: 'Library Insert Viewer',
-    libraryInsertViewer_headline: 'Library Insert Viewer',
+    libraryInsertViewer_headline: 'Library Element Type Access Viewer',
     libraryInsertViewer_intro: 'Shows which library element types a user group or user may create, resolved across all their groups. Click a row to see the reasoning.',
     elementTypePermissions_menuLabel: 'Library Element Type Permissions',
-    elementTypePermissions_headline: 'Library Element Type Permissions',
+    elementTypePermissions_headline: 'Library Element Type Permissions Editor',
     elementTypePermissions_intro: 'Control which element types each user group may create in the Library. Element types are creatable by default; set Allow or Deny — with an optional priority override — to control how the choice resolves when a user belongs to several groups.',
     elementTypePermissions_typeHeader: 'Element Type',
     elementTypePermissions_verbCreate: 'Create in Library',

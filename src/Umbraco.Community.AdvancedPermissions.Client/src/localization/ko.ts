@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: '고급 권한',
+    group_content: '콘텐츠 권한',
+    group_documentTypes: '문서 유형 권한',
+    group_library: '라이브러리 권한',
+    group_libraryElementTypes: '라이브러리 요소 유형 권한',
+    menuItem_permissionsEditor: '권한 편집기',
+    menuItem_accessViewer: '접근 권한 뷰어',
     editorsSectionLabel: '편집기',
     viewersSectionLabel: '뷰어',
     permissionsEditor: '콘텐츠 권한 편집기',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: '재정의가 없었다면 결과는 다음과 같았을 것입니다:',
 
     // ── Access Viewer ─────────────────────────────────────────────────────
-    viewerHeadline: '접근 권한 뷰어',
+    viewerHeadline: '콘텐츠 접근 권한 뷰어',
     byRole: '사용자 그룹별',
     byUser: '사용자별',
     chooseRole: '사용자 그룹 선택',
@@ -100,7 +106,7 @@ export default {
 
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:
-      '이 사용자 그룹의 문서 권한은 Advanced Permissions 패키지에서 관리합니다. 권한을 구성하려면 사용자 섹션에서 권한 편집기를 여세요.',
+      '이 사용자 그룹의 문서 권한은 Advanced Permissions 패키지에서 관리합니다. 권한을 구성하려면 사용자 섹션에서 콘텐츠 권한 편집기를 여세요.',
 
     // ── Doc-Type Permissions ──────────────────────────────────────────────
     role: '사용자 그룹',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: '문서 유형 권한 편집기',
     docTypePermissions_insertOptionsMenuLabel: '삽입 옵션 뷰어',
     docTypePermissions_workspaceTitle: '문서 유형 권한 편집기',
-    docTypePermissions_auditTitle: '삽입 옵션 뷰어',
+    docTypePermissions_auditTitle: '문서 유형 접근 권한 뷰어',
     docTypePermissions_allDocTypes: '모든 문서 유형',
     docTypePermissions_verbInsert: '삽입',
     docTypePermissions_documentType: '문서 유형',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb}은(는) 폴더에는 적용되지 않으며, 내부 항목에는 설정할 수 있습니다.`,
     library_folderInheritLabel: '내부 항목 (하위 항목)',
     libraryInsertViewer_menuLabel: '라이브러리 삽입 뷰어',
-    libraryInsertViewer_headline: '라이브러리 삽입 뷰어',
+    libraryInsertViewer_headline: '라이브러리 요소 유형 접근 권한 뷰어',
     libraryInsertViewer_intro: '사용자 그룹 또는 사용자가 생성할 수 있는 라이브러리 요소 유형을 모든 그룹에 걸쳐 결정하여 표시합니다. 근거를 보려면 행을 클릭하세요.',
     elementTypePermissions_menuLabel: '라이브러리 요소 유형 권한',
-    elementTypePermissions_headline: '라이브러리 요소 유형 권한',
+    elementTypePermissions_headline: '라이브러리 요소 유형 권한 편집기',
     elementTypePermissions_intro: '각 사용자 그룹이 라이브러리에서 생성할 수 있는 요소 유형을 제어합니다. 요소 유형은 기본적으로 생성 가능합니다. 사용자가 여러 그룹에 속할 때 선택이 어떻게 결정되는지 제어하려면 선택적 우선순위 재정의와 함께 허용 또는 거부를 설정하세요.',
     elementTypePermissions_typeHeader: '요소 유형',
     elementTypePermissions_verbCreate: '라이브러리에서 생성',

@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Nawigacja ─────────────────────────────────────────────────────────
     sectionLabel: 'Zaawansowane uprawnienia',
+    group_content: 'Uprawnienia do treści',
+    group_documentTypes: 'Uprawnienia typów dokumentów',
+    group_library: 'Uprawnienia Library',
+    group_libraryElementTypes: 'Uprawnienia typów elementów Library',
+    menuItem_permissionsEditor: 'Edytor uprawnień',
+    menuItem_accessViewer: 'Podgląd dostępu',
     editorsSectionLabel: 'Edytorzy',
     viewersSectionLabel: 'Podglądy',
     permissionsEditor: 'Edytor uprawnień do treści',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Bez niego wynik byłby następujący:',
 
     // ── Podgląd dostępu ──────────────────────────────────────────────────
-    viewerHeadline: 'Podgląd dostępu',
+    viewerHeadline: 'Podgląd dostępu do treści',
     byRole: 'Według grupy użytkowników',
     byUser: 'Według użytkownika',
     chooseRole: 'Wybierz grupę użytkowników',
@@ -100,7 +106,7 @@ export default {
 
     // ── Komunikat przekierowania uprawnień szczegółowych ─────────────────
     redirectMessage:
-      'Uprawnienia do dokumentów dla tej grupy użytkowników są zarządzane przez pakiet Advanced Permissions. Otwórz Edytor uprawnień w sekcji Użytkownicy, aby skonfigurować uprawnienia.',
+      'Uprawnienia do dokumentów dla tej grupy użytkowników są zarządzane przez pakiet Advanced Permissions. Otwórz Edytor uprawnień do treści w sekcji Użytkownicy, aby skonfigurować uprawnienia.',
 
     // ── Uprawnienia typów dokumentów ──────────────────────────────────────
     role: 'Grupa użytkowników',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Edytor uprawnień typów dokumentów',
     docTypePermissions_insertOptionsMenuLabel: 'Podgląd opcji wstawiania',
     docTypePermissions_workspaceTitle: 'Edytor uprawnień typów dokumentów',
-    docTypePermissions_auditTitle: 'Podgląd opcji wstawiania',
+    docTypePermissions_auditTitle: 'Podgląd dostępu typu dokumentu',
     docTypePermissions_allDocTypes: 'Wszystkie typy dokumentów',
     docTypePermissions_verbInsert: 'Wstaw',
     docTypePermissions_documentType: 'Typ dokumentu',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} nie dotyczy folderów — można je nadal ustawić dla elementów znajdujących się wewnątrz.`,
     library_folderInheritLabel: 'Elementy wewnątrz (elementy podrzędne)',
     libraryInsertViewer_menuLabel: 'Podgląd wstawiania Library',
-    libraryInsertViewer_headline: 'Podgląd wstawiania Library',
+    libraryInsertViewer_headline: 'Podgląd dostępu typów elementów Library',
     libraryInsertViewer_intro: 'Pokazuje, które typy elementów Library może tworzyć grupa użytkowników lub użytkownik, rozstrzygnięte we wszystkich jego grupach. Kliknij wiersz, aby zobaczyć uzasadnienie.',
     elementTypePermissions_menuLabel: 'Uprawnienia typów elementów Library',
-    elementTypePermissions_headline: 'Uprawnienia typów elementów Library',
+    elementTypePermissions_headline: 'Edytor uprawnień typów elementów Library',
     elementTypePermissions_intro: 'Określ, które typy elementów może tworzyć każda grupa użytkowników w Library. Typy elementów są domyślnie możliwe do utworzenia; ustaw Zezwól lub Odmów — z opcjonalnym nadpisaniem priorytetu — aby kontrolować, jak rozstrzygany jest wybór, gdy użytkownik należy do kilku grup.',
     elementTypePermissions_typeHeader: 'Typ elementu',
     elementTypePermissions_verbCreate: 'Twórz w Library',

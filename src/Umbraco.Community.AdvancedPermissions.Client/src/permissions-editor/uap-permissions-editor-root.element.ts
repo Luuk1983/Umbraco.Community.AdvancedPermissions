@@ -518,7 +518,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
         <uap-selection-panel
           .groups=${this.#selectionGroups}
           promptText=${this.#localize.term('uap_selectRolePrompt')}
-          ctaIcon="icon-lock"
+          ctaIcon="icon-document"
           orLabel=${this.#localize.term('uap_subjectOr')}
           @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
           ${this._pendingChanges.size > 0

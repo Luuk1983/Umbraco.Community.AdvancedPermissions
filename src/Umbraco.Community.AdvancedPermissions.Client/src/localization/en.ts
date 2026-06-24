@@ -4,6 +4,18 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Advanced Permissions',
+    // Domain group headers (sidebar app labels). They carry the domain AND the purpose
+    // ('… Permissions') because these live in the native Users section, where a bare
+    // domain word wouldn't convey that the group is about permissions. Each item's label
+    // stays short ('Permissions Editor' / 'Access Viewer').
+    group_content: 'Content Permissions',
+    group_documentTypes: 'Document Type Permissions',
+    group_library: 'Library Permissions',
+    group_libraryElementTypes: 'Library Element Type Permissions',
+    // Shared menu-item labels — every editor reads the first, every viewer the second.
+    menuItem_permissionsEditor: 'Permissions Editor',
+    menuItem_accessViewer: 'Access Viewer',
+    // Dormant (kept for locale key-parity; no longer referenced by menu items):
     editorsSectionLabel: 'Editors',
     viewersSectionLabel: 'Viewers',
     permissionsEditor: 'Content Permissions Editor',
@@ -85,7 +97,7 @@ export default {
     priorityOverrideSuppressedHint: 'Without it, the result would have been:',
 
     // ── Access Viewer ─────────────────────────────────────────────────────
-    viewerHeadline: 'Access Viewer',
+    viewerHeadline: 'Content Access Viewer',
     byRole: 'By User Group',
     byUser: 'By User',
     chooseRole: 'Choose user group',
@@ -123,7 +135,7 @@ export default {
 
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:
-      'Document permissions for this user group are managed by the Advanced Permissions package. Open the Permissions Editor in the Users section to configure permissions.',
+      'Document permissions for this user group are managed by the Advanced Permissions package. Open the Content Permissions Editor in the Users section to configure permissions.',
     redirectMessageElement:
       'Library (element) permissions for this user group are managed by the Advanced Permissions package. Open the Library Permissions Editor in the Users section to configure permissions.',
 
@@ -143,7 +155,7 @@ export default {
     docTypePermissions_menuLabel: 'Document Type Permissions Editor',
     docTypePermissions_insertOptionsMenuLabel: 'Insert Options Viewer',
     docTypePermissions_workspaceTitle: 'Document Type Permissions Editor',
-    docTypePermissions_auditTitle: 'Insert Options Viewer',
+    docTypePermissions_auditTitle: 'Document Type Access Viewer',
     docTypePermissions_allDocTypes: 'All document types',
     docTypePermissions_verbInsert: 'Insert',
     docTypePermissions_documentType: 'Document Type',
@@ -179,12 +191,12 @@ export default {
 
     // ── Library Insert Viewer (element-type create audit) ─────────────────
     libraryInsertViewer_menuLabel: 'Library Insert Viewer',
-    libraryInsertViewer_headline: 'Library Insert Viewer',
+    libraryInsertViewer_headline: 'Library Element Type Access Viewer',
     libraryInsertViewer_intro: 'Shows which library element types a user group or user may create, resolved across all their groups. Click a row to see the reasoning.',
 
     // ── Library element-type create permissions ───────────────────────────
     elementTypePermissions_menuLabel: 'Library Element Type Permissions',
-    elementTypePermissions_headline: 'Library Element Type Permissions',
+    elementTypePermissions_headline: 'Library Element Type Permissions Editor',
     elementTypePermissions_intro: 'Control which element types each user group may create in the Library. Element types are creatable by default; set Allow or Deny — with an optional priority override — to control how the choice resolves when a user belongs to several groups.',
     elementTypePermissions_typeHeader: 'Element Type',
     elementTypePermissions_verbCreate: 'Create in Library',

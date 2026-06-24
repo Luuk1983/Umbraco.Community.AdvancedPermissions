@@ -23,6 +23,20 @@ export default {
     deny: 'Refuză',
     umbracoUsers: 'Toți utilizatorii',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Gestionați permisiunile de tip Permite/Refuză per grup de utilizatori în arborele de conținut.',
+    help_accessViewer_description: 'Vedeți permisiunile efective pe care le are un utilizator sau un grup la orice nod, cu justificare completă.',
+    help_docTypePermissions_description: 'Decideți ce tipuri de documente poate crea fiecare grup de utilizatori și unde.',
+    help_insertOptions_description: 'Auditați ce tipuri de documente poate crea un utilizator sau un grup de utilizatori la fiecare nod.',
+    help_learnMore: 'Aflați mai multe',
+    help_modalTitle: 'Ajutor',
+    help_tabAbout: 'Despre această pagină',
+    help_tabConcepts: 'Concepte',
+    help_concept_scope_tip: 'Domeniul controlează cât de departe se aplică o regulă: acest nod, acest nod și descendenții săi sau doar descendenții.',
+    help_concept_priorityOverride_tip: 'Suprascrierea de prioritate forțează această înregistrare să prevaleze asupra ordinii normale de rezolvare.',
+    help_concept_allowDeny_tip: 'Permite acordă permisiunea, Refuză o revocă, iar lăsarea nesetată o moștenește de la cel mai apropiat strămoș.',
+    help_concept_reasoning_tip: 'Faceți clic pe orice celulă pentru a vedea exact cum a fost rezolvată permisiunea.',
+
     // ── Editor de permisiuni ─────────────────────────────────────────────
     editorHeadline: 'Editor de permisiuni pentru conținut',
     selectRolePrompt: 'Selectați mai sus un grup de utilizatori pentru a-i gestiona permisiunile.',

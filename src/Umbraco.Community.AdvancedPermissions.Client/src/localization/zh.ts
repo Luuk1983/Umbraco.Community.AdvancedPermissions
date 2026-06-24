@@ -23,6 +23,20 @@ export default {
     deny: '拒绝',
     umbracoUsers: '所有用户',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: '跨内容树为每个用户组管理“允许/拒绝”权限。',
+    help_accessViewer_description: '查看用户或用户组在任意节点上的有效权限，并提供完整的推理过程。',
+    help_docTypePermissions_description: '决定每个用户组可以创建哪些文档类型，以及在何处创建。',
+    help_insertOptions_description: '审核用户或用户组可以在每个节点上创建哪些文档类型。',
+    help_learnMore: '了解更多',
+    help_modalTitle: '帮助',
+    help_tabAbout: '关于此页面',
+    help_tabConcepts: '概念',
+    help_concept_scope_tip: '范围控制规则的作用范围：仅此节点、此节点及其后代节点，或仅后代节点。',
+    help_concept_priorityOverride_tip: '优先级覆盖会强制此条目优先于正常的解析顺序。',
+    help_concept_allowDeny_tip: '“允许”授予该权限，“拒绝”撤销该权限，不设置则从最近的祖先节点继承。',
+    help_concept_reasoning_tip: '点击任意单元格可查看该权限的具体解析过程。',
+
     // ── Permissions Editor ───────────────────────────────────────────────
     editorHeadline: '内容权限编辑器',
     selectRolePrompt: '在上方选择一个用户组以管理其权限。',

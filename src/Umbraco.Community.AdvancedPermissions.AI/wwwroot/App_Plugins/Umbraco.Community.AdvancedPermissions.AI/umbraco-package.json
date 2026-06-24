@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@umbraco-cms/backoffice/umbraco-package-schema.json",
   "name": "Advanced Permissions for Umbraco — AI Copilot Tools",
-  "version": "17.2.0-alpha.0.4",
+  "version": "17.2.0-alpha.0.5",
   "allowPublicAccess": false,
   "extensions": [
     {

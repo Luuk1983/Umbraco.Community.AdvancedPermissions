@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="Umbraco.AI.Agent" />
+    <PackageReference Include="Umbraco.AI.Anthropic" />
     <PackageReference Include="Umbraco.AI.OpenAI" />
     <PackageReference Include="Umbraco.Cms" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />

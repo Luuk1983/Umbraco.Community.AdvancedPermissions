@@ -64,6 +64,12 @@
     <PackageReference Include="Umbraco.AI" />
   </ItemGroup>
 
+  <!-- Expose internal types (e.g. the grounding runtime-context contributor) to the test project so they
+       can be unit-tested without widening their accessibility in the shipped package. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Umbraco.Community.AdvancedPermissions.AI.Tests" />
+  </ItemGroup>
+
   <!-- Sync umbraco-package.json version with the MinVer-derived version at build time.
        The source file keeps "0.0.0" as a placeholder; this target replaces it.
        Mirrors the main Umbraco.Community.AdvancedPermissions package. -->

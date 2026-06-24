@@ -23,6 +23,20 @@ export default {
     deny: 'Neka',
     umbracoUsers: 'Alla användare',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Hantera Tillåt/Neka-behörigheter per användargrupp i ditt innehållsträd.',
+    help_accessViewer_description: 'Se de effektiva behörigheter en användare eller grupp har vid valfri nod, med fullständig motivering.',
+    help_docTypePermissions_description: 'Bestäm vilka dokumenttyper varje användargrupp kan skapa, och var.',
+    help_insertOptions_description: 'Granska vilka dokumenttyper en användare eller användargrupp kan skapa vid varje nod.',
+    help_learnMore: 'Läs mer',
+    help_modalTitle: 'Hjälp',
+    help_tabAbout: 'Om denna sida',
+    help_tabConcepts: 'Begrepp',
+    help_concept_scope_tip: 'Omfattning styr hur långt en regel når: denna nod, denna nod och dess underordnade, eller endast underordnade.',
+    help_concept_priorityOverride_tip: 'Prioritetsåsidosättning tvingar denna post att vinna över den normala lösningsordningen.',
+    help_concept_allowDeny_tip: 'Tillåt beviljar behörigheten, Neka återkallar den, och om den lämnas oangiven ärvs den från närmaste överordnade nod.',
+    help_concept_reasoning_tip: 'Klicka på valfri cell för att se exakt hur behörigheten löstes.',
+
     // ── Behörighetsredigerare ─────────────────────────────────────────────
     editorHeadline: 'Redigerare för innehållsbehörigheter',
     selectRolePrompt: 'Välj en användargrupp ovan för att hantera dess behörigheter.',

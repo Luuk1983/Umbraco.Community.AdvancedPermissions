@@ -23,6 +23,20 @@ export default {
     deny: 'Reddet',
     umbracoUsers: 'Tüm Kullanıcılar',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'İçerik ağacınız genelinde her kullanıcı grubu için İzin ver/Reddet izinlerini yönetin.',
+    help_accessViewer_description: 'Bir kullanıcının veya grubun herhangi bir düğümde sahip olduğu etkin izinleri, tam gerekçesiyle birlikte görün.',
+    help_docTypePermissions_description: 'Her kullanıcı grubunun hangi belge türlerini ve nerede oluşturabileceğine karar verin.',
+    help_insertOptions_description: 'Bir kullanıcının veya kullanıcı grubunun her düğümde hangi belge türlerini oluşturabileceğini denetleyin.',
+    help_learnMore: 'Daha fazla bilgi',
+    help_modalTitle: 'Yardım',
+    help_tabAbout: 'Bu sayfa hakkında',
+    help_tabConcepts: 'Kavramlar',
+    help_concept_scope_tip: 'Kapsam, bir kuralın ne kadar uzağa eriştiğini denetler: bu düğüm, bu düğüm ve alt düğümleri veya yalnızca alt düğümler.',
+    help_concept_priorityOverride_tip: 'Öncelik geçersiz kılma, bu kaydı normal çözümleme sırasına göre öne çıkmaya zorlar.',
+    help_concept_allowDeny_tip: 'İzin ver iznini verir, Reddet onu geri alır ve ayarlanmadan bırakmak en yakın üst düğümden devralır.',
+    help_concept_reasoning_tip: 'İznin tam olarak nasıl çözümlendiğini görmek için herhangi bir hücreye tıklayın.',
+
     // ── İzin Düzenleyicisi ───────────────────────────────────────────────
     editorHeadline: 'İçerik İzinleri Düzenleyicisi',
     selectRolePrompt: 'İzinlerini yönetmek için yukarıdan bir kullanıcı grubu seçin.',

@@ -18,9 +18,11 @@ import { UAP_ROLE_PICKER_MODAL } from './role-picker-modal.token.js';
 import { UAP_USER_PICKER_MODAL } from './user-picker-modal.token.js';
 import type { CellInfo } from '../utils/cell-info.js';
 import { updateNode } from '../utils/tree-ops.js';
-import '../components/uap-picker-button.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
+import '../help/uap-page-intro.element.js';
+import '../help/uap-selection-panel.element.js';
+import type { UapSelectorGroup } from '../help/uap-selection-panel.element.js';
 import type { UapReasoningDialogElement } from '../shared/components/uap-reasoning-dialog.element.js';
 
 /** Client-side tree node with effective permissions for all verbs. */
@@ -439,6 +441,34 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     }
   }
 
+  // ── Selection panel ──────────────────────────────────────────────────────
+
+  get #selectionGroups(): UapSelectorGroup[] {
+    return [
+      {
+        options: [
+          {
+            id: 'group',
+            label: this.#localize.term('uap_chooseRole'),
+            icon: 'icon-users',
+            ...(this._activeSubject === 'role' && this._selectedRole ? { selectedName: this._selectedRole.name } : {}),
+          },
+          {
+            id: 'user',
+            label: this.#localize.term('uap_chooseUser'),
+            icon: 'icon-user',
+            ...(this._activeSubject === 'user' && this._selectedUser ? { selectedName: this._selectedUser.name } : {}),
+          },
+        ],
+      },
+    ];
+  }
+
+  #onSelectorClick(id: string): void {
+    if (id === 'group') void this.#openRolePicker();
+    else if (id === 'user') void this.#openUserPicker();
+  }
+
   // ── Rendering ─────────────────────────────────────────────────────────────
 
   #renderRows(nodes: ViewerTreeNode[], depth: number): TemplateResult[] {
@@ -459,7 +489,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
                   @click=${() => void this.#toggleExpand(node)}>
                   ${node.loading ? html`<uui-loader-circle></uui-loader-circle>` : node.expanded ? '▾' : '▸'}
                 </uui-button>`
-              : html`<span class="expand-spacer"></span>`}
+              : html`<uui-button compact look="default" class="expand-spacer" disabled aria-hidden="true" label="">▸</uui-button>`}
             <umb-icon name=${node.icon ?? 'icon-document'}></umb-icon>
             <span class="node-name">${node.name}</span>
           </div>
@@ -498,43 +528,33 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   override render() {
     return html`
       <umb-body-layout headline=${this.#localize.term('uap_viewerHeadline')}>
-        <div class="toolbar">
-          <uap-picker-button
-            label=${this.#localize.term('uap_chooseRole')}
-            .selectedName=${this._selectedRole?.name ?? ''}
-            icon="icon-users"
-            @click=${() => void this.#openRolePicker()}>
-          </uap-picker-button>
-          <span class="picker-or">${this.#localize.term('uap_subjectOr')}</span>
-          <uap-picker-button
-            label=${this.#localize.term('uap_chooseUser')}
-            .selectedName=${this._selectedUser?.name ?? ''}
-            icon="icon-user"
-            @click=${() => void this.#openUserPicker()}>
-          </uap-picker-button>
-        </div>
-
-${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
-        ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
-        ${!this.#subject ? html`<p class="empty-msg">${this.#localize.term('uap_selectSubjectPrompt')}</p>` : nothing}
-
-        ${this.#subject && !this._loading && this._treeNodes.length > 0
-          ? html`
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th class="node-header">${this.#localize.term('uap_contentNodeHeader')}</th>
-                      ${this._verbs.map((v) => html`<th class="verb-header" title=${v.verb}>${v.displayName}</th>`)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${this.#renderRows(this._treeNodes, 0)}
-                  </tbody>
-                </table>
-              </div>
-            `
-          : nothing}
+        <uap-page-intro surface="uap-access-viewer" headline=${this.#localize.term('uap_viewerHeadline')}></uap-page-intro>
+        <uap-selection-panel
+          .groups=${this.#selectionGroups}
+          promptText=${this.#localize.term('uap_selectSubjectPrompt')}
+          ctaIcon="icon-eye"
+          orLabel=${this.#localize.term('uap_subjectOr')}
+          @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
+          ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
+          ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
+          ${!this._loading && this._treeNodes.length > 0
+            ? html`
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th class="node-header">${this.#localize.term('uap_contentNodeHeader')}</th>
+                        ${this._verbs.map((v) => html`<th class="verb-header" title=${v.verb}>${v.displayName}</th>`)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this.#renderRows(this._treeNodes, 0)}
+                    </tbody>
+                  </table>
+                </div>
+              `
+            : nothing}
+        </uap-selection-panel>
       </umb-body-layout>
 
       <uap-reasoning-dialog
@@ -581,25 +601,6 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
       height: 100%;
     }
 
-    /* ── Toolbar ──────────────────────────────────────────────── */
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: var(--uui-size-4, 12px);
-      padding: var(--uui-size-3, 9px) var(--uui-size-6, 18px);
-      background: var(--uui-color-surface, #fff);
-      border-bottom: 1px solid var(--uui-color-border, #e0e0e0);
-      flex-wrap: wrap;
-    }
-
-    .picker-or {
-      font-size: 12px;
-      color: var(--uui-color-text-alt, #888);
-      text-align: center;
-      align-self: center;
-    }
-
-
     .loading {
       display: flex;
       justify-content: center;
@@ -609,11 +610,6 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
     .error-msg {
       padding: 12px 18px;
       color: var(--uui-color-danger, #b91c1c);
-    }
-
-    .empty-msg {
-      padding: 32px 18px;
-      color: var(--uui-color-text-alt, #888);
     }
 
     /* ── Table ────────────────────────────────────────────────── */
@@ -684,9 +680,10 @@ ${this._error ? html`<p class="error-msg">\u26a0 ${this._error}</p>` : nothing}
       overflow: hidden;
     }
 
+    /* Invisible clone of the expand toggle: leaf rows reserve the exact same width as expandable
+       rows, so the node icon and label stay aligned whether or not a row has an expander. */
     .expand-spacer {
-      width: 16px;
-      flex-shrink: 0;
+      visibility: hidden;
     }
 
     .node-name {

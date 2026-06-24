@@ -198,6 +198,14 @@ const manifests: Array<UmbExtensionManifest> = [
     element: () => import('./access-viewer/user-picker-modal.element.js'),
   },
 
+  // ─── Help Modal ───────────────────────────────────────────────────────────
+  {
+    type: 'modal',
+    alias: 'UAP.Modal.Help',
+    name: 'Advanced Permissions Help Modal',
+    element: () => import('./help/uap-help-modal.element.js'),
+  },
+
   // ─── Localization ─────────────────────────────────────────────────────────
   {
     type: 'localization',

@@ -23,6 +23,20 @@ export default {
     deny: 'Nega',
     umbracoUsers: 'Tutti gli utenti',
 
+    // ── Help ──────────────────────────────────────────────────────────────
+    help_contentPermissions_description: 'Gestisci i permessi Consenti/Nega per ogni gruppo di utenti nell’albero dei contenuti.',
+    help_accessViewer_description: 'Visualizza i permessi effettivi di un utente o gruppo su qualsiasi nodo, con la motivazione completa.',
+    help_docTypePermissions_description: 'Decidi quali tipi di documento ogni gruppo di utenti può creare e dove.',
+    help_insertOptions_description: 'Verifica quali tipi di documento un utente o un gruppo di utenti può creare su ciascun nodo.',
+    help_learnMore: 'Scopri di più',
+    help_modalTitle: 'Guida',
+    help_tabAbout: 'Informazioni su questa pagina',
+    help_tabConcepts: 'Concetti',
+    help_concept_scope_tip: 'L’ambito determina fin dove arriva una regola: questo nodo, questo nodo e i suoi discendenti, oppure solo i discendenti.',
+    help_concept_priorityOverride_tip: 'La sostituzione prioritaria forza questa voce a prevalere sul normale ordine di risoluzione.',
+    help_concept_allowDeny_tip: 'Consenti concede il permesso, Nega lo revoca e, lasciandolo non impostato, viene ereditato dall’antenato più vicino.',
+    help_concept_reasoning_tip: 'Clicca su qualsiasi cella per vedere esattamente come è stato risolto il permesso.',
+
     // ── Editor dei permessi ───────────────────────────────────────────────
     editorHeadline: 'Editor dei permessi sui contenuti',
     selectRolePrompt: 'Seleziona un gruppo di utenti qui sopra per gestirne i permessi.',

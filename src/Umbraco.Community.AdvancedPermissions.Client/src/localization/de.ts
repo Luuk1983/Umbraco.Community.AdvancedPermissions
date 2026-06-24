@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Erweiterte Berechtigungen',
+    group_content: 'Inhaltsberechtigungen',
+    group_documentTypes: 'Dokumenttyp-Berechtigungen',
+    group_library: 'Library-Berechtigungen',
+    group_libraryElementTypes: 'Library-Elementtyp-Berechtigungen',
+    menuItem_permissionsEditor: 'Berechtigungseditor',
+    menuItem_accessViewer: 'Zugriffsanzeige',
     editorsSectionLabel: 'Editoren',
     viewersSectionLabel: 'Anzeigen',
     permissionsEditor: 'Inhaltsberechtigungs-Editor',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Andernfalls w\u00e4re das Ergebnis gewesen:',
 
     // ── Zugriffsanzeige ───────────────────────────────────────────────────
-    viewerHeadline: 'Zugriffsanzeige',
+    viewerHeadline: 'Inhalts-Zugriffsanzeige',
     byRole: 'Nach Benutzergruppe',
     byUser: 'Nach Benutzer',
     chooseRole: 'Benutzergruppe ausw\u00e4hlen',
@@ -100,7 +106,7 @@ export default {
 
     // ── Weiterleitungsnachricht granulare Berechtigungen ──────────────────
     redirectMessage:
-      'Dokumentberechtigungen f\u00fcr diese Benutzergruppe werden durch das Advanced Permissions-Paket verwaltet. \u00d6ffnen Sie den Berechtigungseditor im Benutzerbereich, um Berechtigungen zu konfigurieren.',
+      'Dokumentberechtigungen f\u00fcr diese Benutzergruppe werden durch das Advanced Permissions-Paket verwaltet. \u00d6ffnen Sie den Inhaltsberechtigungs-Editor im Benutzerbereich, um Berechtigungen zu konfigurieren.',
 
     // \u2500\u2500 Dokumenttyp-Berechtigungen \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
     role: 'Benutzergruppe',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Dokumenttyp-Berechtigungs-Editor',
     docTypePermissions_insertOptionsMenuLabel: 'Einfügeoptionen-Anzeige',
     docTypePermissions_workspaceTitle: 'Dokumenttyp-Berechtigungs-Editor',
-    docTypePermissions_auditTitle: 'Einfügeoptionen-Anzeige',
+    docTypePermissions_auditTitle: 'Dokumenttyp-Zugriffsanzeige',
     docTypePermissions_allDocTypes: 'Alle Dokumenttypen',
     docTypePermissions_verbInsert: 'Einfügen',
     docTypePermissions_documentType: 'Dokumenttyp',
@@ -162,7 +168,7 @@ export default {
     elementFolderDescSection: 'Enthaltene Elemente',
     naChip: 'N/V',
     redirectMessageElement:
-      'Library-Berechtigungen (Elemente) f\u00fcr diese Benutzergruppe werden durch das Advanced Permissions-Paket verwaltet. \u00d6ffnen Sie den Library-Berechtigungseditor im Benutzerbereich, um Berechtigungen zu konfigurieren.',
+      'Library-Berechtigungen (Elemente) f\u00fcr diese Benutzergruppe werden durch das Advanced Permissions-Paket verwaltet. \u00d6ffnen Sie den Library-Berechtigungs-Editor im Benutzerbereich, um Berechtigungen zu konfigurieren.',
     library_menuLabel: 'Library-Berechtigungs-Editor',
     library_editorHeadline: 'Library-Berechtigungs-Editor',
     library_accessViewerMenuLabel: 'Library-Zugriffsanzeige',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} gilt nicht f\u00fcr Ordner \u2013 es kann dennoch f\u00fcr die darin enthaltenen Elemente festgelegt werden.`,
     library_folderInheritLabel: 'Enthaltene Elemente (Unterknoten)',
     libraryInsertViewer_menuLabel: 'Library-Einf\u00fcgeanzeige',
-    libraryInsertViewer_headline: 'Library-Einf\u00fcgeanzeige',
+    libraryInsertViewer_headline: 'Library-Elementtyp-Zugriffsanzeige',
     libraryInsertViewer_intro: 'Zeigt, welche Library-Elementtypen eine Benutzergruppe oder ein Benutzer erstellen darf, aufgel\u00f6st \u00fcber alle ihre Gruppen hinweg. Klicken Sie auf eine Zeile, um die Begr\u00fcndung zu sehen.',
     elementTypePermissions_menuLabel: 'Library-Elementtyp-Berechtigungen',
-    elementTypePermissions_headline: 'Library-Elementtyp-Berechtigungen',
+    elementTypePermissions_headline: 'Library-Elementtyp-Berechtigungseditor',
     elementTypePermissions_intro: 'Steuern Sie, welche Elementtypen jede Benutzergruppe in der Library erstellen darf. Elementtypen sind standardm\u00e4\u00dfig erstellbar; legen Sie Erlauben oder Verweigern fest \u2013 mit einer optionalen Priorit\u00e4ts-\u00dcberschreibung \u2013, um zu steuern, wie sich die Auswahl aufl\u00f6st, wenn ein Benutzer mehreren Gruppen angeh\u00f6rt.',
     elementTypePermissions_typeHeader: 'Elementtyp',
     elementTypePermissions_verbCreate: 'In Library erstellen',

@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigacija ────────────────────────────────────────────────────────
     sectionLabel: 'Napredne dozvole',
+    group_content: 'Dozvole za sadržaj',
+    group_documentTypes: 'Dozvole za tip dokumenta',
+    group_library: 'Dozvole za Biblioteku',
+    group_libraryElementTypes: 'Dozvole za tipove elemenata Biblioteke',
+    menuItem_permissionsEditor: 'Uređivač dozvola',
+    menuItem_accessViewer: 'Pregled pristupa',
     editorsSectionLabel: 'Urednici',
     viewersSectionLabel: 'Pregledi',
     permissionsEditor: 'Uređivač dozvola za sadržaj',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Bez njega bi rezultat bio:',
 
     // ── Pregled pristupa ──────────────────────────────────────────────────
-    viewerHeadline: 'Pregled pristupa',
+    viewerHeadline: 'Pregled pristupa sadržaju',
     byRole: 'Po grupi korisnika',
     byUser: 'Po korisniku',
     chooseRole: 'Odaberite grupu korisnika',
@@ -100,7 +106,7 @@ export default {
 
     // ── Poruka preusmjeravanja granularnih dozvola ────────────────────────
     redirectMessage:
-      'Dozvolama za dokumente za ovu grupu korisnika upravlja paket Advanced Permissions. Otvorite Uređivač dozvola u sekciji Korisnici za konfiguraciju dozvola.',
+      'Dozvolama za dokumente za ovu grupu korisnika upravlja paket Advanced Permissions. Otvorite Uređivač dozvola za sadržaj u sekciji Korisnici za konfiguraciju dozvola.',
 
     // ── Dozvole za tipove dokumenata ──────────────────────────────────────
     role: 'Grupa korisnika',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Uređivač dozvola za tip dokumenta',
     docTypePermissions_insertOptionsMenuLabel: 'Pregled opcija umetanja',
     docTypePermissions_workspaceTitle: 'Uređivač dozvola za tip dokumenta',
-    docTypePermissions_auditTitle: 'Pregled opcija umetanja',
+    docTypePermissions_auditTitle: 'Pregled pristupa tipovima dokumenata',
     docTypePermissions_allDocTypes: 'Svi tipovi dokumenata',
     docTypePermissions_verbInsert: 'Umetni',
     docTypePermissions_documentType: 'Tip dokumenta',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} se ne primjenjuje na foldere — i dalje se može postaviti za stavke unutar njih.`,
     library_folderInheritLabel: 'Stavke unutar (potomci)',
     libraryInsertViewer_menuLabel: 'Pregled umetanja u Biblioteku',
-    libraryInsertViewer_headline: 'Pregled umetanja u Biblioteku',
+    libraryInsertViewer_headline: 'Pregled pristupa tipovima elemenata Biblioteke',
     libraryInsertViewer_intro: 'Prikazuje koje tipove elemenata Biblioteke grupa korisnika ili korisnik može kreirati, razriješeno kroz sve njihove grupe. Kliknite na red da vidite obrazloženje.',
     elementTypePermissions_menuLabel: 'Dozvole za tipove elemenata Biblioteke',
-    elementTypePermissions_headline: 'Dozvole za tipove elemenata Biblioteke',
+    elementTypePermissions_headline: 'Uređivač dozvola za tipove elemenata Biblioteke',
     elementTypePermissions_intro: 'Kontrolišite koje tipove elemenata svaka grupa korisnika može kreirati u Biblioteci. Tipovi elemenata su po zadanim postavkama dostupni za kreiranje; postavite Dozvoli ili Zabrani — uz opcionalno prioritetno nadjačavanje — da kontrolišete kako se izbor razrješava kada korisnik pripada većem broju grupa.',
     elementTypePermissions_typeHeader: 'Tip elementa',
     elementTypePermissions_verbCreate: 'Kreiraj u Biblioteci',

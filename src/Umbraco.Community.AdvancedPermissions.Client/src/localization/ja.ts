@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: '高度なアクセス権限',
+    group_content: 'コンテンツアクセス権限',
+    group_documentTypes: 'ドキュメントタイプアクセス権限',
+    group_library: 'ライブラリアクセス権限',
+    group_libraryElementTypes: 'ライブラリエレメントタイプアクセス権限',
+    menuItem_permissionsEditor: 'アクセス権限エディタ',
+    menuItem_accessViewer: 'アクセスビューア',
     editorsSectionLabel: 'エディタ',
     viewersSectionLabel: 'ビューア',
     permissionsEditor: 'コンテンツアクセス権限エディタ',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'これがなければ、結果は次のようになっていました:',
 
     // ── Access Viewer ─────────────────────────────────────────────────────
-    viewerHeadline: 'アクセスビューア',
+    viewerHeadline: 'コンテンツアクセスビューア',
     byRole: 'ユーザーグループ別',
     byUser: 'ユーザー別',
     chooseRole: 'ユーザーグループを選択',
@@ -100,7 +106,7 @@ export default {
 
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:
-      'このユーザーグループのドキュメントアクセス権限は Advanced Permissions パッケージによって管理されます。アクセス権限を設定するには、ユーザーセクションのアクセス権限エディタを開いてください。',
+      'このユーザーグループのドキュメントアクセス権限は Advanced Permissions パッケージによって管理されます。アクセス権限を設定するには、ユーザーセクションの「コンテンツアクセス権限エディタ」を開いてください。',
 
     // ── Doc-Type Permissions ──────────────────────────────────────────────
     role: 'ユーザーグループ',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'ドキュメントタイプアクセス権限エディタ',
     docTypePermissions_insertOptionsMenuLabel: '挿入オプションビューア',
     docTypePermissions_workspaceTitle: 'ドキュメントタイプアクセス権限エディタ',
-    docTypePermissions_auditTitle: '挿入オプションビューア',
+    docTypePermissions_auditTitle: 'ドキュメントタイプアクセスビューア',
     docTypePermissions_allDocTypes: 'すべてのドキュメントタイプ',
     docTypePermissions_verbInsert: '挿入',
     docTypePermissions_documentType: 'ドキュメントタイプ',
@@ -162,7 +168,7 @@ export default {
     elementFolderDescSection: '内部のエレメント',
     naChip: '該当なし',
     redirectMessageElement:
-      'このユーザーグループのライブラリ（エレメント）アクセス権限は Advanced Permissions パッケージによって管理されます。アクセス権限を設定するには、ユーザーセクションのライブラリアクセス権限エディタを開いてください。',
+      'このユーザーグループのライブラリ（エレメント）アクセス権限は Advanced Permissions パッケージによって管理されます。アクセス権限を設定するには、ユーザーセクションの「ライブラリアクセス権限エディタ」を開いてください。',
     library_menuLabel: 'ライブラリアクセス権限エディタ',
     library_editorHeadline: 'ライブラリアクセス権限エディタ',
     library_accessViewerMenuLabel: 'ライブラリアクセスビューア',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} はフォルダーには適用されません — 内部のアイテムには引き続き設定できます。`,
     library_folderInheritLabel: '内部のアイテム（子孫）',
     libraryInsertViewer_menuLabel: 'ライブラリ挿入ビューア',
-    libraryInsertViewer_headline: 'ライブラリ挿入ビューア',
+    libraryInsertViewer_headline: 'ライブラリエレメントタイプアクセスビューア',
     libraryInsertViewer_intro: 'ユーザーグループまたはユーザーが作成できるライブラリのエレメントタイプを、所属するすべてのグループにわたって解決して表示します。行をクリックすると根拠を確認できます。',
     elementTypePermissions_menuLabel: 'ライブラリエレメントタイプアクセス権限',
-    elementTypePermissions_headline: 'ライブラリエレメントタイプアクセス権限',
+    elementTypePermissions_headline: 'ライブラリエレメントタイプアクセス権限エディタ',
     elementTypePermissions_intro: '各ユーザーグループがライブラリで作成できるエレメントタイプを制御します。エレメントタイプはデフォルトで作成可能です。許可または拒否を設定し、必要に応じて優先オーバーライドを使用して、ユーザーが複数のグループに所属する場合に選択がどのように解決されるかを制御します。',
     elementTypePermissions_typeHeader: 'エレメントタイプ',
     elementTypePermissions_verbCreate: 'ライブラリで作成',

@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Навігація ─────────────────────────────────────────────────────────
     sectionLabel: 'Розширені права доступу',
+    group_content: 'Права доступу до вмісту',
+    group_documentTypes: 'Права доступу за типом документа',
+    group_library: 'Права доступу Library',
+    group_libraryElementTypes: 'Права доступу до типів елементів Library',
+    menuItem_permissionsEditor: 'Редактор прав доступу',
+    menuItem_accessViewer: 'Перегляд доступу',
     editorsSectionLabel: 'Редактори',
     viewersSectionLabel: 'Перегляди',
     permissionsEditor: 'Редактор прав доступу до вмісту',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Без нього результат був би:',
 
     // ── Перегляд доступу ──────────────────────────────────────────────────
-    viewerHeadline: 'Перегляд доступу',
+    viewerHeadline: 'Перегляд доступу до вмісту',
     byRole: 'За групою користувачів',
     byUser: 'За користувачем',
     chooseRole: 'Виберіть групу користувачів',
@@ -100,7 +106,7 @@ export default {
 
     // ── Повідомлення про перенаправлення атомарних прав доступу ───────────
     redirectMessage:
-      'Права доступу до документів для цієї групи користувачів керуються пакетом Advanced Permissions. Відкрийте Редактор прав доступу в розділі Користувачі, щоб налаштувати права доступу.',
+      'Права доступу до документів для цієї групи користувачів керуються пакетом Advanced Permissions. Відкрийте Редактор прав доступу до вмісту в розділі Користувачі, щоб налаштувати права доступу.',
 
     // ── Права доступу за типом документа ──────────────────────────────────
     role: 'Група користувачів',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Редактор прав доступу за типом документа',
     docTypePermissions_insertOptionsMenuLabel: 'Перегляд параметрів вставлення',
     docTypePermissions_workspaceTitle: 'Редактор прав доступу за типом документа',
-    docTypePermissions_auditTitle: 'Перегляд параметрів вставлення',
+    docTypePermissions_auditTitle: 'Перегляд доступу за типом документа',
     docTypePermissions_allDocTypes: 'Усі типи документів',
     docTypePermissions_verbInsert: 'Вставити',
     docTypePermissions_documentType: 'Тип документа',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `«${verb}» не застосовується до тек — це право все одно можна задати для елементів усередині.`,
     library_folderInheritLabel: 'Елементи всередині (дочірні)',
     libraryInsertViewer_menuLabel: 'Перегляд вставлення Library',
-    libraryInsertViewer_headline: 'Перегляд вставлення Library',
+    libraryInsertViewer_headline: 'Перегляд доступу до типів елементів Library',
     libraryInsertViewer_intro: 'Показує, які типи елементів Library може створювати група користувачів або користувач, визначені з урахуванням усіх їхніх груп. Натисніть рядок, щоб побачити пояснення.',
     elementTypePermissions_menuLabel: 'Права доступу до типів елементів Library',
-    elementTypePermissions_headline: 'Права доступу до типів елементів Library',
+    elementTypePermissions_headline: 'Редактор прав доступу до типів елементів Library',
     elementTypePermissions_intro: 'Керуйте тим, які типи елементів кожна група користувачів може створювати в Library. Типи елементів можна створювати за замовчуванням; задайте «Дозволити» або «Заборонити» — з необов’язковим перевизначенням пріоритету — щоб керувати тим, як визначається вибір, коли користувач належить до кількох груп.',
     elementTypePermissions_typeHeader: 'Тип елемента',
     elementTypePermissions_verbCreate: 'Створити в Library',

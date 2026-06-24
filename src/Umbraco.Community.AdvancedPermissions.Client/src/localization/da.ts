@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Avancerede tilladelser',
+    group_content: 'Indholdstilladelser',
+    group_documentTypes: 'Dokumenttype-tilladelser',
+    group_library: 'Library-tilladelser',
+    group_libraryElementTypes: 'Library-elementtype-tilladelser',
+    menuItem_permissionsEditor: 'Tilladelseseditor',
+    menuItem_accessViewer: 'Adgangsvisning',
     editorsSectionLabel: 'Redaktører',
     viewersSectionLabel: 'Visninger',
     permissionsEditor: 'Editor til indholdstilladelser',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Uden den ville resultatet have været:',
 
     // ── Adgangsvisning ────────────────────────────────────────────────────
-    viewerHeadline: 'Adgangsvisning',
+    viewerHeadline: 'Indholds-adgangsvisning',
     byRole: 'Efter brugergruppe',
     byUser: 'Efter bruger',
     chooseRole: 'Vælg brugergruppe',
@@ -100,7 +106,7 @@ export default {
 
     // ── Omdirigeringsbesked for granulære tilladelser ─────────────────────
     redirectMessage:
-      'Dokumenttilladelser for denne brugergruppe administreres af Advanced Permissions-pakken. Åbn Tilladelseseditoren i sektionen Brugere for at konfigurere tilladelser.',
+      'Dokumenttilladelser for denne brugergruppe administreres af Advanced Permissions-pakken. Åbn Editor til indholdstilladelser i sektionen Brugere for at konfigurere tilladelser.',
 
     // ── Dokumenttype-tilladelser ──────────────────────────────────────────
     role: 'Brugergruppe',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Editor til dokumenttype-tilladelser',
     docTypePermissions_insertOptionsMenuLabel: 'Visning af indsætningsmuligheder',
     docTypePermissions_workspaceTitle: 'Editor til dokumenttype-tilladelser',
-    docTypePermissions_auditTitle: 'Visning af indsætningsmuligheder',
+    docTypePermissions_auditTitle: 'Dokumenttype-adgangsvisning',
     docTypePermissions_allDocTypes: 'Alle dokumenttyper',
     docTypePermissions_verbInsert: 'Indsæt',
     docTypePermissions_documentType: 'Dokumenttype',
@@ -162,7 +168,7 @@ export default {
     elementFolderDescSection: 'Elementer indeni',
     naChip: 'I/A',
     redirectMessageElement:
-      'Library-tilladelser (element) for denne brugergruppe administreres af Advanced Permissions-pakken. Åbn Library-tilladelseseditoren i sektionen Brugere for at konfigurere tilladelser.',
+      'Library-tilladelser (element) for denne brugergruppe administreres af Advanced Permissions-pakken. Åbn Library-tilladelseseditor i sektionen Brugere for at konfigurere tilladelser.',
     library_menuLabel: 'Library-tilladelseseditor',
     library_editorHeadline: 'Library-tilladelseseditor',
     library_accessViewerMenuLabel: 'Library-adgangsvisning',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} gælder ikke for mapper — det kan stadig angives for elementerne indeni.`,
     library_folderInheritLabel: 'Elementer indeni (undernoder)',
     libraryInsertViewer_menuLabel: 'Library-indsætningsvisning',
-    libraryInsertViewer_headline: 'Library-indsætningsvisning',
+    libraryInsertViewer_headline: 'Library-elementtype-adgangsvisning',
     libraryInsertViewer_intro: 'Viser, hvilke library-elementtyper en brugergruppe eller bruger må oprette, løst på tværs af alle deres grupper. Klik på en række for at se begrundelsen.',
     elementTypePermissions_menuLabel: 'Library-elementtype-tilladelser',
-    elementTypePermissions_headline: 'Library-elementtype-tilladelser',
+    elementTypePermissions_headline: 'Library-elementtype-tilladelseseditor',
     elementTypePermissions_intro: 'Styr, hvilke elementtyper hver brugergruppe må oprette i Library. Elementtyper kan oprettes som standard; angiv Tillad eller Nægt — med en valgfri prioritetstilsidesættelse — for at styre, hvordan valget løses, når en bruger tilhører flere grupper.',
     elementTypePermissions_typeHeader: 'Elementtype',
     elementTypePermissions_verbCreate: 'Opret i Library',

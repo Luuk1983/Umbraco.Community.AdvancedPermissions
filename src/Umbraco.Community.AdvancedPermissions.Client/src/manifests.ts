@@ -13,16 +13,14 @@ const manifests: Array<UmbExtensionManifest> = [
   },
 
   // ─── Section Sidebar Apps (inside Users section) ──────────────────────────
-  // Grouped by workflow (editing vs inspecting), not by feature family. The Access Viewer is
-  // intentionally NOT scoped to "content permissions" because future of-type verbs
-  // (DeleteOfType, MoveOfType…) will surface in its reasoning chain too — it's downstream of
-  // wherever entries originate. Insert Options Viewer stays separate because it answers a
-  // structurally different question ("which types may I insert here?").
+  // Grouped by DOMAIN (Content, Document Types, Library, Library Element Types), not by mode.
+  // Each group's sidebar-app label carries the domain, so its two menu items can stay short
+  // ('Permissions Editor' / 'Access Viewer') and the per-domain icon distinguishes them.
   {
     type: 'sectionSidebarApp',
     kind: 'menu',
-    alias: 'UAP.SidebarApp.Editors',
-    name: 'Advanced Permissions Editors Sidebar',
+    alias: 'UAP.SidebarApp.Content',
+    name: 'Advanced Permissions Content Sidebar',
     weight: 60,
     conditions: [
       {
@@ -31,15 +29,32 @@ const manifests: Array<UmbExtensionManifest> = [
       },
     ],
     meta: {
-      label: '#uap_editorsSectionLabel',
-      menu: 'UAP.Menu.Editors',
+      label: '#uap_group_content',
+      menu: 'UAP.Menu.Content',
     },
   },
   {
     type: 'sectionSidebarApp',
     kind: 'menu',
-    alias: 'UAP.SidebarApp.Viewers',
-    name: 'Advanced Permissions Viewers Sidebar',
+    alias: 'UAP.SidebarApp.DocumentTypes',
+    name: 'Advanced Permissions Document Types Sidebar',
+    weight: 55,
+    conditions: [
+      {
+        alias: 'Umb.Condition.SectionAlias',
+        match: 'Umb.Section.Users',
+      },
+    ],
+    meta: {
+      label: '#uap_group_documentTypes',
+      menu: 'UAP.Menu.DocumentTypes',
+    },
+  },
+  {
+    type: 'sectionSidebarApp',
+    kind: 'menu',
+    alias: 'UAP.SidebarApp.Library',
+    name: 'Advanced Permissions Library Sidebar',
     weight: 50,
     conditions: [
       {
@@ -48,118 +63,157 @@ const manifests: Array<UmbExtensionManifest> = [
       },
     ],
     meta: {
-      label: '#uap_viewersSectionLabel',
-      menu: 'UAP.Menu.Viewers',
+      label: '#uap_group_library',
+      menu: 'UAP.Menu.Library',
+    },
+  },
+  {
+    type: 'sectionSidebarApp',
+    kind: 'menu',
+    alias: 'UAP.SidebarApp.LibraryElementTypes',
+    name: 'Advanced Permissions Library Element Types Sidebar',
+    weight: 45,
+    conditions: [
+      {
+        alias: 'Umb.Condition.SectionAlias',
+        match: 'Umb.Section.Users',
+      },
+    ],
+    meta: {
+      label: '#uap_group_libraryElementTypes',
+      menu: 'UAP.Menu.LibraryElementTypes',
     },
   },
 
   // ─── Menus ────────────────────────────────────────────────────────────────
   {
     type: 'menu',
-    alias: 'UAP.Menu.Editors',
-    name: 'Advanced Permissions Editors Menu',
+    alias: 'UAP.Menu.Content',
+    name: 'Advanced Permissions Content Menu',
   },
   {
     type: 'menu',
-    alias: 'UAP.Menu.Viewers',
-    name: 'Advanced Permissions Viewers Menu',
+    alias: 'UAP.Menu.DocumentTypes',
+    name: 'Advanced Permissions Document Types Menu',
+  },
+  {
+    type: 'menu',
+    alias: 'UAP.Menu.Library',
+    name: 'Advanced Permissions Library Menu',
+  },
+  {
+    type: 'menu',
+    alias: 'UAP.Menu.LibraryElementTypes',
+    name: 'Advanced Permissions Library Element Types Menu',
   },
 
   // ─── Menu Items ───────────────────────────────────────────────────────────
+  // Grouped by domain. Within each group the editor (weight 100) sits above the
+  // viewer (weight 90). Labels are the shared short keys; the per-domain icon is
+  // shared by the editor and viewer and kept in sync with each workspace's
+  // empty-state ctaIcon. Aliases and entityTypes are intentionally unchanged.
+
+  // Content
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.PermissionsEditor',
     name: 'Content Permissions Editor Menu Item',
     weight: 100,
     meta: {
-      label: '#uap_permissionsEditor',
-      icon: 'icon-lock',
-      entityType: 'uap-permissions-editor',
-      menus: ['UAP.Menu.Editors'],
-    },
-  },
-  {
-    type: 'menuItem',
-    alias: 'UAP.MenuItem.DocTypePermissions',
-    name: 'Document Type Permissions Editor Menu Item',
-    weight: 90,
-    meta: {
-      label: '#uap_docTypePermissions_menuLabel',
+      label: '#uap_menuItem_permissionsEditor',
       icon: 'icon-document',
-      entityType: 'uap-doc-type-permissions',
-      menus: ['UAP.Menu.Editors'],
-    },
-  },
-  {
-    type: 'menuItem',
-    alias: 'UAP.MenuItem.LibraryPermissions',
-    name: 'Library Permissions Editor Menu Item',
-    weight: 85,
-    meta: {
-      label: '#uap_library_menuLabel',
-      icon: 'icon-globe',
-      entityType: 'uap-library-permissions',
-      menus: ['UAP.Menu.Editors'],
-    },
-  },
-  {
-    type: 'menuItem',
-    alias: 'UAP.MenuItem.ElementTypePermissions',
-    name: 'Library Element Type Permissions Menu Item',
-    weight: 80,
-    meta: {
-      label: '#uap_elementTypePermissions_menuLabel',
-      icon: 'icon-thumbnail-list',
-      entityType: 'uap-element-type-permissions',
-      menus: ['UAP.Menu.Editors'],
+      entityType: 'uap-permissions-editor',
+      menus: ['UAP.Menu.Content'],
     },
   },
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.AccessViewer',
-    name: 'Access Viewer Menu Item',
+    name: 'Content Access Viewer Menu Item',
+    weight: 90,
+    meta: {
+      label: '#uap_menuItem_accessViewer',
+      icon: 'icon-document',
+      entityType: 'uap-access-viewer',
+      menus: ['UAP.Menu.Content'],
+    },
+  },
+
+  // Document Types
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.DocTypePermissions',
+    name: 'Document Type Permissions Editor Menu Item',
     weight: 100,
     meta: {
-      label: '#uap_accessViewer',
-      icon: 'icon-eye',
-      entityType: 'uap-access-viewer',
-      menus: ['UAP.Menu.Viewers'],
+      label: '#uap_menuItem_permissionsEditor',
+      icon: 'icon-diploma',
+      entityType: 'uap-doc-type-permissions',
+      menus: ['UAP.Menu.DocumentTypes'],
     },
   },
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.InsertOptions',
-    name: 'Insert Options Viewer Menu Item',
+    name: 'Document Type Access Viewer Menu Item',
     weight: 90,
     meta: {
-      label: '#uap_docTypePermissions_insertOptionsMenuLabel',
-      icon: 'icon-eye',
+      label: '#uap_menuItem_accessViewer',
+      icon: 'icon-diploma',
       entityType: 'uap-doc-type-create-audit',
-      menus: ['UAP.Menu.Viewers'],
+      menus: ['UAP.Menu.DocumentTypes'],
+    },
+  },
+
+  // Library
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.LibraryPermissions',
+    name: 'Library Permissions Editor Menu Item',
+    weight: 100,
+    meta: {
+      label: '#uap_menuItem_permissionsEditor',
+      icon: 'icon-globe',
+      entityType: 'uap-library-permissions',
+      menus: ['UAP.Menu.Library'],
     },
   },
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.LibraryAccessViewer',
     name: 'Library Access Viewer Menu Item',
-    weight: 80,
+    weight: 90,
     meta: {
-      label: '#uap_library_accessViewerMenuLabel',
-      icon: 'icon-eye',
+      label: '#uap_menuItem_accessViewer',
+      icon: 'icon-globe',
       entityType: 'uap-library-access-viewer',
-      menus: ['UAP.Menu.Viewers'],
+      menus: ['UAP.Menu.Library'],
+    },
+  },
+
+  // Library Element Types
+  {
+    type: 'menuItem',
+    alias: 'UAP.MenuItem.ElementTypePermissions',
+    name: 'Library Element Type Permissions Editor Menu Item',
+    weight: 100,
+    meta: {
+      label: '#uap_menuItem_permissionsEditor',
+      icon: 'icon-thumbnail-list',
+      entityType: 'uap-element-type-permissions',
+      menus: ['UAP.Menu.LibraryElementTypes'],
     },
   },
   {
     type: 'menuItem',
     alias: 'UAP.MenuItem.LibraryInsertOptions',
-    name: 'Library Insert Viewer Menu Item',
-    weight: 70,
+    name: 'Library Element Type Access Viewer Menu Item',
+    weight: 90,
     meta: {
-      label: '#uap_libraryInsertViewer_menuLabel',
-      icon: 'icon-eye',
+      label: '#uap_menuItem_accessViewer',
+      icon: 'icon-thumbnail-list',
       entityType: 'uap-library-insert-viewer',
-      menus: ['UAP.Menu.Viewers'],
+      menus: ['UAP.Menu.LibraryElementTypes'],
     },
   },
 

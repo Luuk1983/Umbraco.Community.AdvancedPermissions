@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: '高级权限',
+    group_content: '内容权限',
+    group_documentTypes: '文档类型权限',
+    group_library: 'Library 权限',
+    group_libraryElementTypes: 'Library 元素类型权限',
+    menuItem_permissionsEditor: '权限编辑器',
+    menuItem_accessViewer: '访问查看器',
     editorsSectionLabel: '编辑器',
     viewersSectionLabel: '查看器',
     permissionsEditor: '内容权限编辑器',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: '如果没有它，结果将会是：',
 
     // ── Access Viewer ─────────────────────────────────────────────────────
-    viewerHeadline: '访问查看器',
+    viewerHeadline: '内容访问查看器',
     byRole: '按用户组',
     byUser: '按用户',
     chooseRole: '选择用户组',
@@ -100,7 +106,7 @@ export default {
 
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:
-      '此用户组的文档权限由 Advanced Permissions 包管理。请在“用户”区域打开权限编辑器以配置权限。',
+      '此用户组的文档权限由 Advanced Permissions 包管理。请在“用户”区域打开“内容权限编辑器”以配置权限。',
 
     // ── Doc-Type Permissions ──────────────────────────────────────────────
     role: '用户组',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: '文档类型权限编辑器',
     docTypePermissions_insertOptionsMenuLabel: '插入选项查看器',
     docTypePermissions_workspaceTitle: '文档类型权限编辑器',
-    docTypePermissions_auditTitle: '插入选项查看器',
+    docTypePermissions_auditTitle: '文档类型访问查看器',
     docTypePermissions_allDocTypes: '所有文档类型',
     docTypePermissions_verbInsert: '插入',
     docTypePermissions_documentType: '文档类型',
@@ -162,7 +168,7 @@ export default {
     elementFolderDescSection: '其中的元素',
     naChip: '不适用',
     redirectMessageElement:
-      '此用户组的 Library（元素）权限由 Advanced Permissions 包管理。请在“用户”区域打开 Library 权限编辑器以配置权限。',
+      '此用户组的 Library（元素）权限由 Advanced Permissions 包管理。请在“用户”区域打开“Library 权限编辑器”以配置权限。',
     library_menuLabel: 'Library 权限编辑器',
     library_editorHeadline: 'Library 权限编辑器',
     library_accessViewerMenuLabel: 'Library 访问查看器',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `“${verb}”不适用于文件夹——但仍可为其中的项进行设置。`,
     library_folderInheritLabel: '其中的项（后代节点）',
     libraryInsertViewer_menuLabel: 'Library 插入查看器',
-    libraryInsertViewer_headline: 'Library 插入查看器',
+    libraryInsertViewer_headline: 'Library 元素类型访问查看器',
     libraryInsertViewer_intro: '显示用户组或用户可以创建哪些 Library 元素类型，并跨其所有用户组进行解析。点击某一行可查看推理过程。',
     elementTypePermissions_menuLabel: 'Library 元素类型权限',
-    elementTypePermissions_headline: 'Library 元素类型权限',
+    elementTypePermissions_headline: 'Library 元素类型权限编辑器',
     elementTypePermissions_intro: '控制每个用户组可以在 Library 中创建哪些元素类型。元素类型默认可创建；设置“允许”或“拒绝”——并可选择优先级覆盖——以控制当用户属于多个用户组时如何解析该选择。',
     elementTypePermissions_typeHeader: '元素类型',
     elementTypePermissions_verbCreate: '在 Library 中创建',

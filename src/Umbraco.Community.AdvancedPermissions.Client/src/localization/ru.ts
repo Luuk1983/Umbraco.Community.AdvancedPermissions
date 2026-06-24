@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Навигация ─────────────────────────────────────────────────────────
     sectionLabel: 'Расширенные разрешения',
+    group_content: 'Разрешения на содержимое',
+    group_documentTypes: 'Разрешения для типов документов',
+    group_library: 'Разрешения Library',
+    group_libraryElementTypes: 'Разрешения для типов элементов Library',
+    menuItem_permissionsEditor: 'Редактор разрешений',
+    menuItem_accessViewer: 'Просмотр доступа',
     editorsSectionLabel: 'Редакторы',
     viewersSectionLabel: 'Просмотрщики',
     permissionsEditor: 'Редактор разрешений на содержимое',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Без него результат был бы:',
 
     // ── Просмотр доступа ──────────────────────────────────────────────────
-    viewerHeadline: 'Просмотр доступа',
+    viewerHeadline: 'Просмотр доступа к содержимому',
     byRole: 'По группе пользователей',
     byUser: 'По пользователю',
     chooseRole: 'Выберите группу пользователей',
@@ -100,7 +106,7 @@ export default {
 
     // ── Сообщение о перенаправлении гранулярных разрешений ─────────────────
     redirectMessage:
-      'Разрешения на документы для этой группы пользователей управляются пакетом Advanced Permissions. Откройте Редактор разрешений в разделе Пользователи, чтобы настроить разрешения.',
+      'Разрешения на документы для этой группы пользователей управляются пакетом Advanced Permissions. Откройте Редактор разрешений на содержимое в разделе Пользователи, чтобы настроить разрешения.',
 
     // ── Разрешения для типов документов ───────────────────────────────────
     role: 'Группа пользователей',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Редактор разрешений для типов документов',
     docTypePermissions_insertOptionsMenuLabel: 'Просмотр вариантов вставки',
     docTypePermissions_workspaceTitle: 'Редактор разрешений для типов документов',
-    docTypePermissions_auditTitle: 'Просмотр вариантов вставки',
+    docTypePermissions_auditTitle: 'Просмотр доступа для типа документа',
     docTypePermissions_allDocTypes: 'Все типы документов',
     docTypePermissions_verbInsert: 'Вставить',
     docTypePermissions_documentType: 'Тип документа',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `«${verb}» не применяется к папкам — его всё равно можно задать для элементов внутри.`,
     library_folderInheritLabel: 'Элементы внутри (дочерние)',
     libraryInsertViewer_menuLabel: 'Просмотр вставки Library',
-    libraryInsertViewer_headline: 'Просмотр вставки Library',
+    libraryInsertViewer_headline: 'Просмотр доступа для типов элементов Library',
     libraryInsertViewer_intro: 'Показывает, какие типы элементов Library может создавать группа пользователей или пользователь, с учётом всех их групп. Нажмите на строку, чтобы увидеть обоснование.',
     elementTypePermissions_menuLabel: 'Разрешения для типов элементов Library',
-    elementTypePermissions_headline: 'Разрешения для типов элементов Library',
+    elementTypePermissions_headline: 'Редактор разрешений для типов элементов Library',
     elementTypePermissions_intro: 'Управляйте тем, какие типы элементов может создавать каждая группа пользователей в Library. Типы элементов создаваемы по умолчанию; задайте Разрешить или Запретить — с дополнительным приоритетным переопределением — чтобы управлять тем, как выбор разрешается, когда пользователь входит в несколько групп.',
     elementTypePermissions_typeHeader: 'Тип элемента',
     elementTypePermissions_verbCreate: 'Создать в Library',

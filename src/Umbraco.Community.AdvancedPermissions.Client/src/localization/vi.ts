@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigation ────────────────────────────────────────────────────────
     sectionLabel: 'Phân quyền nâng cao',
+    group_content: 'Quyền nội dung',
+    group_documentTypes: 'Quyền loại tài liệu',
+    group_library: 'Quyền Library',
+    group_libraryElementTypes: 'Quyền loại phần tử Library',
+    menuItem_permissionsEditor: 'Trình chỉnh sửa quyền',
+    menuItem_accessViewer: 'Trình xem quyền truy cập',
     editorsSectionLabel: 'Trình chỉnh sửa',
     viewersSectionLabel: 'Trình xem',
     permissionsEditor: 'Trình chỉnh sửa quyền nội dung',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Nếu không có nó, kết quả sẽ là:',
 
     // ── Access Viewer ─────────────────────────────────────────────────────
-    viewerHeadline: 'Trình xem quyền truy cập',
+    viewerHeadline: 'Trình xem quyền truy cập nội dung',
     byRole: 'Theo nhóm người dùng',
     byUser: 'Theo người dùng',
     chooseRole: 'Chọn nhóm người dùng',
@@ -100,7 +106,7 @@ export default {
 
     // ── Granular permission redirect ──────────────────────────────────────
     redirectMessage:
-      'Quyền tài liệu cho nhóm người dùng này được quản lý bởi gói Advanced Permissions. Mở Trình chỉnh sửa quyền trong mục Người dùng để cấu hình quyền.',
+      'Quyền tài liệu cho nhóm người dùng này được quản lý bởi gói Advanced Permissions. Mở Trình chỉnh sửa quyền nội dung trong mục Người dùng để cấu hình quyền.',
 
     // ── Doc-Type Permissions ──────────────────────────────────────────────
     role: 'Nhóm người dùng',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Trình chỉnh sửa quyền loại tài liệu',
     docTypePermissions_insertOptionsMenuLabel: 'Trình xem tùy chọn chèn',
     docTypePermissions_workspaceTitle: 'Trình chỉnh sửa quyền loại tài liệu',
-    docTypePermissions_auditTitle: 'Trình xem tùy chọn chèn',
+    docTypePermissions_auditTitle: 'Trình xem quyền truy cập loại tài liệu',
     docTypePermissions_allDocTypes: 'Tất cả loại tài liệu',
     docTypePermissions_verbInsert: 'Chèn',
     docTypePermissions_documentType: 'Loại tài liệu',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} không áp dụng cho thư mục — vẫn có thể đặt cho các mục bên trong.`,
     library_folderInheritLabel: 'Các mục bên trong (nút con cháu)',
     libraryInsertViewer_menuLabel: 'Trình xem chèn Library',
-    libraryInsertViewer_headline: 'Trình xem chèn Library',
+    libraryInsertViewer_headline: 'Trình xem quyền truy cập loại phần tử Library',
     libraryInsertViewer_intro: 'Hiển thị loại phần tử Library nào mà một nhóm người dùng hoặc người dùng có thể tạo, được giải quyết trên tất cả các nhóm của họ. Nhấp vào một hàng để xem lý giải.',
     elementTypePermissions_menuLabel: 'Quyền loại phần tử Library',
-    elementTypePermissions_headline: 'Quyền loại phần tử Library',
+    elementTypePermissions_headline: 'Trình chỉnh sửa quyền loại phần tử Library',
     elementTypePermissions_intro: 'Kiểm soát loại phần tử nào mà mỗi nhóm người dùng có thể tạo trong Library. Loại phần tử có thể tạo theo mặc định; đặt Cho phép hoặc Từ chối — kèm theo ghi đè ưu tiên tùy chọn — để kiểm soát cách lựa chọn được giải quyết khi một người dùng thuộc nhiều nhóm.',
     elementTypePermissions_typeHeader: 'Loại phần tử',
     elementTypePermissions_verbCreate: 'Tạo trong Library',

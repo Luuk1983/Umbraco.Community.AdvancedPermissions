@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── التنقل ────────────────────────────────────────────────────────────
     sectionLabel: 'الأذونات المتقدمة',
+    group_content: 'أذونات المحتوى',
+    group_documentTypes: 'أذونات نوع الوثيقة',
+    group_library: 'أذونات Library',
+    group_libraryElementTypes: 'أذونات أنواع عناصر Library',
+    menuItem_permissionsEditor: 'محرر الأذونات',
+    menuItem_accessViewer: 'عارض الوصول',
     editorsSectionLabel: 'المحررون',
     viewersSectionLabel: 'العارضون',
     permissionsEditor: 'محرر أذونات المحتوى',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'بدونه، كانت النتيجة ستكون:',
 
     // ── عارض الوصول ───────────────────────────────────────────────────────
-    viewerHeadline: 'عارض الوصول',
+    viewerHeadline: 'عارض الوصول إلى المحتوى',
     byRole: 'حسب مجموعة المستخدمين',
     byUser: 'حسب المستخدم',
     chooseRole: 'اختر مجموعة المستخدمين',
@@ -100,7 +106,7 @@ export default {
 
     // ── رسالة إعادة التوجيه للأذونات الدقيقة ───────────────────────────────
     redirectMessage:
-      'تُدار أذونات الوثائق لمجموعة المستخدمين هذه بواسطة حزمة Advanced Permissions. افتح محرر الأذونات في قسم المستخدمين لتكوين الأذونات.',
+      'تُدار أذونات الوثائق لمجموعة المستخدمين هذه بواسطة حزمة Advanced Permissions. افتح محرر أذونات المحتوى في قسم المستخدمين لتكوين الأذونات.',
 
     // ── أذونات نوع الوثيقة ────────────────────────────────────────────────
     role: 'مجموعة المستخدمين',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'محرر أذونات نوع الوثيقة',
     docTypePermissions_insertOptionsMenuLabel: 'عارض خيارات الإدراج',
     docTypePermissions_workspaceTitle: 'محرر أذونات نوع الوثيقة',
-    docTypePermissions_auditTitle: 'عارض خيارات الإدراج',
+    docTypePermissions_auditTitle: 'عارض الوصول إلى نوع الوثيقة',
     docTypePermissions_allDocTypes: 'جميع أنواع الوثائق',
     docTypePermissions_verbInsert: 'إدراج',
     docTypePermissions_documentType: 'نوع الوثيقة',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} لا ينطبق على المجلدات — لا يزال بالإمكان تعيينه للعناصر الموجودة بالداخل.`,
     library_folderInheritLabel: 'العناصر بالداخل (العناصر الفرعية)',
     libraryInsertViewer_menuLabel: 'عارض إدراج Library',
-    libraryInsertViewer_headline: 'عارض إدراج Library',
+    libraryInsertViewer_headline: 'عارض الوصول إلى أنواع عناصر Library',
     libraryInsertViewer_intro: 'يعرض أنواع عناصر Library التي يجوز لمجموعة مستخدمين أو مستخدم إنشاؤها، محسومةً عبر جميع مجموعاتهم. انقر على صف لمعرفة السبب.',
     elementTypePermissions_menuLabel: 'أذونات أنواع عناصر Library',
-    elementTypePermissions_headline: 'أذونات أنواع عناصر Library',
+    elementTypePermissions_headline: 'محرر أذونات أنواع عناصر Library',
     elementTypePermissions_intro: 'تحكّم في أنواع العناصر التي يجوز لكل مجموعة مستخدمين إنشاؤها في Library. أنواع العناصر قابلة للإنشاء افتراضيًا؛ عيّن السماح أو المنع — مع تجاوز أولوية اختياري — للتحكم في كيفية حسم الاختيار عندما ينتمي المستخدم إلى عدة مجموعات.',
     elementTypePermissions_typeHeader: 'نوع العنصر',
     elementTypePermissions_verbCreate: 'الإنشاء في Library',

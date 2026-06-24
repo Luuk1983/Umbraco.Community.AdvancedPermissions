@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── ניווט ─────────────────────────────────────────────────────────────
     sectionLabel: 'הרשאות מתקדמות',
+    group_content: 'הרשאות תוכן',
+    group_documentTypes: 'הרשאות סוג מסמך',
+    group_library: 'הרשאות ספרייה',
+    group_libraryElementTypes: 'הרשאות סוג רכיב ספרייה',
+    menuItem_permissionsEditor: 'עורך הרשאות',
+    menuItem_accessViewer: 'מציג גישה',
     editorsSectionLabel: 'עורכים',
     viewersSectionLabel: 'מציגים',
     permissionsEditor: 'עורך הרשאות תוכן',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'בלעדיה, התוצאה הייתה:',
 
     // ── מציג הגישה ────────────────────────────────────────────────────────
-    viewerHeadline: 'מציג גישה',
+    viewerHeadline: 'מציג גישת תוכן',
     byRole: 'לפי קבוצת משתמשים',
     byUser: 'לפי משתמש',
     chooseRole: 'בחר קבוצת משתמשים',
@@ -100,7 +106,7 @@ export default {
 
     // ── הודעת הפניה להרשאות מפורטות ───────────────────────────────────────
     redirectMessage:
-      'הרשאות מסמכים עבור קבוצת משתמשים זו מנוהלות על ידי חבילת Advanced Permissions. פתח את עורך ההרשאות במקטע המשתמשים כדי להגדיר הרשאות.',
+      'הרשאות מסמכים עבור קבוצת משתמשים זו מנוהלות על ידי חבילת Advanced Permissions. פתח את עורך הרשאות תוכן במקטע המשתמשים כדי להגדיר הרשאות.',
 
     // ── הרשאות סוג מסמך ───────────────────────────────────────────────────
     role: 'קבוצת משתמשים',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'עורך הרשאות סוג מסמך',
     docTypePermissions_insertOptionsMenuLabel: 'מציג אפשרויות הוספה',
     docTypePermissions_workspaceTitle: 'עורך הרשאות סוג מסמך',
-    docTypePermissions_auditTitle: 'מציג אפשרויות הוספה',
+    docTypePermissions_auditTitle: 'מציג גישת סוג מסמך',
     docTypePermissions_allDocTypes: 'כל סוגי המסמכים',
     docTypePermissions_verbInsert: 'הוסף',
     docTypePermissions_documentType: 'סוג מסמך',
@@ -162,7 +168,7 @@ export default {
     elementFolderDescSection: 'רכיבים בפנים',
     naChip: 'לא רלוונטי',
     redirectMessageElement:
-      'הרשאות ספרייה (רכיב) עבור קבוצת משתמשים זו מנוהלות על ידי חבילת Advanced Permissions. פתח את עורך הרשאות הספרייה במקטע המשתמשים כדי להגדיר הרשאות.',
+      'הרשאות ספרייה (רכיב) עבור קבוצת משתמשים זו מנוהלות על ידי חבילת Advanced Permissions. פתח את עורך הרשאות ספרייה במקטע המשתמשים כדי להגדיר הרשאות.',
     library_menuLabel: 'עורך הרשאות ספרייה',
     library_editorHeadline: 'עורך הרשאות ספרייה',
     library_accessViewerMenuLabel: 'מציג גישת ספרייה',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} אינו חל על תיקיות — עדיין ניתן להגדירו עבור הפריטים שבתוכן.`,
     library_folderInheritLabel: 'פריטים בפנים (צאצאים)',
     libraryInsertViewer_menuLabel: 'מציג הוספת ספרייה',
-    libraryInsertViewer_headline: 'מציג הוספת ספרייה',
+    libraryInsertViewer_headline: 'מציג גישת סוג רכיב ספרייה',
     libraryInsertViewer_intro: 'מציג אילו סוגי רכיבי ספרייה קבוצת משתמשים או משתמש רשאים ליצור, מוכרע על פני כל הקבוצות שלהם. לחץ על שורה כדי לראות את ההנמקה.',
     elementTypePermissions_menuLabel: 'הרשאות סוג רכיב ספרייה',
-    elementTypePermissions_headline: 'הרשאות סוג רכיב ספרייה',
+    elementTypePermissions_headline: 'עורך הרשאות סוג רכיב ספרייה',
     elementTypePermissions_intro: 'שלוט אילו סוגי רכיבים כל קבוצת משתמשים רשאית ליצור בספרייה. סוגי רכיבים ניתנים ליצירה כברירת מחדל; הגדר אפשר או מנע — עם עקיפת עדיפות אופציונלית — כדי לשלוט כיצד הבחירה מוכרעת כאשר משתמש משתייך למספר קבוצות.',
     elementTypePermissions_typeHeader: 'סוג רכיב',
     elementTypePermissions_verbCreate: 'צור בספרייה',

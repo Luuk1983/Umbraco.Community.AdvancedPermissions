@@ -493,7 +493,7 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
       <uap-selection-panel
         .groups=${this.#selectionGroups}
         promptText=${this.#localize.term('uap_docTypePermissions_pickToStart')}
-        ctaIcon="icon-document"
+        ctaIcon="icon-diploma"
         orLabel=${this.#localize.term('uap_subjectOr')}
         @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
 

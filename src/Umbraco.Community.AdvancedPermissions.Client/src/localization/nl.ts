@@ -4,6 +4,16 @@ export default {
   uap: {
     // ── Navigatie ─────────────────────────────────────────────────────────
     sectionLabel: 'Geavanceerde machtigingen',
+    // Domeingroep-koppen (labels van de zijbalk-apps) — dragen het domein én het doel
+    // ('…machtigingen'), omdat ze in de sectie Gebruikers staan.
+    group_content: 'Inhoudsmachtigingen',
+    group_documentTypes: 'Documenttype-machtigingen',
+    group_library: 'Library-machtigingen',
+    group_libraryElementTypes: 'Library-elementtype-machtigingen',
+    // Gedeelde menu-item-labels
+    menuItem_permissionsEditor: 'Machtigingeneditor',
+    menuItem_accessViewer: 'Toegangsweergave',
+    // Slapend (behouden voor sleutelpariteit; niet meer gebruikt door menu-items):
     editorsSectionLabel: 'Editors',
     viewersSectionLabel: 'Weergaven',
     permissionsEditor: 'Inhoudsmachtigingen-editor',
@@ -80,7 +90,7 @@ export default {
     priorityOverrideSuppressedHint: 'Zonder deze zou het resultaat zijn geweest:',
 
     // ── Toegangsweergave ──────────────────────────────────────────────────
-    viewerHeadline: 'Toegangsweergave',
+    viewerHeadline: 'Content-toegangsweergave',
     byRole: 'Op gebruikersgroep',
     byUser: 'Op gebruiker',
     chooseRole: 'Kies gebruikersgroep',
@@ -118,7 +128,7 @@ export default {
 
     // ── Omleidingsbericht granulaire machtigingen ─────────────────────────
     redirectMessage:
-      'Documentmachtigingen voor deze gebruikersgroep worden beheerd door het Advanced Permissions-pakket. Open de Machtigingeneditor in de sectie Gebruikers om machtigingen te configureren.',
+      'Documentmachtigingen voor deze gebruikersgroep worden beheerd door het Advanced Permissions-pakket. Open de Inhoudsmachtigingen-editor in de sectie Gebruikers om machtigingen te configureren.',
 
     // ── Documenttype-machtigingen ─────────────────────────────────────────
     role: 'Gebruikersgroep',
@@ -136,7 +146,7 @@ export default {
     docTypePermissions_menuLabel: 'Documenttype-machtigingeneditor',
     docTypePermissions_insertOptionsMenuLabel: 'Invoegopties-weergave',
     docTypePermissions_workspaceTitle: 'Documenttype-machtigingeneditor',
-    docTypePermissions_auditTitle: 'Invoegopties-weergave',
+    docTypePermissions_auditTitle: 'Documenttype-toegangsweergave',
     docTypePermissions_allDocTypes: 'Alle documenttypes',
     docTypePermissions_verbInsert: 'Invoegen',
     docTypePermissions_documentType: 'Documenttype',
@@ -177,10 +187,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} is niet van toepassing op mappen — het kan nog wel worden ingesteld voor de items erin.`,
     library_folderInheritLabel: 'Items erin (onderliggende)',
     libraryInsertViewer_menuLabel: 'Library-invoegweergave',
-    libraryInsertViewer_headline: 'Library-invoegweergave',
+    libraryInsertViewer_headline: 'Library-elementtype-toegangsweergave',
     libraryInsertViewer_intro: 'Toont welke Library-elementtypen een gebruikersgroep of gebruiker mag aanmaken, opgelost over al hun groepen. Klik op een rij om de onderbouwing te zien.',
     elementTypePermissions_menuLabel: 'Library-elementtype-machtigingen',
-    elementTypePermissions_headline: 'Library-elementtype-machtigingen',
+    elementTypePermissions_headline: 'Library-elementtype-machtigingeneditor',
     elementTypePermissions_intro: 'Bepaal welke elementtypen elke gebruikersgroep in de Library mag aanmaken. Elementtypen zijn standaard aanmaakbaar; stel Toestaan of Weigeren in — met een optionele prioriteitsoverschrijving — om te bepalen hoe de keuze wordt opgelost wanneer een gebruiker tot meerdere groepen behoort.',
     elementTypePermissions_typeHeader: 'Elementtype',
     elementTypePermissions_verbCreate: 'Aanmaken in Library',

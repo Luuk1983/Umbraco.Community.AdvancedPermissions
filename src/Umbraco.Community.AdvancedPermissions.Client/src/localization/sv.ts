@@ -4,6 +4,12 @@ export default {
   uap: {
     // ── Navigering ────────────────────────────────────────────────────────
     sectionLabel: 'Avancerade behörigheter',
+    group_content: 'Innehållsbehörigheter',
+    group_documentTypes: 'Dokumenttypsbehörigheter',
+    group_library: 'Biblioteksbehörigheter',
+    group_libraryElementTypes: 'Biblioteks-elementtypsbehörigheter',
+    menuItem_permissionsEditor: 'Behörighetsredigerare',
+    menuItem_accessViewer: 'Åtkomstvisning',
     editorsSectionLabel: 'Redigerare',
     viewersSectionLabel: 'Visningar',
     permissionsEditor: 'Redigerare för innehållsbehörigheter',
@@ -62,7 +68,7 @@ export default {
     priorityOverrideSuppressedHint: 'Utan den skulle resultatet ha blivit:',
 
     // ── Åtkomstvisning ──────────────────────────────────────────────────
-    viewerHeadline: 'Åtkomstvisning',
+    viewerHeadline: 'Åtkomstvisning för innehåll',
     byRole: 'Per användargrupp',
     byUser: 'Per användare',
     chooseRole: 'Välj användargrupp',
@@ -100,7 +106,7 @@ export default {
 
     // ── Omdirigeringsmeddelande för granulära behörigheter ───────────────
     redirectMessage:
-      'Dokumentbehörigheter för denna användargrupp hanteras av paketet Advanced Permissions. Öppna behörighetsredigeraren i sektionen Användare för att konfigurera behörigheter.',
+      'Dokumentbehörigheter för denna användargrupp hanteras av paketet Advanced Permissions. Öppna Redigerare för innehållsbehörigheter i sektionen Användare för att konfigurera behörigheter.',
 
     // ── Dokumenttypsbehörigheter ──────────────────────────────────────────
     role: 'Användargrupp',
@@ -118,7 +124,7 @@ export default {
     docTypePermissions_menuLabel: 'Redigerare för dokumenttypsbehörigheter',
     docTypePermissions_insertOptionsMenuLabel: 'Visning av infogningsalternativ',
     docTypePermissions_workspaceTitle: 'Redigerare för dokumenttypsbehörigheter',
-    docTypePermissions_auditTitle: 'Visning av infogningsalternativ',
+    docTypePermissions_auditTitle: 'Åtkomstvisning för dokumenttyper',
     docTypePermissions_allDocTypes: 'Alla dokumenttyper',
     docTypePermissions_verbInsert: 'Infoga',
     docTypePermissions_documentType: 'Dokumenttyp',
@@ -162,7 +168,7 @@ export default {
     elementFolderDescSection: 'Element inuti',
     naChip: 'Ej tillämpligt',
     redirectMessageElement:
-      'Bibliotekets (element-)behörigheter för denna användargrupp hanteras av paketet Advanced Permissions. Öppna redigeraren för biblioteksbehörigheter i sektionen Användare för att konfigurera behörigheter.',
+      'Bibliotekets (element-)behörigheter för denna användargrupp hanteras av paketet Advanced Permissions. Öppna Redigerare för biblioteksbehörigheter i sektionen Användare för att konfigurera behörigheter.',
     library_menuLabel: 'Redigerare för biblioteksbehörigheter',
     library_editorHeadline: 'Redigerare för biblioteksbehörigheter',
     library_accessViewerMenuLabel: 'Åtkomstvisning för bibliotek',
@@ -174,10 +180,10 @@ export default {
     library_notApplicableTitle: (verb: string) => `${verb} gäller inte mappar — den kan ändå anges för objekten inuti.`,
     library_folderInheritLabel: 'Objekt inuti (underordnade)',
     libraryInsertViewer_menuLabel: 'Visning av biblioteksinfogning',
-    libraryInsertViewer_headline: 'Visning av biblioteksinfogning',
+    libraryInsertViewer_headline: 'Åtkomstvisning för biblioteks-elementtyper',
     libraryInsertViewer_intro: 'Visar vilka biblioteks-elementtyper en användargrupp eller användare kan skapa, löst över alla deras grupper. Klicka på en rad för att se motiveringen.',
     elementTypePermissions_menuLabel: 'Behörigheter för biblioteks-elementtyper',
-    elementTypePermissions_headline: 'Behörigheter för biblioteks-elementtyper',
+    elementTypePermissions_headline: 'Redigerare för biblioteks-elementtypsbehörigheter',
     elementTypePermissions_intro: 'Styr vilka elementtyper varje användargrupp kan skapa i biblioteket. Elementtyper är skapbara som standard; ange Tillåt eller Neka — med en valfri prioritetsåsidosättning — för att styra hur valet löses när en användare tillhör flera grupper.',
     elementTypePermissions_typeHeader: 'Elementtyp',
     elementTypePermissions_verbCreate: 'Skapa i biblioteket',

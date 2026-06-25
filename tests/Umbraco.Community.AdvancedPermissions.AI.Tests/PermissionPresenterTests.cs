@@ -305,4 +305,76 @@ public sealed class PermissionPresenterTests
         Assert.DoesNotContain("Umb.Document.", json);
         Assert.DoesNotContain(nodeKey.ToString(), json);
     }
+
+    /// <summary>
+    /// A "remove the Deny" remediation projects to friendly labels, an administrator-action sentence, and
+    /// a "Remove" change verb — and leaks no raw role alias, verb, scope/state enum, or node GUID.
+    /// </summary>
+    [Fact]
+    public async Task ToRemediation_RemoveDeny_ProjectsFriendlyAdminAction()
+    {
+        var nodeKey = Guid.NewGuid();
+        SetupGroups(Group("editors", "Editors"));
+        SetupNode(nodeKey, "News");
+        var sut = new PermissionPresenter(_userGroupService, _entityService, _contentTypeService);
+
+        var option = new RemediationOption(
+            RemediationActionKind.RemoveDeny,
+            "editors",
+            AdvancedPermissionsConstants.VerbDelete,
+            nodeKey,
+            Scope: null,
+            RemovedRoleAliases: ["editors", AdvancedPermissionsConstants.EveryoneRoleAlias]);
+
+        var friendly = await sut.ToRemediationAsync(option);
+
+        Assert.Equal("Remove", friendly.Action);
+        Assert.Equal("Delete", friendly.Permission);
+        Assert.Equal("News", friendly.SetOn);
+        Assert.Null(friendly.Scope);
+        Assert.Contains("administrator", friendly.Description, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("allow", friendly.Description, StringComparison.OrdinalIgnoreCase);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(friendly);
+        Assert.DoesNotContain("$everyone", json);
+        Assert.DoesNotContain("Umb.Document.", json);
+        Assert.DoesNotContain("RemoveDeny", json);
+        Assert.DoesNotContain(nodeKey.ToString(), json);
+        // The All Users role is named friendly, not by alias.
+        Assert.Contains("All Users", friendly.Description);
+    }
+
+    /// <summary>
+    /// A priority-override Allow remediation projects to the "Override" change verb, names the friendly
+    /// scope, and leaks no raw identifiers.
+    /// </summary>
+    [Fact]
+    public async Task ToRemediation_PriorityOverrideAllow_ProjectsOverrideAction()
+    {
+        var nodeKey = Guid.NewGuid();
+        SetupGroups(Group("editors", "Editors"));
+        SetupNode(nodeKey, "News");
+        var sut = new PermissionPresenter(_userGroupService, _entityService, _contentTypeService);
+
+        var option = new RemediationOption(
+            RemediationActionKind.AddPriorityOverrideAllow,
+            "editors",
+            AdvancedPermissionsConstants.VerbPublish,
+            nodeKey,
+            PermissionScope.ThisNodeOnly,
+            RemovedRoleAliases: []);
+
+        var friendly = await sut.ToRemediationAsync(option);
+
+        Assert.Equal("Override", friendly.Action);
+        Assert.Equal("Publish", friendly.Permission);
+        Assert.Equal("Editors", friendly.Role);
+        Assert.Equal("This node only", friendly.Scope);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(friendly);
+        Assert.DoesNotContain("Umb.Document.", json);
+        Assert.DoesNotContain("ThisNodeOnly", json);
+        Assert.DoesNotContain("AddPriorityOverrideAllow", json);
+        Assert.DoesNotContain(nodeKey.ToString(), json);
+    }
 }

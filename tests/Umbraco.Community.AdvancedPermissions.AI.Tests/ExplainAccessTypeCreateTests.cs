@@ -46,6 +46,12 @@ public sealed class ExplainAccessTypeCreateTests
     /// <summary>The mocked backoffice security accessor used to resolve the current user.</summary>
     private readonly IBackOfficeSecurityAccessor _securityAccessor = Substitute.For<IBackOfficeSecurityAccessor>();
 
+    /// <summary>The mocked remediation service (unused by the type-create aspect, but a tool dependency).</summary>
+    private readonly IPermissionRemediationService _remediation = Substitute.For<IPermissionRemediationService>();
+
+    /// <summary>The mocked user service (unused by the type-create aspect, but a tool dependency).</summary>
+    private readonly IUserService _userService = Substitute.For<IUserService>();
+
     /// <summary>Builds the tests around a single editors group exposed by the user group service.</summary>
     public ExplainAccessTypeCreateTests()
     {
@@ -69,7 +75,9 @@ public sealed class ExplainAccessTypeCreateTests
             _securityAccessor,
             _docTypePermissions,
             _contentTypeService,
-            _entityService);
+            _entityService,
+            _remediation,
+            _userService);
 
     /// <summary>Builds a mocked user group exposing the given alias and display name.</summary>
     /// <param name="alias">The alias the group should report.</param>

@@ -87,6 +87,18 @@ public interface IPermissionPresenter
     Task<AccessVerdict> ToVerdictAsync(EffectivePermission permission, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Projects a confirmed engine-level <see cref="RemediationOption"/> to a friendly, editor-facing
+    /// <see cref="AccessRemediation"/>. The role alias, raw verb, scope/state enums, and node GUID are all
+    /// replaced by display names, and a plain-language administrator-action sentence is built. Every
+    /// returned remediation is a confirmed fact — the change has already been validated to flip the
+    /// verdict to Allowed — so the wording states the outcome positively.
+    /// </summary>
+    /// <param name="option">The confirmed remediation option to project.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <returns>The friendly remediation.</returns>
+    Task<AccessRemediation> ToRemediationAsync(RemediationOption option, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Maps a verb-to-effective-permission dictionary and a node key to a friendly
     /// <see cref="AccessExplanation"/> with one verdict per verb.
     /// </summary>

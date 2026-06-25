@@ -56,7 +56,12 @@ internal sealed class AdvancedPermissionsGroundingContributor : IAIRuntimeContex
         "created where. If a user cannot perform an action or the editor appears read-only, a permission " +
         "Deny is a likely cause — use the Advanced Permissions tools (uap_explain_access, " +
         "uap_audit_permissions) to check before concluding the cause is structural. These rules are " +
-        "configured per user group and node in the Permissions Editor.";
+        "configured per user group and node in the Permissions Editor. " +
+        "Precedence: an explicit Deny always beats an explicit Allow on the same node — the only way an " +
+        "Allow wins over a same-node Deny is the priority-override flag. Explicit beats inherited; the " +
+        "nearest ancestor wins; no rule means deny. Do not claim a plain Allow can override a same-node " +
+        "Deny — to get the exact, confirmed changes that would grant a denied action, call " +
+        "uap_explain_access with suggestFix=true.";
 
     /// <inheritdoc />
     public void Contribute(AIRuntimeContext context)

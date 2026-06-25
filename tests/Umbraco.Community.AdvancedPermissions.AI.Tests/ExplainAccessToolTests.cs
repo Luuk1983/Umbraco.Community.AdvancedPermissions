@@ -45,6 +45,12 @@ public sealed class ExplainAccessToolTests
     /// <summary>The mocked backoffice security accessor used to resolve the current user.</summary>
     private readonly IBackOfficeSecurityAccessor _securityAccessor = Substitute.For<IBackOfficeSecurityAccessor>();
 
+    /// <summary>The mocked repository backing the REAL remediation service used by the tool.</summary>
+    private readonly IAdvancedPermissionRepository _repository = Substitute.For<IAdvancedPermissionRepository>();
+
+    /// <summary>The mocked Umbraco user service used to resolve a user's groups for the remediation role set.</summary>
+    private readonly IUserService _userService = Substitute.For<IUserService>();
+
     /// <summary>Builds the tests around a single editors group exposed by the user group service.</summary>
     public ExplainAccessToolTests()
     {
@@ -57,6 +63,13 @@ public sealed class ExplainAccessToolTests
     /// <summary>The presenter under test, wired over the mocked services.</summary>
     private IPermissionPresenter Presenter => new PermissionPresenter(_userGroupService, _entityService, _contentTypeService);
 
+    /// <summary>
+    /// The REAL remediation service over the mocked repository and the real pure resolver. The tool wraps
+    /// this so the suggest-fix path is exercised end-to-end through genuine re-resolution.
+    /// </summary>
+    private IPermissionRemediationService Remediation =>
+        new PermissionRemediator(new Umbraco.Community.AdvancedPermissions.Core.Services.PermissionResolver(), _repository);
+
     /// <summary>Builds the tool under test over the current mocks.</summary>
     /// <returns>A fresh tool instance.</returns>
     private ExplainAccessTool CreateTool() =>
@@ -68,7 +81,9 @@ public sealed class ExplainAccessToolTests
             _securityAccessor,
             _docTypePermissions,
             _contentTypeService,
-            _entityService);
+            _entityService,
+            Remediation,
+            _userService);
 
     /// <summary>Builds a mocked user group exposing the given alias and display name.</summary>
     /// <param name="alias">The alias the group should report.</param>
@@ -102,6 +117,32 @@ public sealed class ExplainAccessToolTests
         security.CurrentUser.Returns(user);
         _securityAccessor.BackOfficeSecurity.Returns(security);
     }
+
+    /// <summary>
+    /// Configures the user service so the given user resolves to a member of the given group aliases.
+    /// Mirrors how the tool builds the remediation role set (groups plus the implicit All Users role).
+    /// </summary>
+    /// <param name="userKey">The user key.</param>
+    /// <param name="groupAliases">The group aliases the user belongs to.</param>
+    private void SetupUserGroups(Guid userKey, params string[] groupAliases)
+    {
+        var user = Substitute.For<IUser>();
+        var groups = groupAliases.Select(alias =>
+        {
+            var group = Substitute.For<IReadOnlyUserGroup>();
+            group.Alias.Returns(alias);
+            return group;
+        }).ToArray();
+        user.Groups.Returns(groups);
+        _userService.GetAsync(userKey).Returns(user);
+    }
+
+    /// <summary>Configures the repository to return the given entries for any roles+nodes read.</summary>
+    /// <param name="entries">The stored entries to return.</param>
+    private void SetupStoredEntries(params AdvancedPermissionEntry[] entries) =>
+        _repository
+            .GetByRolesAndNodesAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(entries);
 
     /// <summary>Builds an effective permission with a two-line reasoning chain (override + base).</summary>
     /// <param name="verb">The verb the permission applies to.</param>
@@ -478,5 +519,149 @@ public sealed class ExplainAccessToolTests
             CancellationToken.None);
         var detailedVerdict = Assert.IsType<AccessVerdict>(detailed);
         Assert.Equal(2, detailedVerdict.Reasons.Count);
+    }
+
+    /// <summary>Creates a node-level entry for the suggest-fix fixtures.</summary>
+    /// <param name="nodeKey">The node the entry applies to.</param>
+    /// <param name="role">The role alias.</param>
+    /// <param name="verb">The verb the entry grants or denies.</param>
+    /// <param name="state">Allow or Deny.</param>
+    /// <param name="scope">The scope.</param>
+    /// <returns>The entry.</returns>
+    private static AdvancedPermissionEntry StoreEntry(Guid nodeKey, string role, string verb, PermissionState state, PermissionScope scope) =>
+        new(Guid.NewGuid(), nodeKey, role, verb, state, scope);
+
+    /// <summary>
+    /// SuggestFix=true on a denied verb attaches CONFIRMED friendly remediations: for an explicit Deny
+    /// suppressing an underlying Allow, "remove the Deny" and "override Allow" are offered, "add a plain
+    /// Allow" is NOT, and the output leaks no raw identifiers.
+    /// </summary>
+    [Fact]
+    public async Task User_SuggestFix_DeniedExplicit_AttachesConfirmedRemediations()
+    {
+        var userKey = Guid.NewGuid();
+        var root = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new[] { root, nodeKey };
+        const string verb = "Umb.Document.Delete";
+        SetupNode(nodeKey, "News");
+        SetupUserGroups(userKey, "editors");
+
+        // The verdict the tool shows for the verb (mocked service) — denied.
+        _pathResolver.GetPathFromRoot(nodeKey).Returns(path);
+        _permissions
+            .ResolveAsync(userKey, nodeKey, path, verb, Arg.Any<CancellationToken>())
+            .Returns(Perm(verb, isAllowed: false, "editors", nodeKey));
+
+        // The stored entries the REAL remediation service re-resolves against: an explicit Deny on the
+        // node for editors, suppressing an underlying All Users Allow.
+        SetupStoredEntries(
+            StoreEntry(nodeKey, "editors", verb, PermissionState.Deny, PermissionScope.ThisNodeOnly),
+            StoreEntry(AdvancedPermissionsConstants.VirtualRootNodeKey, AdvancedPermissionsConstants.EveryoneRoleAlias, verb, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants));
+
+        var result = await ((IAITool)CreateTool()).ExecuteAsync(
+            new ExplainAccessArgs(ExplainSubject.User, nodeKey, UserKey: userKey, Verb: verb, SuggestFix: true),
+            CancellationToken.None);
+
+        var verdict = Assert.IsType<AccessVerdict>(result);
+        Assert.Equal("Denied", verdict.Result);
+        Assert.NotNull(verdict.Remediations);
+        Assert.NotEmpty(verdict.Remediations!);
+
+        // Confirmed fixes: a "Remove" and an "Override" — never a plain "Add" on the node.
+        Assert.Contains(verdict.Remediations!, r => r.Action == "Remove");
+        Assert.Contains(verdict.Remediations!, r => r.Action == "Override");
+        Assert.DoesNotContain(verdict.Remediations!, r => r.Action == "Add");
+
+        AssertNoRawIdentifiers(verdict, nodeKey);
+    }
+
+    /// <summary>SuggestFix defaults to false, so no remediations are attached to a denied verdict.</summary>
+    [Fact]
+    public async Task User_SuggestFixFalse_AttachesNoRemediations()
+    {
+        var userKey = Guid.NewGuid();
+        var root = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new[] { root, nodeKey };
+        const string verb = "Umb.Document.Delete";
+        SetupNode(nodeKey, "News");
+        SetupUserGroups(userKey, "editors");
+
+        _pathResolver.GetPathFromRoot(nodeKey).Returns(path);
+        _permissions
+            .ResolveAsync(userKey, nodeKey, path, verb, Arg.Any<CancellationToken>())
+            .Returns(Perm(verb, isAllowed: false, "editors", nodeKey));
+        SetupStoredEntries(StoreEntry(nodeKey, "editors", verb, PermissionState.Deny, PermissionScope.ThisNodeOnly));
+
+        var result = await ((IAITool)CreateTool()).ExecuteAsync(
+            new ExplainAccessArgs(ExplainSubject.User, nodeKey, UserKey: userKey, Verb: verb), CancellationToken.None);
+
+        var verdict = Assert.IsType<AccessVerdict>(result);
+        Assert.Null(verdict.Remediations);
+        // The remediation service is never consulted when the flag is off.
+        await _repository.DidNotReceive().GetByRolesAndNodesAsync(
+            Arg.Any<IEnumerable<string>>(), Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// SuggestFix is ignored for the all-roles subject — there is no single role set to simulate, so the
+    /// roster is returned with no remediation and the remediation service is never consulted.
+    /// </summary>
+    [Fact]
+    public async Task AllRoles_SuggestFix_ProducesNoRemediations()
+    {
+        var nodeKey = Guid.NewGuid();
+        var path = new[] { Guid.NewGuid(), nodeKey };
+        const string verb = "Umb.Document.Publish";
+        SetupNode(nodeKey, "Campaign");
+
+        _pathResolver.GetPathFromRoot(nodeKey).Returns(path);
+        _permissions
+            .ResolveForRoleAsync(Arg.Any<string>(), nodeKey, path, Arg.Any<IEnumerable<string>?>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission> { [verb] = Perm(verb, isAllowed: false, "editors", nodeKey) });
+
+        var result = await ((IAITool)CreateTool()).ExecuteAsync(
+            new ExplainAccessArgs(ExplainSubject.AllRoles, nodeKey, Verb: verb, SuggestFix: true), CancellationToken.None);
+
+        // All-roles returns a roster, never a verdict-with-remediation.
+        Assert.IsType<AccessRoster>(result);
+        await _repository.DidNotReceive().GetByRolesAndNodesAsync(
+            Arg.Any<IEnumerable<string>>(), Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// Role subject with SuggestFix=true simulates with the single-role set (excluding All Users) and
+    /// attaches a confirmed remediation for an inherited Deny.
+    /// </summary>
+    [Fact]
+    public async Task Role_SuggestFix_DeniedImplicit_AttachesRemediation()
+    {
+        const string roleAlias = "editors";
+        var root = Guid.NewGuid();
+        var parent = Guid.NewGuid();
+        var nodeKey = Guid.NewGuid();
+        var path = new[] { root, parent, nodeKey };
+        const string verb = "Umb.Document.Publish";
+        SetupNode(nodeKey, "News");
+
+        _pathResolver.GetPathFromRoot(nodeKey).Returns(path);
+        _permissions
+            .ResolveForRoleAsync(
+                roleAlias, nodeKey, path,
+                Arg.Is<IEnumerable<string>>(v => v != null && v.SequenceEqual(new[] { verb })),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission> { [verb] = Perm(verb, isAllowed: false, roleAlias, nodeKey) });
+
+        // Inherited Deny from the parent for the role only.
+        SetupStoredEntries(StoreEntry(parent, roleAlias, verb, PermissionState.Deny, PermissionScope.ThisNodeAndDescendants));
+
+        var result = await ((IAITool)CreateTool()).ExecuteAsync(
+            new ExplainAccessArgs(ExplainSubject.Role, nodeKey, RoleAlias: roleAlias, Verb: verb, SuggestFix: true), CancellationToken.None);
+
+        var verdict = Assert.IsType<AccessVerdict>(result);
+        Assert.NotNull(verdict.Remediations);
+        Assert.Contains(verdict.Remediations!, r => r.Action == "Add");
+        AssertNoRawIdentifiers(verdict, nodeKey);
     }
 }

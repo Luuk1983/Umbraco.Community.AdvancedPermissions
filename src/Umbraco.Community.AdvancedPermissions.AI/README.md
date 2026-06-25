@@ -6,8 +6,10 @@ It makes the Umbraco backoffice **AI copilot permission-aware**: editors and adm
 language, *who can do what* — and get answers grounded in the package's existing permission-resolution
 engine (including the full reasoning chain), not in the model's guesswork.
 
-> **This package is read-only.** It only *reads and explains* permissions. AI-*authored* permission
-> changes (with a human approval step) are tracked separately in
+> **This package is read-only.** It only *reads and explains* permissions — it never writes them. The
+> `suggestFix` remediation (below) only *computes and describes* the changes an administrator could make
+> by simulating them against the resolver; it applies nothing. AI-*authored* permission changes (with a
+> human approval step) are tracked separately in
 > [issue #33](https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions/issues/33).
 
 ## What you can ask the copilot
@@ -18,6 +20,8 @@ engine (including the full reasoning chain), not in the model's guesswork.
 | `explain_access` (type-create aspect) | *"Why can't I create an Article here?"*, *"What document types can I create under /News?"*, *"Who can create a Landing Page here?"* |
 | `audit_permissions` | *"Audit the permissions for the Editors role."*, *"Are there any risks under /News?"*, *"Is anything misconfigured?"* |
 
+| `explain_access` (suggestFix) | *"Why can't I publish this — and what would fix it?"* |
+
 `explain_access` is a single parameterized tool: a `subject` argument selects whether to evaluate the
 **current user**, a specific **user**, a single **role** (or "All Users"), or **all roles** at a node.
 An `aspect` argument selects which dimension of access to explain: **node** action permissions (edit /
@@ -26,6 +30,21 @@ document types may be created under a node. For `aspect=type-create`, `nodeKey` 
 supply `contentTypeKey` to focus a single document type, or omit it for the full per-type roster
 (document types that Umbraco's allowed-child-types config disallows are reported distinctly as
 "Not applicable", separate from a permission Deny).
+
+Set **`suggestFix=true`** to also get the concrete changes that would grant a *denied* action. This is
+**not guesswork** — the package simulates a small, case-specific set of candidate entry mutations against
+its own pure resolver and returns **only** the changes that actually flip the verdict to Allowed, ranked
+least-privileged-first (remove the Deny → add an Allow on the node → add an Allow on an ancestor → add a
+priority-override Allow). It is the deterministic fix for a real failure mode: an LLM left to itself will
+claim a plain Allow can beat a same-node Deny — it cannot, and the simulation rejects that suggestion (an
+explicit Deny is only beaten by removing it or by a priority-override Allow, which is itself defeated by a
+competing priority-override Deny). `suggestFix` is honoured for the **node** aspect, the
+current-user / user / role subjects (never all-roles), and only when a single `verb` is supplied (keeping
+the work bounded — the all-verbs explanation attaches no remediation). Re-resolution goes **directly**
+through the pure resolver on the in-memory mutated entries, never the cached service, and matches the
+exact role set the verdict used (user groups + All Users for a user; the single role for a role subject).
+Every returned option is a confirmed fact and is phrased as an administrator action — the companion still
+writes nothing.
 
 `audit_permissions` is likewise parameterized: a `scope` argument selects whether to scan all entries
 for one **role** (the default), everything under a node's **subtree**, or the whole configuration
@@ -143,11 +162,14 @@ sequenceDiagram
 
 ## Security
 
-- **Read-only** — nothing the AI does here writes data.
+- **Read-only** — nothing the AI does here writes data. The `suggestFix` remediation depends only on the
+  pure resolver, a single repository read, and a local copy of the entry list; it never calls any
+  save/delete path and never persists a simulated mutation.
 - **No privilege escalation by design** — answers come from the same resolver the backoffice uses, so
-  the model cannot invent or grant a permission rule; it can only report what your engine computes.
+  the model cannot invent or grant a permission rule; it can only report what your engine computes. The
+  remediation only names roles and nodes already present in the reasoning chain.
 - Tools live under the `advanced-permissions:read` scope, so Umbraco AI's per-user-group governance can
-  allow or deny them.
+  allow or deny them — `suggestFix` stays within that same read scope.
 
 ## Local verification (manual)
 

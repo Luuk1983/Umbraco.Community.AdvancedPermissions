@@ -64,6 +64,11 @@ public enum ExplainResponseFormat
 /// <param name="ResponseFormat">How much reasoning detail to return.</param>
 /// <param name="Aspect">Which dimension of access to explain: node action permissions, or document-type creation.</param>
 /// <param name="ContentTypeKey">Optional document type to focus on when <see cref="ExplainAspect.TypeCreate"/> is chosen.</param>
+/// <param name="SuggestFix">
+/// When <see langword="true"/> and access is denied, also return the concrete, confirmed permission
+/// changes that would grant it. Only honoured for the node aspect, the current-user/user/role subjects,
+/// and when a single <see cref="Verb"/> is supplied.
+/// </param>
 public sealed record ExplainAccessArgs(
     [property: Description("Whose access to evaluate: current-user (the editor asking about themselves), user (a specific user, requires userKey), role (a user group or 'All Users', requires roleAlias), or all-roles (who can/can't do this).")]
     ExplainSubject Subject,
@@ -80,7 +85,9 @@ public sealed record ExplainAccessArgs(
     [property: Description("node = action permissions like edit/delete/publish; type-create = which document types can be created under this node")]
     ExplainAspect Aspect = ExplainAspect.Node,
     [property: Description("optional — focus a single document type when Aspect=type-create")]
-    Guid? ContentTypeKey = null);
+    Guid? ContentTypeKey = null,
+    [property: Description("When true, and access is denied, also return the concrete permission changes that would grant it.")]
+    bool SuggestFix = false);
 
 /// <summary>
 /// Selects which slice of the stored permission configuration the <c>uap_audit_permissions</c> tool audits.

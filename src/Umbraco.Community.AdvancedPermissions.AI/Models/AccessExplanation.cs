@@ -29,10 +29,17 @@ public sealed record AccessReason(
 /// <param name="Action">The friendly action name (e.g. "Delete", "Publish").</param>
 /// <param name="Result">The friendly result ("Allowed" or "Denied").</param>
 /// <param name="Reasons">The ordered friendly reasons that led to the result, highest priority first.</param>
+/// <param name="Remediations">
+/// When access is <c>Denied</c> and remediation was requested, the confirmed permission changes that
+/// would make it <c>Allowed</c> — each one already validated by re-resolving the pure resolver against
+/// the change, ranked least-privileged-first. <see langword="null"/> when remediation was not requested,
+/// the verdict is <c>Allowed</c>, or no change could flip it.
+/// </param>
 public sealed record AccessVerdict(
     string Action,
     string Result,
-    IReadOnlyList<AccessReason> Reasons);
+    IReadOnlyList<AccessReason> Reasons,
+    IReadOnlyList<AccessRemediation>? Remediations = null);
 
 /// <summary>
 /// A friendly access explanation for a content node: the node name plus one verdict per action.

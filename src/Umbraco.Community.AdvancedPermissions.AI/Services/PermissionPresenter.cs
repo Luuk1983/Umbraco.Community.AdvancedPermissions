@@ -153,6 +153,53 @@ public sealed class PermissionPresenter(
     }
 
     /// <inheritdoc />
+    public async Task<AccessRemediation> ToRemediationAsync(RemediationOption option, CancellationToken cancellationToken = default)
+    {
+        var permission = GetVerbDisplayName(option.Verb);
+        var node = GetNodeName(option.NodeKey);
+        var scope = option.Scope is { } s ? GetScopeText(s) : null;
+
+        if (option.Kind == RemediationActionKind.RemoveDeny)
+        {
+            // Name every role whose Deny must be removed together, friendly.
+            var roleNames = new List<string>(option.RemovedRoleAliases.Count);
+            foreach (var alias in option.RemovedRoleAliases)
+            {
+                roleNames.Add(await GetRoleDisplayNameAsync(alias, cancellationToken));
+            }
+
+            var role = await GetRoleDisplayNameAsync(option.RoleAlias, cancellationToken);
+            var rolesText = Join(roleNames);
+            var removeDescription =
+                $"An administrator could remove the Deny for {permission} on {node} " +
+                $"set for {rolesText}, which would result in {permission} being allowed.";
+
+            return new AccessRemediation(removeDescription, "Remove", role, permission, Scope: null, SetOn: node);
+        }
+
+        // An addition: name the single target role and build the action-specific sentence.
+        var addRole = await GetRoleDisplayNameAsync(option.RoleAlias, cancellationToken);
+
+        var (action, description) = option.Kind switch
+        {
+            RemediationActionKind.AddPriorityOverrideAllow => (
+                "Override",
+                $"An administrator could add a priority-override Allow for {permission} on {node} " +
+                $"for {addRole} ({scope}), which would override the conflicting Deny and result in {permission} being allowed."),
+            RemediationActionKind.AddAllowOnAncestor => (
+                "Add",
+                $"An administrator could add an Allow for {permission} on {node} for {addRole} ({scope}), " +
+                $"which would result in {permission} being allowed here through inheritance."),
+            _ => (
+                "Add",
+                $"An administrator could add an Allow for {permission} on {node} for {addRole} ({scope}), " +
+                $"which would result in {permission} being allowed."),
+        };
+
+        return new AccessRemediation(description, action, addRole, permission, scope, node);
+    }
+
+    /// <inheritdoc />
     public async Task<AccessExplanation> ToExplanationAsync(
         IReadOnlyDictionary<string, EffectivePermission> permissions,
         Guid nodeKey,
@@ -234,6 +281,20 @@ public sealed class PermissionPresenter(
     /// <returns>The value with a lower-cased first character, or <see langword="null"/>.</returns>
     private static string? Lower(string? value) =>
         string.IsNullOrEmpty(value) ? value : char.ToLowerInvariant(value[0]) + value[1..];
+
+    /// <summary>
+    /// Joins friendly role names into a natural-language list ("Editors", "Editors and All Users", or
+    /// "A, B and C") for use in a remediation sentence.
+    /// </summary>
+    /// <param name="names">The friendly role names, in order.</param>
+    /// <returns>The joined, human-readable list.</returns>
+    private static string Join(IReadOnlyList<string> names) => names.Count switch
+    {
+        0 => "the role",
+        1 => names[0],
+        2 => $"{names[0]} and {names[1]}",
+        _ => $"{string.Join(", ", names.Take(names.Count - 1))} and {names[^1]}",
+    };
 
     /// <summary>
     /// Builds (once) and returns the map of user group alias to display name, paging the user group

@@ -30,6 +30,8 @@ namespace Umbraco.Community.AdvancedPermissions.AI.Tools;
 /// <param name="docTypePermissions">The doc-type permission service used to resolve "Insert Options" (type-create) decisions.</param>
 /// <param name="contentTypeService">The Umbraco content-type service used to enumerate candidate document types and resolve allowed children.</param>
 /// <param name="entityService">The Umbraco entity service used to resolve the parent node's content type for the structural allowed-children check.</param>
+/// <param name="remediation">The remediation service used to compute confirmed denial-to-allow changes when <see cref="ExplainAccessArgs.SuggestFix"/> is set.</param>
+/// <param name="userService">The Umbraco user service used to resolve a user's group memberships when building the remediation role set for the user/current-user subjects.</param>
 [AITool("uap_explain_access", "Explain access", ScopeId = "advanced-permissions:read")]
 public sealed class ExplainAccessTool(
     IAdvancedPermissionService permissions,
@@ -39,7 +41,9 @@ public sealed class ExplainAccessTool(
     IBackOfficeSecurityAccessor backOfficeSecurityAccessor,
     IDocTypePermissionService docTypePermissions,
     IContentTypeService contentTypeService,
-    IEntityService entityService)
+    IEntityService entityService,
+    IPermissionRemediationService remediation,
+    IUserService userService)
     : AIToolBase<ExplainAccessArgs>
 {
     /// <summary>The page size used when enumerating user groups, mirroring the roles metadata endpoint.</summary>
@@ -57,6 +61,9 @@ public sealed class ExplainAccessTool(
         "A permission Deny is a common, invisible cause — don't attribute a block to a structural reason " +
         "(root node, content type) before checking this. " +
         "Returns each action's Allowed/Denied result with the reason (which role and node; explicit vs inherited). " +
+        "Set suggestFix=true (with a single verb, node aspect, and the current-user/user/role subject) to also get the " +
+        "concrete, confirmed permission changes that would grant a denied action — computed by simulating them against " +
+        "the resolver, so do NOT guess fixes yourself (a plain Allow cannot beat a same-node Deny). " +
         "Set aspect=type-create for 'why can't I create/insert document type X here?', 'what document types can I create here?', " +
         "or 'who can create type X here?' — this covers the Insert Options / allowed-child-types restrictions " +
         "(for type-create, nodeKey is the PARENT node; set contentTypeKey to focus a single document type, or omit it for the full roster).";
@@ -152,7 +159,9 @@ public sealed class ExplainAccessTool(
         if (!string.IsNullOrWhiteSpace(args.Verb))
         {
             var single = await permissions.ResolveAsync(userKey, args.NodeKey, path, args.Verb, cancellationToken);
-            return Format(await presenter.ToVerdictAsync(single, cancellationToken), args.ResponseFormat);
+            var verdict = Format(await presenter.ToVerdictAsync(single, cancellationToken), args.ResponseFormat);
+            var roleAliases = await GetUserRoleAliasesAsync(userKey);
+            return await AttachRemediationAsync(verdict, single, args, path, roleAliases, cancellationToken);
         }
 
         var all = await permissions.ResolveAllAsync(userKey, args.NodeKey, path, null, cancellationToken);
@@ -181,7 +190,13 @@ public sealed class ExplainAccessTool(
 
         if (!string.IsNullOrWhiteSpace(args.Verb) && resolved.TryGetValue(args.Verb, out var single))
         {
-            return Format(await presenter.ToVerdictAsync(single, cancellationToken), args.ResponseFormat);
+            var verdict = Format(await presenter.ToVerdictAsync(single, cancellationToken), args.ResponseFormat);
+
+            // Node-level role resolution uses ONLY the role itself — $everyone is excluded (mirrors
+            // AdvancedPermissionService.ResolveForRoleAsync). The remediation must simulate with the same
+            // single-role set or its baseline would not match the verdict being explained.
+            IReadOnlyList<string> roleAliases = [args.RoleAlias];
+            return await AttachRemediationAsync(verdict, single, args, path, roleAliases, cancellationToken);
         }
 
         return Format(await presenter.ToExplanationAsync(resolved, args.NodeKey, cancellationToken), args.ResponseFormat);
@@ -298,6 +313,90 @@ public sealed class ExplainAccessTool(
         format == ExplainResponseFormat.Detailed
             ? explanation
             : explanation with { Permissions = explanation.Permissions.Select(v => Format(v, format)).ToList() };
+
+    // ----------------------------------------------------------------------------------------------
+    // Remediation ("suggest fix"). Opt-in via ExplainAccessArgs.SuggestFix. Computed ONLY for a single
+    // focused verb (the all-verbs explanation path attaches nothing — keeping the work bounded), only
+    // for the node aspect, and only for the current-user / user / role subjects (never all-roles, which
+    // has no single role set to simulate against). Each suggestion is a CONFIRMED change: the remediation
+    // service has already re-resolved the package's pure resolver against the change and kept only the
+    // mutations that flip the verdict to Allowed.
+    // ----------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Attaches confirmed remediations to a single denied verdict when remediation was requested. When
+    /// <see cref="ExplainAccessArgs.SuggestFix"/> is unset, the verb is allowed, or no bounded change
+    /// flips it, the verdict is returned unchanged.
+    /// </summary>
+    /// <param name="verdict">The friendly verdict produced for the focused verb.</param>
+    /// <param name="permission">The raw effective permission backing the verdict.</param>
+    /// <param name="args">The tool arguments (carries the focused verb and the SuggestFix flag).</param>
+    /// <param name="path">The resolved root-to-node ancestor key path.</param>
+    /// <param name="roleAliases">
+    /// The exact role set the verdict used — the user's groups plus <c>$everyone</c> for a user subject,
+    /// or the single role alias for a role subject.
+    /// </param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <returns>The verdict, possibly enriched with confirmed remediations.</returns>
+    private async Task<AccessVerdict> AttachRemediationAsync(
+        AccessVerdict verdict,
+        EffectivePermission permission,
+        ExplainAccessArgs args,
+        IReadOnlyList<Guid> path,
+        IReadOnlyList<string> roleAliases,
+        CancellationToken cancellationToken)
+    {
+        // Gate: opt-in, denied only, single verb only, and a usable role set.
+        if (!args.SuggestFix || permission.IsAllowed || string.IsNullOrWhiteSpace(args.Verb) || roleAliases.Count == 0)
+        {
+            return verdict;
+        }
+
+        var resolvePath = path.Count > 0 ? path : [AdvancedPermissionsConstants.VirtualRootNodeKey];
+
+        var options = await remediation.SuggestAsync(
+            args.NodeKey,
+            resolvePath,
+            roleAliases,
+            args.Verb,
+            PermissionState.Deny,
+            cancellationToken);
+
+        if (options.Count == 0)
+        {
+            return verdict;
+        }
+
+        var friendly = new List<AccessRemediation>(options.Count);
+        foreach (var option in options)
+        {
+            friendly.Add(await presenter.ToRemediationAsync(option, cancellationToken));
+        }
+
+        return verdict with { Remediations = friendly };
+    }
+
+    /// <summary>
+    /// Builds the role set used to resolve a user's node permissions: every user group alias the user
+    /// belongs to, plus the virtual <c>$everyone</c> role. Mirrors
+    /// <c>AdvancedPermissionService.BuildUserContextAsync</c> so the remediation baseline matches the
+    /// verdict's ground truth. Returns an empty list when the user cannot be resolved.
+    /// </summary>
+    /// <param name="userKey">The user whose group memberships to resolve.</param>
+    /// <returns>The user's role aliases plus <c>$everyone</c>, or an empty list when unresolved.</returns>
+    private async Task<IReadOnlyList<string>> GetUserRoleAliasesAsync(Guid userKey)
+    {
+        var user = await userService.GetAsync(userKey);
+        if (user is null)
+        {
+            return [];
+        }
+
+        var aliases = new List<string>();
+        aliases.AddRange(user.Groups.Select(g => g.Alias));
+        aliases.Add(AdvancedPermissionsConstants.EveryoneRoleAlias);
+        return aliases;
+    }
 
     // ----------------------------------------------------------------------------------------------
     // Type-create ("Insert Options") aspect.

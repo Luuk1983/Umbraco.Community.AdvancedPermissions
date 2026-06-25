@@ -6,7 +6,7 @@ Decide which document types a user group is allowed to create, and where in the 
 
 Umbraco lets you set the allowed child types of a document type, but that choice is the same for everyone. This editor goes further: it controls *per user group* whether a document type can be created under a node. So you can let one group add "News Article" pages under a section while another group can't — without changing the document type itself.
 
-Creating is allowed by default (wherever Umbraco's own allowed-child-types permit it). You use this editor to add **Allow** or **Deny** rules that narrow or widen that for a specific group.
+Creating is allowed by default (wherever Umbraco's own allowed-child-types permit it). This editor is a **filter, not a grant**, so it works differently from the tree-based verbs: it only ever narrows the document types Umbraco already offers. You add a **Deny** to take a type away for a group, or an **Allow** to keep it — but an Allow never makes a type appear that Umbraco doesn't already permit as a child there.
 
 ## How to use it
 
@@ -19,6 +19,6 @@ Creating is allowed by default (wherever Umbraco's own allowed-child-types permi
 ## Good to know
 
 - A dimmed or N/A cell means the document type isn't an allowed child type on that node in the first place. The rule still resolves, but Umbraco wouldn't offer the type there.
-- Because creating is allowed by default, you usually add **Deny** to lock specific types down, or **Allow** to re-enable a type that a broader Deny removed.
+- Because creating is allowed by default, you usually add **Deny** to lock specific types down. An **Allow** only ever keeps (or, with Priority Override, wins back) a type Umbraco already allows there — it can't add a type that isn't a valid child in the first place.
 
 See the **Concepts** tab for Allow/Deny, scope, the Default permissions row, the All Users Group, and Priority Override.

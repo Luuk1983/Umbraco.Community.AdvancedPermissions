@@ -14,7 +14,7 @@
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
-    <PackageReference Include="uSync" />
+    <PackageReference Include="Umbraco.TheStarterKit" />
   </ItemGroup>
 
 </Project>

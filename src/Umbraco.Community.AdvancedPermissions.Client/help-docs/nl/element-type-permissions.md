@@ -4,9 +4,9 @@ Bepaal welke elementtypen een gebruikersgroep in de Library mag aanmaken.
 
 ## Waarvoor het dient
 
-Elementtypen zijn de bouwstenen die je in de Library kunt toevoegen. Standaard is elk elementtype aanmaakbaar. Met deze editor kun je, per gebruikersgroep, een elementtype uit de Library verbergen (**Weigeren**) of er expliciet één toestaan (**Toestaan**).
+Elementtypen zijn de bouwstenen die je in de Library kunt toevoegen. Standaard is elk elementtype aanmaakbaar. Met deze editor kun je, per gebruikersgroep, een elementtype uit de Library verbergen (**Weigeren**) of er expliciet één behouden (**Toestaan**).
 
-Een expliciete Toestaan is handig wanneer een gebruiker tot meerdere groepen behoort: een Toestaan met Prioriteitsoverschrijving kan winnen van een Weigeren uit een andere groep.
+Het is een **filter, geen toekenning** en werkt daarmee anders dan de boomgebaseerde rechten: het beperkt alleen de elementtypen die Umbraco al in de Library aanbiedt. Een Weigeren verbergt een type; een Toestaan laat nooit een type verschijnen dat geen geldig Library-elementtype is — het houdt een type aanmaakbaar en laat die keuze, met Prioriteitsoverschrijving, winnen van een Weigeren uit een andere groep van de gebruiker.
 
 Anders dan de boomgebaseerde editors is deze keuze **sectiebreed** — ze is niet gekoppeld aan een specifiek knooppunt, omdat Umbraco geen bovenliggende meegeeft wanneer je een item in de Library aanmaakt.
 

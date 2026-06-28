@@ -32,27 +32,27 @@
   "Screenshots": [
     {
       "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/permissions_editor.jpg",
-      "Caption": "Permissions Editor: browse the content tree and manage permission entries per user group."
+      "Caption": "Manage Allow/Deny permissions per user group across your content tree — each permission inherited or overridden independently."
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/verb_permissions_editor.jpg",
-      "Caption": "Set Allow or Deny for each verb, with a configurable scope (This Node Only, This Node and Descendants, or Descendants Only)."
+      "Caption": "Set Allow or Deny for a single permission, with scope (this node, its descendants, or both) — without restating the rest."
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/library_permissions_editor.jpg",
+      "Caption": "New in v18: the same control across Umbraco's Library — manage what each group may do to library folders and items."
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/doc_type_permissions_editor.jpg",
+      "Caption": "Decide which document types each user group may create, and where."
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/access_viewer.jpg",
-      "Caption": "Access Viewer: inspect effective permissions for any user or user group at any content node."
+      "Caption": "Audit the effective permissions any user or group has at any node."
     },
     {
       "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/verb_access_viewer.jpg",
-      "Caption": "Full reasoning chain showing which user group contributed, from which node, and whether it was explicit or inherited."
-    },
-    {
-      "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/advanced-permissions_menu.jpg",
-      "Caption": "The Users section gains four permission groups in the sidebar — Content, Document Type, Library and Library Element Type — each with a Permissions Editor and an Access Viewer."
-    },
-    {
-      "ImageUrl": "https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/replaced_permissions_panel.jpg",
-      "Caption": "In each user group's editor, the native Documents permissions panel is replaced with a link to the Content Permissions Editor."
+      "Caption": "Every result is fully explained: which group contributed, from which node, and whether it was explicit or inherited."
     }
   ]
 }

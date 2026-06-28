@@ -2,7 +2,7 @@
 
 # Advanced Permissions for Umbraco
 
-Fine-grained, explicit permission management for Umbraco user groups. Decide exactly who can do what, and where.
+Fine-grained, explicit permission management for Umbraco user groups. Decide exactly who can do what, and where — across content, document types, and the Library.
 
 [![NuGet](https://img.shields.io/nuget/v/Umbraco.Community.AdvancedPermissions)](https://www.nuget.org/packages/Umbraco.Community.AdvancedPermissions) [![NuGet Downloads](https://img.shields.io/nuget/dt/Umbraco.Community.AdvancedPermissions)](https://www.nuget.org/packages/Umbraco.Community.AdvancedPermissions) [![License](https://img.shields.io/github/license/Luuk1983/Umbraco.Community.AdvancedPermissions)](https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions/blob/main/LICENSE)
 
@@ -10,7 +10,7 @@ Fine-grained, explicit permission management for Umbraco user groups. Decide exa
 
 ## Features
 
-Umbraco's built-in permissions cover the everyday cases well: you grant a user group a set of permissions, optionally override them per node, and those overrides inherit down the content tree. Advanced Permissions builds on that same model and adds finer-grained control for the situations that call for it. Here is what it adds on top of the defaults.
+Umbraco's built-in permissions cover the everyday cases well: you grant a user group a set of permissions, optionally override them per node, and those overrides inherit down the content tree. Advanced Permissions builds on that same model and adds finer-grained control for the situations that call for it. That control spans your content tree, document-type creation, and — new in v18 — Umbraco's Library. Here is what it adds on top of the defaults.
 
 - **Override one permission, inherit the rest.** This is the big one. In Umbraco, the permissions you set on a node are all-or-nothing: they replace everything that node would otherwise inherit, so to change a single permission you have to restate every other permission you want to keep. Advanced Permissions treats each permission independently, so you can change just the one you care about on a node and let the others keep inheriting from above. You override exactly what you need and leave the rest untouched.
 
@@ -24,13 +24,15 @@ Umbraco's built-in permissions cover the everyday cases well: you grant a user g
 
 - **Control what can be created, and where.** Beyond Umbraco's static "allowed child types", you can decide per group which document types may be created at which nodes. The package filters the insert options users actually see, so editors only get the choices they are meant to have.
 
+- **Reach beyond the content tree, into the Library.** The same model applies to Umbraco's Library of reusable items. Manage, per group, what each may do to library folders and items — with the same Allow/Deny, scope, inheritance, and reasoning — and control which element types a group may create there.
+
 - **See exactly why a permission resolved the way it did.** The Access Viewer shows the effective permission for any user or group at any node, with a full reasoning chain: which group contributed, from which node, and whether it was explicit or inherited. Every result is fully explainable.
 
 - **Start exactly where you already are.** On first boot the package imports your existing user-group permissions, and seeds new groups automatically afterwards. Day one matches what you had before, so there is nothing to reconfigure by hand.
 
 ## Prerequisites
 
-- Umbraco v17.3.0 or later
+- Umbraco v18.0.0 or later
 - .NET 10
 
 ## Installation
@@ -41,14 +43,16 @@ dotnet add package Umbraco.Community.AdvancedPermissions
 
 The package auto-registers, so there is no setup code to write. On first boot it imports the permissions from your existing user groups, so your current security setup carries over automatically (see [First-time import](#first-time-import) below).
 
-After installation, the Users section of the backoffice gains two new menu groups in the sidebar:
+After installation, the Users section of the backoffice gains four new menu groups in the sidebar, one per domain. Each group holds a **Permissions Editor** (to set the rules) and an **Access Viewer** (to audit them):
 
-- **Editors**: Content Permissions Editor and Document Type Permissions Editor
-- **Viewers**: Access Viewer and Insert Options Viewer
+- **Content Permissions** — manage and audit permissions across the content tree.
+- **Document Type Permissions** — control and audit which document types each group can create, and where.
+- **Library Permissions** — manage and audit permissions across the Library tree.
+- **Library Element Type Permissions** — control and audit which element types each group can create in the Library.
 
 ![Advanced Permissions menu groups in the sidebar of the Users section](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/advanced-permissions_menu.jpg)
 
-You still create and manage your user groups in Umbraco exactly as you do today. The only change is where document permissions are edited: in each user group's editor, the native Documents permissions panel is replaced with a short message pointing you to the Content Permissions Editor, where that editing now lives.
+You still create and manage your user groups in Umbraco exactly as you do today. The only change is where permissions are edited. In each user group's editor, the native **Documents** permissions panel is replaced with a short message pointing you to the Content Permissions Editor, and the native **Library** element permissions panel is likewise replaced with a pointer to the Library Permissions Editor — that editing now lives in those dedicated screens.
 
 ![Native Documents permissions panel in the user group editor, replaced with a link to the Content Permissions Editor](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/replaced_permissions_panel.jpg)
 
@@ -110,6 +114,38 @@ The counterpart audit screen. Pick a user or user group, then pick a document ty
 As in the Access Viewer, click a cell for the full reasoning behind the result.
 
 ![Insert Options Viewer: which document types a user or group can create at a node](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/insert_options_viewer.jpg)
+
+### Library Permissions Editor
+
+The Library holds reusable items — folders and elements — that live outside the main content tree. This editor manages, per user group, what each group may do to those items, node by node, using the same verbs as content (Read, Create, Update, Delete, Publish, Unpublish, Duplicate, Move, Rollback). It works exactly like the Content Permissions Editor: the same Allow/Deny states, inheritance down the tree, scope options, and Priority Override, with a Default permissions row at the top setting the baseline for the whole Library.
+
+Some cells show a hatched **N/A** — a permission that does not apply to that kind of item. "Create" has no meaning on a single item, and item-only actions (Publish, Unpublish, Duplicate, Rollback) do not apply to a folder itself, only to the items inside it.
+
+![Library Permissions Editor: the Library tree with permission entries per user group](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/library_permissions_editor.jpg)
+
+### Library Access Viewer
+
+The read-only companion to the Library Permissions Editor, and the Library equivalent of the Access Viewer. Pick a user or user group, browse the Library tree, and see the fully resolved permission for every item, combined across all the groups the subject belongs to. Click any cell for the reasoning chain: which group contributed, from which item, and whether the rule was set explicitly or inherited.
+
+![Library Access Viewer: effective Library permissions for a user or user group, with reasoning](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/library_access_viewer.jpg)
+
+### Library Element Type Permissions Editor
+
+Element types are the building blocks you can add in the Library. This editor controls, per user group, which of them a group may create there. Like the Document Type Permissions Editor, this is a **filter, not a grant** — it behaves differently from the tree verbs above. It does not give access; it narrows the list of element types Umbraco already offers in the Library's Create menu.
+
+Every element type is creatable by default, the opposite of content permissions (which default to Deny). A **Deny** hides an element type from the Library; an **Allow** never makes a type appear that isn't a valid Library element type to begin with — it only keeps one creatable and, with Priority Override, lets that choice win over a Deny coming from another of the user's groups. So use Deny to take options away, and leave Allow (or inherit) for the ones you want to keep.
+
+Unlike the tree-based editors this choice is **section-wide**, not tied to a node — Umbraco does not provide a parent when you create an item in the Library — so you set a single "Create in Library" state per element type.
+
+If the list is empty, no document types are marked as element types yet: mark a document type as an element type and enable "Allow in Library" for it to appear here.
+
+![Library Element Type Permissions Editor: set which element types a user group may create in the Library](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/library_element_type_permissions.jpg)
+
+### Library Insert Viewer
+
+The read-only companion to the Library Element Type Permissions editor. Pick a user or user group and it lists every element type with whether that subject can create it in the Library, resolved across all their groups. Click a row for the reasoning. Because the decision is section-wide, this is a flat list rather than a tree, and an element type with no rules anywhere shows as allowed (creation in the Library is allowed by default).
+
+![Library Insert Viewer: which element types a user or group can create in the Library](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/library_insert_viewer.jpg)
 
 ### How conflicts are resolved
 

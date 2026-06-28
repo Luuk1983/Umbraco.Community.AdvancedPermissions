@@ -82,21 +82,15 @@ export class UapSelectionPanelElement extends UmbLitElement {
   }
 
   /**
-   * Renders a group's controls. When nothing is selected, every option is a "Choose …" button
-   * joined by the "or" separator. When an option IS selected, its pill is shown — plus, for a
-   * mutually-exclusive group, the remaining option(s) as "Choose …" buttons so the user can still
-   * switch type (e.g. swap a chosen user for a user group) in both the empty and the results view.
+   * Renders a group's controls. Options are always rendered in their declared order, joined by the
+   * "or" separator — a selected option becomes a pill, an unselected one a "Choose …" button. Keeping
+   * the declared order means the controls don't reshuffle between the empty and the results view
+   * (e.g. user group stays before user whether or not a selection has been made), and the remaining
+   * option(s) stay available so the user can still switch type (swap a chosen user for a user group).
    */
   #groupControls(g: UapSelectorGroup): TemplateResult {
-    const selected = g.options.find((o) => o.selectedName);
-    if (!selected) {
-      return html`${g.options.map(
-        (o, i) => html`${i > 0 ? html`<span class="or">${this.orLabel}</span>` : nothing}${this.#placeholder(o)}`,
-      )}`;
-    }
-    const others = g.options.filter((o) => o !== selected);
-    return html`${this.#pill(selected)}${others.map(
-      (o) => html`<span class="or">${this.orLabel}</span>${this.#placeholder(o)}`,
+    return html`${g.options.map(
+      (o, i) => html`${i > 0 ? html`<span class="or">${this.orLabel}</span>` : nothing}${o.selectedName ? this.#pill(o) : this.#placeholder(o)}`,
     )}`;
   }
 

@@ -8,13 +8,46 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Views\Blog.cshtml" />
+    <Content Remove="Views\Blogpost.cshtml" />
+    <Content Remove="Views\Contact.cshtml" />
+    <Content Remove="Views\ContentPage.cshtml" />
+    <Content Remove="Views\Home.cshtml" />
+    <Content Remove="Views\Partials\blockgrid\Components\latestBlogposts.cshtml" />
+    <Content Remove="Views\Partials\blockgrid\Components\umbBlockGridDemoHeadlineBlock.cshtml" />
+    <Content Remove="Views\Partials\blockgrid\Components\umbBlockGridDemoImageBlock.cshtml" />
+    <Content Remove="Views\Partials\blockgrid\Components\umbBlockGridDemoRichTextBlock.cshtml" />
+    <Content Remove="Views\Partials\blockgrid\Components\umbBlockGridDemoTwoColumnLayoutBlock.cshtml" />
+    <Content Remove="Views\Partials\blocklist\Components\feature.cshtml" />
+    <Content Remove="Views\Partials\CategoryLinks.cshtml" />
+    <Content Remove="Views\Partials\Components\LatestBlogPosts\Default.cshtml" />
+    <Content Remove="Views\Partials\Components\LatestBlogPosts\NoContent.cshtml" />
+    <Content Remove="Views\Partials\ContactForm.cshtml" />
+    <Content Remove="Views\Partials\Navigation\SubNavigation.cshtml" />
+    <Content Remove="Views\Partials\Navigation\TopNavigation.cshtml" />
+    <Content Remove="Views\Partials\SectionHeader.cshtml" />
+    <Content Remove="Views\People.cshtml" />
+    <Content Remove="Views\Person.cshtml" />
+    <Content Remove="Views\Product.cshtml" />
+    <Content Remove="Views\Products.cshtml" />
+    <Content Remove="Views\_Master.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Umbraco.Community.AdvancedPermissions\Umbraco.Community.AdvancedPermissions.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
-    <PackageReference Include="uSync" />
+    <PackageReference Include="Umbraco.TheStarterKit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Views\Partials\blockgrid\Components\" />
+    <Folder Include="Views\Partials\blocklist\Components\" />
+    <Folder Include="Views\Partials\Components\LatestBlogPosts\" />
+    <Folder Include="Views\Partials\Navigation\" />
   </ItemGroup>
 
 </Project>

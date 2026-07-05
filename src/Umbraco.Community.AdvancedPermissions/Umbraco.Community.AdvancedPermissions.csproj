@@ -52,6 +52,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Public contract package: a REAL NuGet dependency (no PrivateAssets), so it is declared in
+         the .nuspec and shared by add-ons/overrides. Excluded from the bundle target below. -->
+    <ProjectReference Include="..\Umbraco.Community.AdvancedPermissions.Abstractions\Umbraco.Community.AdvancedPermissions.Abstractions.csproj" />
+    <!-- Implementation: bundled into this package (PrivateAssets=all + CopyProjectReferencesToPackage). -->
     <ProjectReference Include="..\Umbraco.Community.AdvancedPermissions.Core\Umbraco.Community.AdvancedPermissions.Core.csproj" PrivateAssets="all" />
     <ProjectReference Include="..\Umbraco.Community.AdvancedPermissions.Data\Umbraco.Community.AdvancedPermissions.Data.csproj" PrivateAssets="all" />
   </ItemGroup>
@@ -64,11 +68,14 @@
     <PackageReference Include="Umbraco.Cms.Api.Management" />
   </ItemGroup>
 
-  <!-- Include Core and Data DLLs in the NuGet package (lib/net10.0/) -->
+  <!-- Bundle the Core and Data implementation DLLs into this package (lib/net10.0/). The
+       Abstractions DLL is deliberately EXCLUDED — it ships as its own package and is declared as
+       a NuGet dependency above, so add-ons/overrides share the same contract assembly rather than
+       getting a duplicate bundled copy. -->
   <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
     <ItemGroup>
       <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths)"
-        Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference'" />
+        Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferenceCopyLocalPaths.Filename)' != 'Umbraco.Community.AdvancedPermissions.Abstractions'" />
     </ItemGroup>
   </Target>
 

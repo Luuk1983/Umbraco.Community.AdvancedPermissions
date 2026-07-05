@@ -10,7 +10,7 @@ namespace Umbraco.Community.AdvancedPermissions.Core.Models;
 /// "may this role create/affect documents of this type, under this subtree?".
 /// </para>
 /// <para>
-/// The shared <see cref="Services.ResolutionEngine"/> resolves these entries using the same
+/// The shared <c>ResolutionEngine</c> resolves these entries using the same
 /// path-walking + scope-precedence algorithm as node-level permissions, but with a default
 /// state of Allow rather than Deny.
 /// </para>

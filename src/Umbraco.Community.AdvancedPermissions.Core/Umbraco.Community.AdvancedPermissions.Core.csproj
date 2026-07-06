@@ -11,4 +11,10 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Core holds the resolution engine (implementation); the contract types it uses
+         (interfaces, models, constants) now live in the published Abstractions package. -->
+    <ProjectReference Include="..\Umbraco.Community.AdvancedPermissions.Abstractions\Umbraco.Community.AdvancedPermissions.Abstractions.csproj" />
+  </ItemGroup>
+
 </Project>

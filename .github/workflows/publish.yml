@@ -43,8 +43,13 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal
 
+      # Pack BOTH publishable packages into the same output folder. They share the "v" MinVer
+      # tag prefix, so a single v*.*.* tag stamps both with the SAME version. The push step below
+      # globs *.nupkg, so both are released to NuGet together at that version.
       - name: Pack
-        run: dotnet pack src/Umbraco.Community.AdvancedPermissions/ --configuration Release --output ./artifacts
+        run: |
+          dotnet pack src/Umbraco.Community.AdvancedPermissions.Abstractions/ --configuration Release --output ./artifacts
+          dotnet pack src/Umbraco.Community.AdvancedPermissions/ --configuration Release --output ./artifacts
 
       - name: Login to NuGet (trusted publishing)
         id: nuget-login

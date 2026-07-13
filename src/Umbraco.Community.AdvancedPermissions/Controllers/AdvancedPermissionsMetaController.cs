@@ -1,7 +1,9 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 
@@ -11,8 +13,12 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// Provides metadata endpoints for the Advanced Security system:
 /// available permission verbs and assignable roles.
 /// </summary>
+/// <remarks>
+/// A management surface for the package's editors, so it is gated on Users-section access.
+/// </remarks>
 /// <param name="userGroupService">The Umbraco user group service.</param>
 [ApiVersion("1.0")]
+[Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public sealed class AdvancedPermissionsMetaController(IUserGroupService userGroupService)
     : AdvancedPermissionsControllerBase
 {

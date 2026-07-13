@@ -1,6 +1,8 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 
@@ -11,7 +13,11 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// Roles are shared with content and served by <see cref="AdvancedPermissionsMetaController"/>'s
 /// <c>roles</c> endpoint.
 /// </summary>
+/// <remarks>
+/// A management surface for the Library permissions editor, so it is gated on Users-section access.
+/// </remarks>
 [ApiVersion("1.0")]
+[Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public sealed class ElementPermissionsMetaController : AdvancedPermissionsControllerBase
 {
     /// <summary>

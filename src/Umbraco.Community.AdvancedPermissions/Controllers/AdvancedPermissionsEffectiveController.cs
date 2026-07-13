@@ -1,7 +1,9 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 
@@ -11,9 +13,15 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// Provides endpoints for resolving effective (inherited + explicit) permissions for users and roles.
 /// Used by the Access Viewer to explain why a permission resolved the way it did.
 /// </summary>
+/// <remarks>
+/// A management surface for the Access Viewer, so it is gated on Users-section access. (Content-editing
+/// action visibility for documents is gated by the replacement document condition via Umbraco's native
+/// per-document current-user endpoint, not these endpoints, so no consumption endpoint is needed here.)
+/// </remarks>
 /// <param name="permissionService">The advanced permission service.</param>
 /// <param name="entityService">The Umbraco entity service (for path resolution).</param>
 [ApiVersion("1.0")]
+[Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public sealed class AdvancedPermissionsEffectiveController(
     IAdvancedPermissionService permissionService,
     IEntityService entityService)

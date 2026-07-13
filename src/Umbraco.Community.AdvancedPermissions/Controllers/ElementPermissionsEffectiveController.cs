@@ -1,8 +1,10 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
@@ -39,6 +41,7 @@ public sealed class ElementPermissionsEffectiveController(
     /// <param name="nodeKey">The element/folder key to resolve at.</param>
     /// <returns>The effective permissions for all element verbs, with full reasoning.</returns>
     [HttpGet("element/effective", Name = "GetElementEffectiveForUser")]
+    [Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<EffectivePermissionsResponseModel>(StatusCodes.Status200OK)]
     [EndpointSummary("Resolves effective element permissions for a user at a node.")]
@@ -66,6 +69,7 @@ public sealed class ElementPermissionsEffectiveController(
     /// <param name="nodeKey">The element/folder key to resolve at.</param>
     /// <returns>The effective permissions for all element verbs, with full reasoning.</returns>
     [HttpGet("element/effective/by-role", Name = "GetElementEffectiveForRole")]
+    [Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<EffectivePermissionsResponseModel>(StatusCodes.Status200OK)]
     [EndpointSummary("Resolves effective element permissions for a role at a node.")]
@@ -94,6 +98,14 @@ public sealed class ElementPermissionsEffectiveController(
     /// The element/folder key to resolve at, or the virtual-root key for root-level defaults.
     /// </param>
     /// <returns>The current user's effective element permissions for all verbs.</returns>
+    /// <remarks>
+    /// Intentionally NOT gated on <see cref="AuthorizationPolicies.SectionAccessUsers"/>: the element and
+    /// element-folder permission conditions call this to gate library-editing actions for the current
+    /// user, so a content editor without Users-section access must still be able to reach it. Adding a
+    /// section gate here re-introduces the read-only-content regression. It remains backoffice-authenticated
+    /// via <c>ManagementApiControllerBase</c>, and resolves only for the current user — it takes no user
+    /// or role parameter — so it discloses nothing about other users.
+    /// </remarks>
     [HttpGet("element/effective/current-user", Name = "GetElementEffectiveForCurrentUser")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<EffectivePermissionsResponseModel>(StatusCodes.Status200OK)]

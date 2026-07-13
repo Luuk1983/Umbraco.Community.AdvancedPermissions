@@ -12,7 +12,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Umbraco.Community.AdvancedPermissions.Core\Umbraco.Community.AdvancedPermissions.Core.csproj" />
+    <!-- Data implements the repository contracts and works with the domain models, all of
+         which now live in the Abstractions package. -->
+    <ProjectReference Include="..\Umbraco.Community.AdvancedPermissions.Abstractions\Umbraco.Community.AdvancedPermissions.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

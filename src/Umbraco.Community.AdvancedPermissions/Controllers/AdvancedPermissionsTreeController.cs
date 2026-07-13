@@ -1,9 +1,11 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 
@@ -13,9 +15,13 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// Provides content tree data with per-node permission summaries for a given role.
 /// Used by the Security Editor to render the permission grid.
 /// </summary>
+/// <remarks>
+/// A management surface for the Permissions Editor, so it is gated on Users-section access.
+/// </remarks>
 /// <param name="permissionService">The advanced permission service.</param>
 /// <param name="entityService">The Umbraco entity service.</param>
 [ApiVersion("1.0")]
+[Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public sealed class AdvancedPermissionsTreeController(
     IAdvancedPermissionService permissionService,
     IEntityService entityService)

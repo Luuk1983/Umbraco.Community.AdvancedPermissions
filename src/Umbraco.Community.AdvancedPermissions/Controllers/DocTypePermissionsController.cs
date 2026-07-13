@@ -1,9 +1,11 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
@@ -14,12 +16,17 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// <summary>
 /// Management API for the document-type permission editor and the Create Audit view.
 /// </summary>
+/// <remarks>
+/// A management surface (doc-type editor + Create Audit) exposing a mutating save endpoint, so it is
+/// gated on Users-section access.
+/// </remarks>
 /// <param name="docTypeService">The doc-type permission service.</param>
 /// <param name="docTypeRepository">The doc-type permission repository (raw entry lookups for the reasoning dialog).</param>
 /// <param name="contentTypeService">The Umbraco content-type service used to list doc-types.</param>
 /// <param name="entityService">Used to resolve content node paths for the audit.</param>
 /// <param name="userService">Used to look up the audited user's groups.</param>
 [ApiVersion("1.0")]
+[Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public sealed class DocTypePermissionsController(
     IDocTypePermissionService docTypeService,
     IDocTypePermissionRepository docTypeRepository,

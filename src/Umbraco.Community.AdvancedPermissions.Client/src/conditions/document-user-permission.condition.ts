@@ -61,6 +61,15 @@ export function clearEffectivePermissionCache(): void {
  * Instead of reading from cached native group permissions, this condition calls
  * the Advanced Permissions /effective API to resolve permissions with full scope
  * and inheritance support.
+ *
+ * NOTE (min-version swap): this deliberately does NOT use Umbraco's native
+ * `GET /user/current/permissions/document` endpoint, because that endpoint only routes through
+ * `IContentPermissionService` (our `AdvancedContentPermissionService`) from Umbraco 17.4.0 onward
+ * (PR #22400 / issue #22351). On 17.3.x — the package's current minimum (`Umbraco.Cms [17.3.0, ...)`)
+ * — the native endpoint bypasses our service and would return native permissions only. If the minimum
+ * supported version is ever raised to 17.4.0+, switch this condition to the native endpoint (see the v18
+ * package's document condition for the exact pattern) and retire the dependency on the custom
+ * `getEffectiveForUser` call below; the `/effective` endpoint then reverts to Access-Viewer-only use.
  */
 export class UapDocumentUserPermissionCondition
   extends UmbConditionBase<UapDocumentPermissionConditionConfig>

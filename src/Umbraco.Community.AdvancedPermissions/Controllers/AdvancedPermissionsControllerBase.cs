@@ -1,10 +1,8 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Api.Management.Controllers;
 using Umbraco.Cms.Api.Management.Routing;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 
@@ -15,13 +13,16 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// Provides shared utilities for building paths from root and mapping domain models to view models.
 /// </summary>
 /// <remarks>
-/// All endpoints are gated on Users-section access — the same gate the Permissions Editor UI
-/// uses. Without this, any authenticated backoffice user could call the mutating endpoints
-/// directly and grant themselves arbitrary permissions, bypassing the UI restriction.
+/// The base only inherits the backoffice-access gate from <see cref="ManagementApiControllerBase"/>
+/// (every endpoint still requires an authenticated backoffice user). The Users-section gate is applied
+/// per management controller/action instead of here, because a base-class authorization attribute
+/// inherits to every endpoint and cannot be removed by a derived controller — which previously forced
+/// even the content editor's effective-permission endpoint behind the Users section and left content
+/// read-only for users without that section. See the individual controllers for where the section gate
+/// is applied.
 /// </remarks>
 [VersionedApiBackOfficeRoute("advanced-permissions")]
 [ApiExplorerSettings(GroupName = "Advanced Permissions")]
-[Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public abstract class AdvancedPermissionsControllerBase : ManagementApiControllerBase
 {
     /// <summary>

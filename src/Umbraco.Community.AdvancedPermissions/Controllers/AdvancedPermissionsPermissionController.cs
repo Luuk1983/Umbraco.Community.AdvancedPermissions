@@ -1,9 +1,11 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
@@ -14,10 +16,15 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// <summary>
 /// Provides CRUD operations for raw advanced security permission entries.
 /// </summary>
+/// <remarks>
+/// Gated on Users-section access: it exposes the mutating (PUT/DELETE) endpoints, which are a
+/// privilege-escalation primitive if reachable by any authenticated backoffice user.
+/// </remarks>
 /// <param name="permissionService">The advanced permission service.</param>
 /// <param name="repository">The permission repository for batch queries.</param>
 /// <param name="entityService">The Umbraco entity service for path resolution.</param>
 [ApiVersion("1.0")]
+[Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public sealed class AdvancedPermissionsPermissionController(
     IAdvancedPermissionService permissionService,
     IAdvancedPermissionRepository repository,

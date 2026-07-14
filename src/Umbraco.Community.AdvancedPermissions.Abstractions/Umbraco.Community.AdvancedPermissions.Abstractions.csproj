@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>Umbraco.Community.AdvancedPermissions.Abstractions</RootNamespace>
+    <AssemblyName>Umbraco.Community.AdvancedPermissions.Abstractions</AssemblyName>
+
+    <!-- NuGet package metadata. This is the PUBLIC CONTRACT package: the interfaces, models and
+         constants that add-ons (e.g. the AI companion) and overrides compile against. Metadata
+         mirrors the main Umbraco.Community.AdvancedPermissions package, adjusted for this role.
+         TODO(v19): rename the Umbraco.Community.AdvancedPermissions.Core.* namespaces to
+         .Abstractions.*. Kept as-is through v17 AND v18 (both already released) to avoid a source
+         break and to keep v17<->v18 forward-ports conflict-free; v19 is the first major where the
+         rename is possible. -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Umbraco.Community.AdvancedPermissions.Abstractions</PackageId>
+    <Title>Advanced Permissions for Umbraco — Abstractions</Title>
+    <Authors>Luuk Peters</Authors>
+    <Copyright>Copyright (c) Luuk Peters</Copyright>
+    <Description>Public contract (interfaces, models and constants) for Umbraco.Community.AdvancedPermissions. Reference this package to build add-ons or override permission resolution. Not functional on its own — install Umbraco.Community.AdvancedPermissions for the working package.</Description>
+    <!-- Deliberately NO "umbraco-marketplace" tag: this is a developer contract package, not an
+         end-user installable, so it must NOT be listed on the Umbraco Marketplace. -->
+    <PackageTags>umbraco;permissions;cms;abstractions</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Luuk1983/Umbraco.Community.AdvancedPermissions</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>package_logo_128x128.png</PackageIcon>
+
+    <!-- Versioning: shares the main package's "v" tag prefix, so Abstractions versions in
+         lockstep with the main package (same MinVer-derived version). -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerAutoIncrement>minor</MinVerAutoIncrement>
+    <MinVerMinimumMajorMinor>1.0</MinVerMinimumMajorMinor>
+
+    <!-- Symbols package + SourceLink: lets consumers debug into the package source from
+         GitHub at the exact commit the package was built from. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DeterministicSourcePaths Condition="'$(GITHUB_ACTIONS)' == 'true'">true</DeterministicSourcePaths>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <!-- Package icon: a local copy of the main package's logo, so this project is self-contained
+         (mirrors how the main project holds its own icon) and its pack does not depend on the
+         main project's directory layout. -->
+    <None Include="package_logo_128x128.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

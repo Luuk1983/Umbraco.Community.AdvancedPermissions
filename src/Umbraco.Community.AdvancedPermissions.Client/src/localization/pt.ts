@@ -81,6 +81,7 @@ export default {
     byUser: 'Por utilizador',
     chooseRole: 'Escolher grupo de utilizadores',
     chooseUser: 'Escolher utilizador',
+    clearSelection: 'Limpar seleção',
     selectSubjectPrompt: 'Selecione um grupo de utilizadores ou um utilizador para ver as permissões efetivas.',
     legendAllow: 'Permitir',
     legendDeny: 'Negar',

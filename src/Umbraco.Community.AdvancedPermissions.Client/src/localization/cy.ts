@@ -81,6 +81,7 @@ export default {
     byUser: 'Yn ôl Defnyddiwr',
     chooseRole: 'Dewis grŵp defnyddiwr',
     chooseUser: 'Dewis defnyddiwr',
+    clearSelection: 'Clirio\'r dewisiad',
     selectSubjectPrompt: 'Dewiswch grŵp defnyddiwr neu ddefnyddiwr i weld yr hawliau effeithiol.',
     legendAllow: 'Caniatáu',
     legendDeny: 'Gwrthod',

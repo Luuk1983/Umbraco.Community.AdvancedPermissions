@@ -44,9 +44,30 @@ export class UapSelectionPanelElement extends UmbLitElement {
   /** Localized separator between mutually-exclusive options (e.g. "or"). */
   @property() orLabel = 'or';
 
+  /** When true, a "Clear selection" button is offered whenever at least one option is selected. */
+  @property({ type: Boolean }) clearable = false;
+
+  /** Localized label for the clear-selection button. */
+  @property() clearLabel = '';
+
   /** True when every group has a selected option. */
   get #complete(): boolean {
     return this.groups.length > 0 && this.groups.every((g) => g.options.some((o) => !!o.selectedName));
+  }
+
+  /** Emits the clear event for the host to reset and forget its selection. */
+  #clear(): void {
+    this.dispatchEvent(new CustomEvent('uap-selection-clear', { bubbles: true, composed: true }));
+  }
+
+  /** Renders the compact, borderless "Clear selection" action shown beside the chips in the results bar. */
+  #clearButton(): TemplateResult {
+    return html`
+      <uui-button class="clear-btn" compact look="default" label=${this.clearLabel} @click=${() => this.#clear()}>
+        <umb-icon name="icon-delete"></umb-icon>
+        <span>${this.clearLabel}</span>
+      </uui-button>
+    `;
   }
 
   /**
@@ -63,13 +84,12 @@ export class UapSelectionPanelElement extends UmbLitElement {
     this.dispatchEvent(new CustomEvent('uap-selector-click', { detail: { id }, bubbles: true, composed: true }));
   }
 
-  /** Renders a selected option as a pill (icon + name + caret). */
+  /** Renders a selected option as a chip (icon + name). Clicking it reopens the picker to change it. */
   #pill(o: UapSelector): TemplateResult {
     return html`
-      <uui-button look="outline" compact label=${o.selectedName ?? o.label} @click=${() => this.#click(o.id)}>
+      <uui-button look="outline" compact title=${o.label} label=${o.selectedName ?? o.label} @click=${() => this.#click(o.id)}>
         <umb-icon name=${o.icon}></umb-icon>
         <span class="pill-name">${o.selectedName}</span>
-        <umb-icon name="icon-navigation-down" class="caret"></umb-icon>
       </uui-button>
     `;
   }
@@ -119,8 +139,11 @@ export class UapSelectionPanelElement extends UmbLitElement {
         <div class="bar">
           <div class="pills">
             ${this.groups.map((g) => this.#groupControls(g))}
+            ${this.clearable ? html`<span class="clear-divider" aria-hidden="true"></span>${this.#clearButton()}` : nothing}
           </div>
-          <div class="actions"><slot name="actions"></slot></div>
+          <div class="actions">
+            <slot name="actions"></slot>
+          </div>
         </div>
         <slot></slot>
       </uui-box>
@@ -168,7 +191,14 @@ export class UapSelectionPanelElement extends UmbLitElement {
     .pills { display: flex; align-items: center; gap: var(--uui-size-space-2, 6px); flex-wrap: wrap; }
     .actions { display: flex; gap: var(--uui-size-space-2, 6px); }
     .pill-name { margin: 0 2px; }
-    .caret { font-size: 0.7em; margin-left: 2px; color: var(--uui-color-text-alt); }
+    .clear-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--uui-color-divider);
+      margin: 0 var(--uui-size-space-2, 6px);
+      flex-shrink: 0;
+    }
+    .clear-btn { color: var(--uui-color-text-alt); }
   `;
 }
 

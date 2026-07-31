@@ -81,6 +81,7 @@ export default {
     byUser: 'Po korisniku',
     chooseRole: 'Odaberite grupu korisnika',
     chooseUser: 'Odaberite korisnika',
+    clearSelection: 'Obriši odabir',
     selectSubjectPrompt: 'Odaberite grupu korisnika ili korisnika za pregled efektivnih dozvola.',
     legendAllow: 'Dozvoli',
     legendDeny: 'Zabrani',

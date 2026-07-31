@@ -81,6 +81,7 @@ export default {
     byUser: 'За користувачем',
     chooseRole: 'Виберіть групу користувачів',
     chooseUser: 'Виберіть користувача',
+    clearSelection: 'Очистити вибір',
     selectSubjectPrompt: 'Виберіть групу користувачів або користувача, щоб переглянути дійсні права доступу.',
     legendAllow: 'Дозволити',
     legendDeny: 'Заборонити',

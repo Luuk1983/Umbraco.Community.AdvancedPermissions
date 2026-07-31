@@ -81,6 +81,7 @@ export default {
     byUser: 'După utilizator',
     chooseRole: 'Alegeți un grup de utilizatori',
     chooseUser: 'Alegeți un utilizator',
+    clearSelection: 'Șterge selecția',
     selectSubjectPrompt: 'Selectați un grup de utilizatori sau un utilizator pentru a vedea permisiunile efective.',
     legendAllow: 'Permite',
     legendDeny: 'Refuză',

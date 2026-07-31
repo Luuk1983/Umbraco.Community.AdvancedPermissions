@@ -81,6 +81,7 @@ export default {
     byUser: 'By User',
     chooseRole: 'Choose user group',
     chooseUser: 'Choose user',
+    clearSelection: 'Clear selection',
     selectSubjectPrompt: 'Select a user group or user to view effective permissions.',
     legendAllow: 'Allow',
     legendDeny: 'Deny',

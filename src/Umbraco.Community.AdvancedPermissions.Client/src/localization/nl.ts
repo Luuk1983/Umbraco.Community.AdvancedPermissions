@@ -81,6 +81,7 @@ export default {
     byUser: 'Op gebruiker',
     chooseRole: 'Kies gebruikersgroep',
     chooseUser: 'Kies gebruiker',
+    clearSelection: 'Selectie wissen',
     selectSubjectPrompt: 'Selecteer een gebruikersgroep of gebruiker om de effectieve machtigingen te bekijken.',
     legendAllow: 'Toestaan',
     legendDeny: 'Weigeren',

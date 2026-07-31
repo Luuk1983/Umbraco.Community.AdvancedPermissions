@@ -7,7 +7,7 @@ import {
   state,
   query,
 } from '@umbraco-cms/backoffice/external/lit';
-import type { TemplateResult, PropertyValues } from '@umbraco-cms/backoffice/external/lit';
+import type { TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { composeEntries, type PendingVerbEntries } from '../../utils/compose-entries.js';
@@ -90,7 +90,7 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
 
   /**
    * Initial state pushed from the parent each time the dialog opens. Internal state is
-   * resynced from these via `willUpdate`, so the parent can mutate them between opens.
+   * resynced from these in `open()`, so the parent can mutate them between opens.
    */
   @property({ attribute: false }) initialNodeState: TriState = 'inherit';
   @property({ attribute: false }) initialDescState: TriState = 'inherit';
@@ -114,28 +114,28 @@ export class UapPermissionScopeDialogElement extends UmbLitElement {
 
   /**
    * Opens the modal. Call after setting the initial-state properties so the dialog reflects
-   * the cell that was just clicked.
+   * the cell that was just clicked. The working state is resynced from the initial-state
+   * properties on every open (see {@link #syncFromInitial}) so a previous, unapplied
+   * selection never leaks into a freshly opened cell.
    */
   open(): void {
+    this.#syncFromInitial();
     void this.updateComplete.then(() => this._dialog.showModal());
   }
 
-  override willUpdate(changed: PropertyValues): void {
-    if (changed.has('initialNodeState')) {
-      this._nodeState = this.initialNodeState;
-    }
-    if (changed.has('initialDescState')) {
-      this._descState = this.initialDescState;
-    }
-    if (changed.has('initialSameAsNode')) {
-      this._sameAsNode = this.initialSameAsNode;
-    }
-    if (changed.has('initialNodeIsPriorityOverride')) {
-      this._nodeIsPriorityOverride = this.initialNodeIsPriorityOverride;
-    }
-    if (changed.has('initialDescIsPriorityOverride')) {
-      this._descIsPriorityOverride = this.initialDescIsPriorityOverride;
-    }
+  /**
+   * Resets the in-progress working state (`_nodeState`, `_descState`, `_sameAsNode`, and the two
+   * priority-override flags) from the `initial*` properties. Called from {@link open} so the dialog
+   * always reflects the clicked cell's stored state — including when the incoming values are identical
+   * to the previous open (e.g. two different "inherit" cells), where relying on Lit's property-change
+   * detection would skip the resync and leave the previous selection on screen.
+   */
+  #syncFromInitial(): void {
+    this._nodeState = this.initialNodeState;
+    this._descState = this.initialDescState;
+    this._sameAsNode = this.initialSameAsNode;
+    this._nodeIsPriorityOverride = this.initialNodeIsPriorityOverride;
+    this._descIsPriorityOverride = this.initialDescIsPriorityOverride;
   }
 
   /**

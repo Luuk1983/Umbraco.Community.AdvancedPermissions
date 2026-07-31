@@ -73,6 +73,7 @@ export default {
     byUser: 'Theo người dùng',
     chooseRole: 'Chọn nhóm người dùng',
     chooseUser: 'Chọn người dùng',
+    clearSelection: 'Xóa lựa chọn',
     selectSubjectPrompt: 'Chọn một nhóm người dùng hoặc người dùng để xem quyền hiệu lực.',
     legendAllow: 'Cho phép',
     legendDeny: 'Từ chối',

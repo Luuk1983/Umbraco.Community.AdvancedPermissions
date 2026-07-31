@@ -73,6 +73,7 @@ export default {
     byUser: '사용자별',
     chooseRole: '사용자 그룹 선택',
     chooseUser: '사용자 선택',
+    clearSelection: '선택 지우기',
     selectSubjectPrompt: '유효 권한을 보려면 사용자 그룹 또는 사용자를 선택하세요.',
     legendAllow: '허용',
     legendDeny: '거부',

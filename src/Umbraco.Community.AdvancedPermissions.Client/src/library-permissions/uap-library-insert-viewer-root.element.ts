@@ -11,6 +11,7 @@ import type { DocTypeAuditForNodeRow } from '../models/doc-type-permission.model
 import type { CellInfo } from '../utils/cell-info.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
 import { UAP_USER_PICKER_MODAL } from '../access-viewer/user-picker-modal.token.js';
+import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
 import '../help/uap-page-intro.element.js';
@@ -23,6 +24,9 @@ import type {
 
 /** The canonical element-type create verb the audit resolves. */
 const ELEMENT_CREATE_OF_TYPE = 'Umb.Element.CreateOfType';
+
+/** Stable identifier used to key this surface's remembered selection (issue #46). */
+const SURFACE_ID = 'library-insert-viewer';
 
 /**
  * Library Insert Viewer. The element-type analogue of the document-type Insert Options Viewer: shows,
@@ -67,11 +71,46 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     void this.#loadMeta();
+    this.#restoreSelection();
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#abort?.abort();
+  }
+
+  /** Restores the last-used subject (user group or user) from per-user storage and loads its rows. */
+  #restoreSelection(): void {
+    const stored = loadSelection(SURFACE_ID);
+    if (stored?.subjectKind === 'role' && stored.role) {
+      this._selectedRole = stored.role;
+      this._activeSubject = 'role';
+      void this.#load();
+    } else if (stored?.subjectKind === 'user' && stored.user) {
+      this._selectedUser = stored.user;
+      this._activeSubject = 'user';
+      void this.#load();
+    }
+  }
+
+  /** Persists the current subject selection to per-user storage. */
+  #persistSelection(): void {
+    if (this._activeSubject === 'role' && this._selectedRole) {
+      saveSelection(SURFACE_ID, { subjectKind: 'role', role: this._selectedRole });
+    } else if (this._activeSubject === 'user' && this._selectedUser) {
+      saveSelection(SURFACE_ID, { subjectKind: 'user', user: this._selectedUser });
+    }
+  }
+
+  /** Clears the current selection, resets the view, and forgets the stored selection. */
+  #onClearSelection(): void {
+    this.#abort?.abort();
+    this._selectedRole = null;
+    this._selectedUser = null;
+    this._activeSubject = null;
+    this._rows = [];
+    this._error = null;
+    clearSelection(SURFACE_ID);
   }
 
   async #loadMeta(): Promise<void> {
@@ -127,6 +166,7 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     this._selectedRole = result.role;
     this._selectedUser = null;
     this._activeSubject = 'role';
+    this.#persistSelection();
     void this.#load();
   }
 
@@ -140,6 +180,7 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     this._selectedUser = result.user;
     this._selectedRole = null;
     this._activeSubject = 'user';
+    this.#persistSelection();
     void this.#load();
   }
 
@@ -286,7 +327,10 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
           promptText=${this.#localize.term('uap_selectSubjectPrompt')}
           ctaIcon="icon-thumbnail-list"
           orLabel=${this.#localize.term('uap_subjectOr')}
-          @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
+          ?clearable=${true}
+          clearLabel=${this.#localize.term('uap_clearSelection')}
+          @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
+          @uap-selection-clear=${() => this.#onClearSelection()}>
           ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
           ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
           ${!this._loading

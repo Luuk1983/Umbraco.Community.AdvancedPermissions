@@ -73,6 +73,7 @@ export default {
     byUser: 'Nach Benutzer',
     chooseRole: 'Benutzergruppe ausw\u00e4hlen',
     chooseUser: 'Benutzer ausw\u00e4hlen',
+    clearSelection: 'Auswahl löschen',
     selectSubjectPrompt: 'W\u00e4hlen Sie eine Benutzergruppe oder einen Benutzer aus, um die effektiven Berechtigungen anzuzeigen.',
     legendAllow: 'Erlauben',
     legendDeny: 'Verweigern',

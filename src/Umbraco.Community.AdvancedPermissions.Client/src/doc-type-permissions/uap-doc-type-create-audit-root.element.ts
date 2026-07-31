@@ -21,6 +21,7 @@ import type {
   DocTypeAuditForNodeRow,
 } from '../models/doc-type-permission.models.js';
 import { updateNode } from '../utils/tree-ops.js';
+import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
 import type { CellInfo } from '../utils/cell-info.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
 import { UAP_USER_PICKER_MODAL } from '../access-viewer/user-picker-modal.token.js';
@@ -42,6 +43,9 @@ import type {
 const VERBS: ReadonlyArray<{ verb: string; labelKey: string }> = [
   { verb: 'Umb.Document.CreateOfType', labelKey: 'uap_docTypePermissions_verbInsert' },
 ];
+
+/** Stable identifier used to key this surface's remembered selection (issue #46). */
+const SURFACE_ID = 'doc-type-create-audit';
 
 /**
  * Tree node augmented with audit data: a map of doc-type-key → audit row, plus the standard
@@ -118,11 +122,50 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     void this.#loadMeta();
+    this.#restoreSelection();
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#loadAbortController?.abort();
+  }
+
+  /** Restores the last-used subject and document type; loads the tree once a subject is present. */
+  #restoreSelection(): void {
+    const stored = loadSelection(SURFACE_ID);
+    if (stored?.docType) this._selectedDocType = stored.docType;
+    if (stored?.subjectKind === 'role' && stored.role) {
+      this._selectedRole = stored.role;
+      this._activeSubject = 'role';
+      void this.#loadTree();
+    } else if (stored?.subjectKind === 'user' && stored.user) {
+      this._selectedUser = stored.user;
+      this._activeSubject = 'user';
+      void this.#loadTree();
+    }
+  }
+
+  /** Persists the selection only when complete (subject + document type); otherwise forgets it. */
+  #persistSelection(): void {
+    if (this._activeSubject === 'role' && this._selectedRole && this._selectedDocType) {
+      saveSelection(SURFACE_ID, { subjectKind: 'role', role: this._selectedRole, docType: this._selectedDocType });
+    } else if (this._activeSubject === 'user' && this._selectedUser && this._selectedDocType) {
+      saveSelection(SURFACE_ID, { subjectKind: 'user', user: this._selectedUser, docType: this._selectedDocType });
+    } else {
+      clearSelection(SURFACE_ID);
+    }
+  }
+
+  /** Clears the current selection, resets the view, and forgets the stored selection. */
+  #onClearSelection(): void {
+    this.#loadAbortController?.abort();
+    this._selectedRole = null;
+    this._selectedUser = null;
+    this._activeSubject = null;
+    this._selectedDocType = null;
+    this._treeNodes = [];
+    this._error = null;
+    clearSelection(SURFACE_ID);
   }
 
   // ── Data loading ────────────────────────────────────────────────────────
@@ -303,6 +346,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     this._selectedRole = result.role;
     this._selectedUser = null;
     this._activeSubject = 'role';
+    this.#persistSelection();
     if (hadTree) void this.#reloadAudit();
     else void this.#loadTree();
   }
@@ -319,6 +363,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     this._selectedUser = result.user;
     this._selectedRole = null;
     this._activeSubject = 'user';
+    this.#persistSelection();
     if (hadTree) void this.#reloadAudit();
     else void this.#loadTree();
   }
@@ -587,6 +632,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     this._selectedDocType = key
       ? (this._docTypes.find((d) => d.key.toLowerCase() === key.toLowerCase()) ?? null)
       : null;
+    this.#persistSelection();
   }
 
   override render(): TemplateResult {
@@ -602,7 +648,10 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
         promptText=${this.#localize.term('uap_docTypePermissions_pickToStart')}
         ctaIcon="icon-diploma"
         orLabel=${this.#localize.term('uap_subjectOr')}
-        @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
+        ?clearable=${true}
+        clearLabel=${this.#localize.term('uap_clearSelection')}
+        @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
+        @uap-selection-clear=${() => this.#onClearSelection()}>
 
         ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
         ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}

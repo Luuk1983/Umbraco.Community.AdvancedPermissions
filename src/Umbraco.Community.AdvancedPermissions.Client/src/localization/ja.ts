@@ -73,6 +73,7 @@ export default {
     byUser: 'ユーザー別',
     chooseRole: 'ユーザーグループを選択',
     chooseUser: 'ユーザーを選択',
+    clearSelection: '選択をクリア',
     selectSubjectPrompt: '有効なアクセス権限を表示するには、ユーザーグループまたはユーザーを選択します。',
     legendAllow: '許可',
     legendDeny: '拒否',

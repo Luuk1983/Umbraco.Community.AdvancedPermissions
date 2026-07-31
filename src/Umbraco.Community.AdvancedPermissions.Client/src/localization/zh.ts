@@ -73,6 +73,7 @@ export default {
     byUser: '按用户',
     chooseRole: '选择用户组',
     chooseUser: '选择用户',
+    clearSelection: '清除选择',
     selectSubjectPrompt: '选择一个用户组或用户以查看有效权限。',
     legendAllow: '允许',
     legendDeny: '拒绝',

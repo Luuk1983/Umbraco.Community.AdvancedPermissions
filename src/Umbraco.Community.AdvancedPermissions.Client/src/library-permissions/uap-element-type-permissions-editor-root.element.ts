@@ -9,6 +9,7 @@ import { VIRTUAL_ROOT_NODE_KEY } from '../models/permission.models.js';
 import type { DocTypeListItem, SaveDocTypePermissionItem } from '../models/doc-type-permission.models.js';
 import { getElementTypes, getDocTypePermissions, saveDocTypePermissions } from '../api/doc-type-permissions.api.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
+import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
 import type { CellInfo } from '../utils/cell-info.js';
 import type { PendingVerbEntries } from '../utils/compose-entries.js';
 import '../shared/components/uap-perm-block.element.js';
@@ -26,6 +27,9 @@ type TypeState = { state: 'inherit' | 'allow' | 'deny'; isPriorityOverride: bool
 
 /** The neutral starting state for a type with no stored entry (allowed by default). */
 const DEFAULT_STATE: TypeState = { state: 'inherit', isPriorityOverride: false };
+
+/** Stable identifier used to key this surface's remembered selection (issue #46). */
+const SURFACE_ID = 'element-type-permissions-editor';
 
 /**
  * Library element-type permissions editor. Controls which element types each user group may create in
@@ -68,9 +72,34 @@ export class UapElementTypePermissionsEditorRootElement extends UmbLitElement {
     this.consumeContext(UMB_MODAL_MANAGER_CONTEXT, (ctx) => { this.#modalManager = ctx ?? undefined; });
   }
 
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.#restoreSelection();
+  }
+
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#abort?.abort();
+  }
+
+  /** Restores the last-used user group (if any) from per-user storage and loads its element types. */
+  #restoreSelection(): void {
+    const stored = loadSelection(SURFACE_ID);
+    if (stored?.role) {
+      this._selectedRole = stored.role;
+      void this.#load();
+    }
+  }
+
+  /** Clears the current selection, resets the view, and forgets the stored selection. */
+  #onClearSelection(): void {
+    this.#abort?.abort();
+    this._selectedRole = null;
+    this._types = [];
+    this._states = new Map();
+    this._pending = new Set();
+    this._error = null;
+    clearSelection(SURFACE_ID);
   }
 
   async #openRolePicker(): Promise<void> {
@@ -82,6 +111,7 @@ export class UapElementTypePermissionsEditorRootElement extends UmbLitElement {
     if (!result) return;
     this._selectedRole = result.role;
     this._pending = new Set();
+    saveSelection(SURFACE_ID, { subjectKind: 'role', role: result.role });
     void this.#load();
   }
 
@@ -194,7 +224,10 @@ export class UapElementTypePermissionsEditorRootElement extends UmbLitElement {
           promptText=${this.#localize.term('uap_library_selectRolePrompt')}
           ctaIcon="icon-thumbnail-list"
           orLabel=${this.#localize.term('uap_subjectOr')}
-          @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
+          ?clearable=${true}
+          clearLabel=${this.#localize.term('uap_clearSelection')}
+          @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
+          @uap-selection-clear=${() => this.#onClearSelection()}>
           ${this._pending.size > 0
             ? html`<div slot="actions">
                 <uui-button label=${this.#localize.term('uap_saveChanges')} look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#save()}>

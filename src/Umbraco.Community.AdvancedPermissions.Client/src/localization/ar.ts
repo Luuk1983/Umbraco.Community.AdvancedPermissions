@@ -73,6 +73,7 @@ export default {
     byUser: 'حسب المستخدم',
     chooseRole: 'اختر مجموعة المستخدمين',
     chooseUser: 'اختر المستخدم',
+    clearSelection: 'مسح التحديد',
     selectSubjectPrompt: 'اختر مجموعة مستخدمين أو مستخدمًا لعرض الأذونات الفعّالة.',
     legendAllow: 'السماح',
     legendDeny: 'المنع',

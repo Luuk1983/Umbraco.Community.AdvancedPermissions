@@ -25,6 +25,7 @@ import { type PendingVerbEntries } from '../utils/compose-entries.js';
 import type { CellInfo } from '../utils/cell-info.js';
 import { getCellInfo } from '../utils/cell-info.js';
 import { updateNode, findNode } from '../utils/tree-ops.js';
+import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
 import { LIBRARY_VERB_METAS, libraryApplicability } from './library-permission.descriptor.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-permission-scope-dialog.element.js';
@@ -37,6 +38,9 @@ import type { UapSelectorGroup } from '../help/uap-selection-panel.element.js';
 type PendingNodeChanges = Map<string, PendingVerbEntries>;
 
 const VIRTUAL_ROOT_KEY = 'virtual-root';
+
+/** Stable identifier used to key this surface's remembered selection (issue #46). */
+const SURFACE_ID = 'library-permissions-editor';
 
 /**
  * Library permissions editor. Mirrors the content Permissions Editor but operates on the element tree
@@ -81,9 +85,33 @@ export class UapLibraryPermissionsEditorRootElement extends UmbLitElement {
     this.consumeContext(UMB_MODAL_MANAGER_CONTEXT, (ctx) => { this.#modalManager = ctx ?? undefined; });
   }
 
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.#restoreSelection();
+  }
+
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#loadAbortController?.abort();
+  }
+
+  /** Restores the last-used user group (if any) from per-user storage and loads its tree. */
+  #restoreSelection(): void {
+    const stored = loadSelection(SURFACE_ID);
+    if (stored?.role) {
+      this._selectedRole = stored.role;
+      void this.#loadTree();
+    }
+  }
+
+  /** Clears the current selection, resets the view, and forgets the stored selection. */
+  #onClearSelection(): void {
+    this.#loadAbortController?.abort();
+    this._selectedRole = null;
+    this._treeNodes = [];
+    this._pendingChanges = new Map();
+    this._error = null;
+    clearSelection(SURFACE_ID);
   }
 
   // ── Role selection + tree loading ───────────────────────────────────────
@@ -97,6 +125,7 @@ export class UapLibraryPermissionsEditorRootElement extends UmbLitElement {
     if (!result) return;
     this._selectedRole = result.role;
     this._pendingChanges = new Map();
+    saveSelection(SURFACE_ID, { subjectKind: 'role', role: result.role });
     void this.#loadTree();
   }
 
@@ -406,7 +435,10 @@ export class UapLibraryPermissionsEditorRootElement extends UmbLitElement {
           promptText=${this.#localize.term('uap_library_selectRolePrompt')}
           ctaIcon="icon-globe"
           orLabel=${this.#localize.term('uap_subjectOr')}
-          @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
+          ?clearable=${true}
+          clearLabel=${this.#localize.term('uap_clearSelection')}
+          @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
+          @uap-selection-clear=${() => this.#onClearSelection()}>
           ${this._pendingChanges.size > 0
             ? html`<div slot="actions">
                 <uui-button label=${this.#localize.term('uap_saveChanges')} look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#saveChanges()}>

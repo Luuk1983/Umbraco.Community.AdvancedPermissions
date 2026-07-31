@@ -17,6 +17,7 @@ import { decomposeEntries } from '../utils/decompose-entries.js';
 import { type PendingVerbEntries } from '../utils/compose-entries.js';
 import { getCellInfo, type CellInfo } from '../utils/cell-info.js';
 import { updateNode } from '../utils/tree-ops.js';
+import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
 import { UMB_DOCUMENT_TYPE_PICKER_MODAL } from '@umbraco-cms/backoffice/document-type';
 import '../shared/components/uap-perm-block.element.js';
@@ -31,6 +32,9 @@ const VERB = 'Umb.Document.CreateOfType';
 
 /** Sentinel local key for the virtual-root row in the tree. Mapped back to `VIRTUAL_ROOT_NODE_KEY` on save. */
 const VIRTUAL_ROOT_LOCAL_KEY = 'virtual-root';
+
+/** Stable identifier used to key this surface's remembered selection (issue #46). */
+const SURFACE_ID = 'doc-type-permissions-editor';
 
 /**
  * Document-type Permissions Editor workspace.
@@ -88,11 +92,40 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     void this.#loadMeta();
+    this.#restoreSelection();
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#loadAbortController?.abort();
+  }
+
+  /** Restores the last-used user group and document type; loads the tree once both are present. */
+  #restoreSelection(): void {
+    const stored = loadSelection(SURFACE_ID);
+    if (stored?.role) this._selectedRole = stored.role;
+    if (stored?.docType) this._selectedDocType = stored.docType;
+    if (this._selectedRole && this._selectedDocType) void this.#loadTree();
+  }
+
+  /** Persists the selection only when complete (user group + document type); otherwise forgets it. */
+  #persistSelection(): void {
+    if (this._selectedRole && this._selectedDocType) {
+      saveSelection(SURFACE_ID, { subjectKind: 'role', role: this._selectedRole, docType: this._selectedDocType });
+    } else {
+      clearSelection(SURFACE_ID);
+    }
+  }
+
+  /** Clears the current selection, resets the view, and forgets the stored selection. */
+  #onClearSelection(): void {
+    this.#loadAbortController?.abort();
+    this._selectedRole = null;
+    this._selectedDocType = null;
+    this._treeNodes = [];
+    this._pendingChanges = new Map();
+    this._error = null;
+    clearSelection(SURFACE_ID);
   }
 
   // ── Data loading ────────────────────────────────────────────────────────
@@ -118,6 +151,7 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
     const hadTree = this._treeNodes.length > 0 && this._selectedRole !== null && this._selectedDocType !== null;
     this._selectedRole = result.role;
     this._pendingChanges = new Map();
+    this.#persistSelection();
     if (hadTree) {
       void this.#reloadEntries();
     } else if (this._selectedDocType) {
@@ -150,6 +184,7 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
     const hadTree = this._treeNodes.length > 0 && this._selectedRole !== null && this._selectedDocType !== null;
     this._selectedDocType = picked;
     this._pendingChanges = new Map();
+    this.#persistSelection();
     if (!this._selectedDocType) {
       this._treeNodes = [];
       return;
@@ -495,7 +530,10 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
         promptText=${this.#localize.term('uap_docTypePermissions_pickToStart')}
         ctaIcon="icon-diploma"
         orLabel=${this.#localize.term('uap_subjectOr')}
-        @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
+        ?clearable=${true}
+        clearLabel=${this.#localize.term('uap_clearSelection')}
+        @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
+        @uap-selection-clear=${() => this.#onClearSelection()}>
 
         ${hasPending
           ? html`

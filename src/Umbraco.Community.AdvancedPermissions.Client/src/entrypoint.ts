@@ -1,6 +1,8 @@
 import type { UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
 import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
+import { UMB_CURRENT_USER_CONTEXT } from '@umbraco-cms/backoffice/current-user';
 import { client } from './api/generated/client.gen.js';
+import { setCurrentUserKey } from './utils/selection-store.js';
 
 const DOCUMENT_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.Document';
 const ELEMENT_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.Element';
@@ -55,6 +57,16 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
   _host.consumeContext(UMB_AUTH_CONTEXT, (authContext) => {
     if (!authContext) return;
     authContext.configureClient(client);
+  });
+
+  // Track the current backoffice user so per-user selection memory (issue #46) can key its
+  // sessionStorage entries. Resolves well before any editor/viewer opens; until it does,
+  // persistence is a safe no-op.
+  _host.consumeContext(UMB_CURRENT_USER_CONTEXT, (currentUserContext) => {
+    if (!currentUserContext) return;
+    _host.observe(currentUserContext.unique, (unique) => {
+      setCurrentUserKey(unique ?? undefined);
+    });
   });
 
   // Replace the native document permission condition with the Advanced Permissions version.

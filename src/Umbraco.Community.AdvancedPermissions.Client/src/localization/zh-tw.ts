@@ -73,6 +73,7 @@ export default {
     byUser: '依使用者',
     chooseRole: '選擇使用者群組',
     chooseUser: '選擇使用者',
+    clearSelection: '清除選擇',
     selectSubjectPrompt: '選擇使用者群組或使用者以檢視有效權限。',
     legendAllow: '允許',
     legendDeny: '拒絕',

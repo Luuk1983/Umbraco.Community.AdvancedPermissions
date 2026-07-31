@@ -73,6 +73,7 @@ export default {
     byUser: 'לפי משתמש',
     chooseRole: 'בחר קבוצת משתמשים',
     chooseUser: 'בחר משתמש',
+    clearSelection: 'נקה בחירה',
     selectSubjectPrompt: 'בחר קבוצת משתמשים או משתמש כדי להציג את ההרשאות האפקטיביות.',
     legendAllow: 'אפשר',
     legendDeny: 'מנע',

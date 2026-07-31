@@ -20,6 +20,7 @@ import { decomposeEntries } from '../utils/decompose-entries.js';
 import { type PendingVerbEntries } from '../utils/compose-entries.js';
 import { getCellInfo } from '../utils/cell-info.js';
 import { updateNode, findNode } from '../utils/tree-ops.js';
+import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-permission-scope-dialog.element.js';
 import '../help/uap-page-intro.element.js';
@@ -29,6 +30,9 @@ import type { UapPermissionScopeDialogElement } from '../shared/components/uap-p
 
 /** Map of verb → pending entries for a single node. */
 type PendingNodeChanges = Map<string, PendingVerbEntries>;
+
+/** Stable identifier used to key this surface's remembered selection (issue #46). */
+const SURFACE_ID = 'permissions-editor';
 
 /**
  * Security Editor workspace element.
@@ -83,6 +87,26 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     void this.#loadMeta();
+    this.#restoreSelection();
+  }
+
+  /** Restores the last-used user group (if any) from per-user storage and loads its tree. */
+  #restoreSelection(): void {
+    const stored = loadSelection(SURFACE_ID);
+    if (stored?.role) {
+      this._selectedRole = stored.role;
+      void this.#loadTree();
+    }
+  }
+
+  /** Clears the current selection, resets the view, and forgets the stored selection. */
+  #onClearSelection(): void {
+    this.#loadAbortController?.abort();
+    this._selectedRole = null;
+    this._treeNodes = [];
+    this._pendingChanges = new Map();
+    this._error = null;
+    clearSelection(SURFACE_ID);
   }
 
   override disconnectedCallback(): void {
@@ -115,6 +139,7 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
     const hadTree = this._treeNodes.length > 0 && this._selectedRole !== null;
     this._selectedRole = result.role;
     this._pendingChanges = new Map();
+    saveSelection(SURFACE_ID, { subjectKind: 'role', role: result.role });
     if (hadTree) {
       void this.#reloadPermissions();
     } else {
@@ -520,7 +545,10 @@ export class UapPermissionsEditorRootElement extends UmbLitElement {
           promptText=${this.#localize.term('uap_selectRolePrompt')}
           ctaIcon="icon-document"
           orLabel=${this.#localize.term('uap_subjectOr')}
-          @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}>
+          ?clearable=${true}
+          clearLabel=${this.#localize.term('uap_clearSelection')}
+          @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
+          @uap-selection-clear=${() => this.#onClearSelection()}>
           ${this._pendingChanges.size > 0
             ? html`<div slot="actions">
                 <uui-button label=${this.#localize.term('uap_saveChanges')} look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#saveChanges()}>

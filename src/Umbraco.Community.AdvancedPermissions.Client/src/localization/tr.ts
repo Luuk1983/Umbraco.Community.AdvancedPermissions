@@ -73,6 +73,7 @@ export default {
     byUser: 'Kullanıcıya göre',
     chooseRole: 'Kullanıcı grubu seçin',
     chooseUser: 'Kullanıcı seçin',
+    clearSelection: 'Seçimi temizle',
     selectSubjectPrompt: 'Etkin izinleri görüntülemek için bir kullanıcı grubu veya kullanıcı seçin.',
     legendAllow: 'İzin ver',
     legendDeny: 'Reddet',

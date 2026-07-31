@@ -6,17 +6,21 @@
     <!-- Umbraco — pinned to the v17 line. Each Umbraco major (v18, v19, …) requires a
          deliberate verification pass before we widen the range, so consumers on a future
          Umbraco major won't accidentally install this package against an unverified host.
-         Range syntax: [17.3.0,18.0.0-0) means >= 17.3.0 and < 18.0.0-0. The "-0" upper
-         bound is deliberate: a bare 18.0.0 upper bound still admits 18.0.0 prereleases
-         (e.g. 18.0.0-beta) because in NuGet a prerelease sorts *before* its final release.
-         "-0" is the lowest possible 18.0.0 prerelease label, so < 18.0.0-0 excludes every
-         18.x beta/rc as well as the final 18.0.0. -->
-    <PackageVersion Include="Umbraco.Cms" Version="[17.3.0,18.0.0-0)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[17.3.0,18.0.0-0)" />
-    <PackageVersion Include="Umbraco.Cms.Core" Version="[17.3.0,18.0.0-0)" />
-    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[17.3.0,18.0.0-0)" />
-    <PackageVersion Include="Umbraco.Cms.Persistence.EFCore" Version="[17.3.0,18.0.0-0)" />
-    <PackageVersion Include="uSync" Version="[17.0.4,18.0.0-0)" />
+         Range syntax: [17.3.0,18.0.0) means >= 17.3.0 and < 18.0.0.
+
+         NOTE: do NOT change the upper bound to the "18.0.0-0" prerelease-exclusion idiom.
+         Although "-0" is the SemVer-correct way to also exclude 18.0.0 prereleases, NuGet.org
+         rejects a prerelease upper bound in a published dependency range ("invalid Version:
+         '18.0.0-0'") for 2.x-client compatibility. It is also unnecessary here: NuGet never
+         auto-selects a prerelease for a transitive dependency on a normal restore, and even
+         with prerelease resolution enabled it picks the lowest satisfying version (the 17.x
+         floor) — an 18.x beta is never chosen via this range. -->
+    <PackageVersion Include="Umbraco.Cms" Version="[17.3.0,18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[17.3.0,18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Core" Version="[17.3.0,18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[17.3.0,18.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Persistence.EFCore" Version="[17.3.0,18.0.0)" />
+    <PackageVersion Include="uSync" Version="[17.0.4,18.0.0)" />
     <!-- Entity Framework Core: track Umbraco's transitive version (floor only). -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.4" />

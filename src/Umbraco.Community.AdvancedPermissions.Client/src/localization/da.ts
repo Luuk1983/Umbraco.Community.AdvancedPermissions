@@ -81,6 +81,7 @@ export default {
     byUser: 'Efter bruger',
     chooseRole: 'Vælg brugergruppe',
     chooseUser: 'Vælg bruger',
+    clearSelection: 'Ryd valg',
     selectSubjectPrompt: 'Vælg en brugergruppe eller bruger for at se de effektive tilladelser.',
     legendAllow: 'Tillad',
     legendDeny: 'Nægt',

@@ -81,6 +81,7 @@ export default {
     byUser: 'Podle uživatele',
     chooseRole: 'Vyberte uživatelskou skupinu',
     chooseUser: 'Vyberte uživatele',
+    clearSelection: 'Vymazat výběr',
     selectSubjectPrompt: 'Vyberte uživatelskou skupinu nebo uživatele pro zobrazení výsledných oprávnění.',
     legendAllow: 'Povolit',
     legendDeny: 'Zakázat',

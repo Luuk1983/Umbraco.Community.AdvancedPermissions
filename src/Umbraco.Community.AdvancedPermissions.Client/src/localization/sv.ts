@@ -81,6 +81,7 @@ export default {
     byUser: 'Per användare',
     chooseRole: 'Välj användargrupp',
     chooseUser: 'Välj användare',
+    clearSelection: 'Rensa val',
     selectSubjectPrompt: 'Välj en användargrupp eller användare för att visa effektiva behörigheter.',
     legendAllow: 'Tillåt',
     legendDeny: 'Neka',

@@ -1,8 +1,12 @@
+using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Community.AdvancedPermissions.Caching;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
-using Umbraco.Cms.Core.Services;
+using Umbraco.Community.AdvancedPermissions.Notifications;
 
 namespace Umbraco.Community.AdvancedPermissions.Services;
 
@@ -21,7 +25,27 @@ namespace Umbraco.Community.AdvancedPermissions.Services;
 /// The <c>$everyone</c> role and virtual-root sentinel are shared across targets; only the set of
 /// verbs that gets fully resolved-and-cached (<paramref name="allVerbs"/>) is target-specific.
 /// </para>
+/// <para>
+/// Every write goes through the same three steps, in this order: write, invalidate the caches, then
+/// publish a change notification. The order is the point. A client that refetches on a notification
+/// which overtook the invalidation reads the very snapshot the change replaced and — having consumed
+/// its one notification — never asks again. Because the sequence lives here rather than in a concrete
+/// service, every family that derives from this class gets it, and cannot lose it by accident.
+/// </para>
+/// <para>
+/// The type parameter is the notification record the family raises (content raises
+/// <see cref="AdvancedPermissionsChangedNotification"/>, library elements raise
+/// <see cref="ElementPermissionsChangedNotification"/>). It is a type parameter rather than an
+/// <see cref="INotification"/> return because <see cref="IEventAggregator.PublishAsync{TNotification}"/>
+/// finds its handlers by the compile-time type: publishing through the interface would find none and
+/// fail silently. Making the notification a type parameter guarantees two things: within one service,
+/// the single-save and batch paths cannot publish different notification types, and publishing through
+/// a bare <see cref="INotification"/> — which would silently resolve no handlers — is impossible. It
+/// does not stop a future subclass choosing the wrong type argument; that is pinned by the per-family
+/// tests, not by the compiler.
+/// </para>
 /// </remarks>
+/// <typeparam name="TNotification">The change notification this family publishes after a write.</typeparam>
 /// <param name="repository">The repository for reading and writing raw permission entries.</param>
 /// <param name="resolver">The pure resolver that applies inheritance and priority rules (default Deny).</param>
 /// <param name="userService">The Umbraco user service used to look up user group memberships.</param>
@@ -30,14 +54,37 @@ namespace Umbraco.Community.AdvancedPermissions.Services;
 /// The complete set of verbs this target manages. Resolution always computes and caches every verb in
 /// this set so the L2 cache never holds a partial result.
 /// </param>
-public abstract class NodePermissionServiceBase(
+/// <param name="eventAggregator">
+/// Used to publish permission-change notifications after a write has been persisted and the cache
+/// invalidated, so other packages can react without depending on how the write happened.
+/// </param>
+/// <param name="logger">
+/// Used to record a notification handler's failure without letting it propagate — see
+/// <see cref="PermissionChangePublisher"/>.
+/// </param>
+public abstract class NodePermissionServiceBase<TNotification>(
     INodePermissionRepository repository,
     IPermissionResolver resolver,
     IUserService userService,
     NodePermissionCache cache,
-    IReadOnlyList<string> allVerbs)
+    IReadOnlyList<string> allVerbs,
+    IEventAggregator eventAggregator,
+    ILogger logger)
     : INodePermissionService
+    where TNotification : INotification
 {
+    /// <summary>
+    /// Creates the change notification for this family.
+    /// </summary>
+    /// <param name="nodeKey">The node the entries were written for.</param>
+    /// <param name="roleAlias">The user group alias the entries were written for.</param>
+    /// <param name="verbs">The verbs whose entries were written. Empty when all entries were removed.</param>
+    /// <returns>The notification to publish, of the family's own type.</returns>
+    protected abstract TNotification CreateChangedNotification(
+        Guid nodeKey,
+        string roleAlias,
+        IReadOnlyList<string> verbs);
+
     /// <inheritdoc />
     public async Task<EffectivePermission> ResolveAsync(
         Guid userKey,
@@ -122,18 +169,64 @@ public abstract class NodePermissionServiceBase(
         return resolver.ResolveAll(context, verbList);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Saves the entries for a node and user group with no concurrency check, by delegating to the
+    /// stamped overload with a <see langword="null"/> stamp.
+    /// </summary>
+    /// <param name="nodeKey">The node key.</param>
+    /// <param name="roleAlias">The user group alias.</param>
+    /// <param name="entries">The replacement entries.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    // Not marked [Obsolete] here: this class is not the published contract, and the obsolete warning
+    // fires on the interface member, which is where every caller is steered away from it.
+    // Implementing an obsolete interface member does not itself raise a warning.
+    public Task SaveEntriesAsync(
+        Guid nodeKey,
+        string roleAlias,
+        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
+        CancellationToken cancellationToken = default) =>
+        SaveEntriesAsync(nodeKey, roleAlias, entries, (string?)null, cancellationToken);
+
+    /// <summary>
+    /// Saves the entries for a node and user group, refusing the write if the stored entries no
+    /// longer match <paramref name="expectedStamp"/>, then invalidates caches and announces the
+    /// change. This is the real implementation of the interface's stamped overload - it overrides
+    /// the interface's default implementation, which would ignore the stamp.
+    /// </summary>
+    /// <param name="nodeKey">The node key.</param>
+    /// <param name="roleAlias">The user group alias.</param>
+    /// <param name="entries">The replacement entries.</param>
+    /// <param name="expectedStamp">The stamp the caller read, or <see langword="null"/> to skip the check.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
     public async Task SaveEntriesAsync(
         Guid nodeKey,
         string roleAlias,
         IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
+        string? expectedStamp,
         CancellationToken cancellationToken = default)
     {
-        await repository.SaveAsync(nodeKey, roleAlias, entries, cancellationToken);
+        // Materialised once: the sequence is enumerated by the repository and again for the
+        // notification's verb list, and a caller is entitled to hand us a lazy one.
+        var materialised = entries as IList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>
+            ?? entries.ToList();
+
+        // The stamp check happens inside the repository's write transaction. A refusal throws from
+        // here, before the cache is touched and before anything is published: nothing was written,
+        // so there is nothing to invalidate and nothing to announce.
+        await repository.SaveAsync(nodeKey, roleAlias, materialised, expectedStamp, cancellationToken);
 
         // Invalidate L1 for this role (entries changed), and ALL L2 (any user's resolution may be stale)
         cache.InvalidateRoleEntries(roleAlias);
         cache.InvalidateAllResolved();
+
+        // Strictly after invalidation. A handler that refetches on this notification while the
+        // cache still holds the old value would read the very snapshot this write replaced — and,
+        // having consumed its notification, would never ask again.
+        await PublishChangedAsync(
+            nodeKey,
+            roleAlias,
+            materialised.Select(e => e.Verb).Distinct(StringComparer.Ordinal).ToList(),
+            cancellationToken);
     }
 
     /// <inheritdoc />
@@ -148,7 +241,73 @@ public abstract class NodePermissionServiceBase(
         // Invalidate L1 for this role (entries changed), and ALL L2 (any user's resolution may be stale)
         cache.InvalidateRoleEntries(roleAlias);
         cache.InvalidateAllResolved();
+
+        // Strictly after invalidation — see the note in SaveEntriesAsync above.
+        await PublishChangedAsync(nodeKey, roleAlias, [verb], cancellationToken);
     }
+
+    /// <inheritdoc />
+    public async Task SaveManyAsync(
+        IReadOnlyList<(Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)> batch,
+        CancellationToken cancellationToken = default)
+    {
+        // Nothing was written, so nothing is stale — skip the transaction and the L2 flush.
+        if (batch.Count == 0)
+        {
+            return;
+        }
+
+        // A stale stamp throws from here, before any invalidation or publish - see SaveEntriesAsync.
+        await repository.SaveManyAsync(
+            batch.Select(b => (b.NodeKey, b.RoleAlias,
+                (IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>)b.Entries,
+                b.ExpectedStamp)),
+            cancellationToken);
+
+        // Invalidated once per distinct user group rather than per pair, and the resolved (L2) cache
+        // once for the whole batch: L2 is dropped wholesale anyway, and doing it per pair would drop
+        // it N times for no further effect.
+        foreach (var roleAlias in batch.Select(b => b.RoleAlias).Distinct(StringComparer.Ordinal))
+        {
+            cache.InvalidateRoleEntries(roleAlias);
+        }
+
+        cache.InvalidateAllResolved();
+
+        // Again strictly after invalidation, and one notification per pair so a handler sees the
+        // same granularity it would from a single save. Each publish is isolated individually (in
+        // PublishChangedAsync) so one bad pair's handler failure does not stop the remaining pairs
+        // from being announced.
+        foreach (var (nodeKey, roleAlias, entries, _) in batch)
+        {
+            await PublishChangedAsync(
+                nodeKey,
+                roleAlias,
+                entries.Select(e => e.Verb).Distinct(StringComparer.Ordinal).ToList(),
+                cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Publishes this family's change notification, isolating any handler failure so it cannot mask a
+    /// write that has already committed. Must only be called after the cache has been invalidated.
+    /// </summary>
+    /// <param name="nodeKey">The node the entries were written for.</param>
+    /// <param name="roleAlias">The user group alias the entries were written for.</param>
+    /// <param name="verbs">The verbs whose entries were written.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <returns>A task that completes once the notification has been published or its failure logged.</returns>
+    private Task PublishChangedAsync(
+        Guid nodeKey,
+        string roleAlias,
+        IReadOnlyList<string> verbs,
+        CancellationToken cancellationToken) =>
+        PermissionChangePublisher.PublishSafelyAsync(
+            eventAggregator,
+            logger,
+            CreateChangedNotification(nodeKey, roleAlias, verbs),
+            $"node {nodeKey} and user group {roleAlias}",
+            cancellationToken);
 
     /// <summary>
     /// Builds the <see cref="PermissionResolutionContext"/> for a given user and node by loading

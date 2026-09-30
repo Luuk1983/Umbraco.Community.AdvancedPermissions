@@ -195,5 +195,30 @@ export default {
     elementType_denyLabel: 'Nægt (skjult fra Library)',
     elementType_previewInherit: 'Ingen eksplicit regel. Denne elementtype kan oprettes i Library som standard.',
     elementType_previewSet: (action: string) => `${action} oprettelse af denne elementtype i Library.`,
+
+    // ── Live opdateringer og konflikter ─────────────────────────────────
+    liveUpdated: 'Opdateret for et øjeblik siden',
+    liveRefresh: 'Opdater',
+    liveRefreshing: 'Opdaterer…',
+    liveRefreshFailed: 'Opdateringen mislykkedes',
+    liveConflictTitle: 'Nogen har ændret disse tilladelser, mens du redigerede',
+    liveConflictBody: '%0% af dine ugemte ændringer er i konflikt med det, der er gemt nu. Intet af dit er blevet ændret.',
+    liveConflictBodyOne: 'En af dine ugemte ændringer er i konflikt med det, der er gemt nu. Intet af dit er blevet ændret.',
+    liveLoadStored: 'Indlæs gemte værdier',
+    liveKeepMine: 'Behold mine ændringer',
+    liveFlagLegend: 'Ændret af en anden, siden du indlæste',
+    conflictDialogTitle: 'Overskriv de gemte ændringer?',
+    conflictDialogBody: 'Hvis du gemmer, erstattes det, der er gemt nu. %0% ændringer foretaget af en anden går tabt, og dette kan ikke fortrydes.',
+    conflictDialogBodyOne: 'Hvis du gemmer, erstattes det, der er gemt nu. En ændring foretaget af en anden går tabt, og dette kan ikke fortrydes.',
+    conflictStoredLabel: 'gemt',
+    conflictYoursLabel: 'dit',
+    conflictOverwrite: 'Overskriv alligevel',
+    conflictCancel: 'Fortryd',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Kassér ikke-gemte ændringer?',
+    discardPromptBody: 'Du har ikke-gemte ændringer af tilladelser. Hvis du fortsætter, kasseres de, og de kan ikke gendannes.',
+    discardPromptStay: 'Fortsæt redigering',
+    discardPromptConfirm: 'Kassér ændringer',
   },
 } satisfies UmbLocalizationDictionary;

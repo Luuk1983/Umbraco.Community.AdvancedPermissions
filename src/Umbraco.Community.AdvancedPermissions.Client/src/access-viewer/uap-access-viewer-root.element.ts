@@ -19,6 +19,10 @@ import { UAP_USER_PICKER_MODAL } from './user-picker-modal.token.js';
 import type { CellInfo } from '../utils/cell-info.js';
 import { updateNode } from '../utils/tree-ops.js';
 import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
+import { clearEffectivePermissionCache } from '../conditions/document-user-permission.condition.js';
+import { UapSecurityEventsController, UAP_EVENT_SOURCES } from '../live/security-events.controller.js';
+import type { UapRefreshPhase } from '../live/refresh-phase.js';
+import '../live/uap-live-refresh.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
 import '../help/uap-page-intro.element.js';
@@ -52,36 +56,52 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   #localize = new UmbLocalizationController(this);
 
   // ── Metadata ────────────────────────────────────────────────────────────
+  /** The permission verbs, one per grid column; empty until the metadata request lands. */
   @state() private _verbs: VerbInfo[] = [];
   /** Maps role alias → display name for showing friendly role names in the dialog. */
   #roleNames = new Map<string, string>();
 
   // ── Subject selection ────────────────────────────────────────────────────
+  /** The user group being inspected, when the subject is a group. */
   @state() private _selectedRole: RoleInfo | null = null;
+  /** The user being inspected, when the subject is a user. */
   @state() private _selectedUser: UserItem | null = null;
   /** Which subject was most recently picked; determines the tree view mode. */
   @state() private _activeSubject: 'role' | 'user' | null = null;
 
   // ── Tree ─────────────────────────────────────────────────────────────────
+  /** The loaded tree, with each node's effective permissions; rows swap their data in place on a refresh. */
   @state() private _treeNodes: ViewerTreeNode[] = [];
+  /** True only for a first load or a selection change, which hides the grid behind the loader. A live refresh never sets it. */
   @state() private _loading = false;
+  /** The last load failure, shown above the grid. */
   @state() private _error: string | null = null;
 
   // ── Reasoning dialog ─────────────────────────────────────────────────────
+  /** The node whose cell opened the reasoning dialog. */
   @state() private _reasoningNode: ViewerTreeNode | null = null;
+  /** The verb whose cell opened the reasoning dialog. */
   @state() private _reasoningVerb: string | null = null;
+  /** The ancestor chain, root first, that the dialog walks through. */
   @state() private _dialogPath: PathNode[] = [];
   /** nodeKey → array of {roleAlias, entries for the verb} for roles that have entries at that node. */
   @state() private _dialogEntriesByNode: Map<string, Array<{ role: string; entries: PermissionEntry[] }>> = new Map();
+  /** True while the dialog's inheritance path is being fetched. */
   @state() private _dialogLoading = false;
   /** Whether the dialog should show stars on deny entries (deny trumping allow). */
   @state() private _dialogShowStars = false;
+
+  /** Where the refresh control is: idle, refreshing, or briefly confirming an update. */
+  @state() private _refreshPhase: UapRefreshPhase = 'idle';
 
   @query('uap-reasoning-dialog') private _reasoningDialog!: UapReasoningDialogElement;
 
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #loadAbortController: AbortController | null = null;
+
+  /** Live-event subscription; also the entry point for the manual refresh control. */
+  #liveEvents: UapSecurityEventsController;
 
   constructor() {
     super();
@@ -91,6 +111,30 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     this.consumeContext(UMB_MODAL_MANAGER_CONTEXT, (ctx) => {
       this.#modalManager = ctx ?? undefined;
     });
+
+    // A viewer holds nothing of the user's, so it never asks and never flags — it just becomes
+    // correct again. The keys are ignored deliberately: a permission written on an ancestor moves
+    // what every descendant on screen resolves to, so there is no subset worth refetching.
+    // Sources: Listens for content-node permission writes and for the changes that move a content node's
+    // effective permissions without touching the store: user or user group edits, group deletion
+    // (which also wipes the group's entries) and content moves or deletes. It reads nothing from the
+    // library or document-type stores, so those sources are left out.
+    this.#liveEvents = new UapSecurityEventsController(
+      this,
+      async () => {
+        if (!this._activeSubject) return;
+        // The client-side effective-permission cache would otherwise hand the refetch back the
+        // value it already had.
+        clearEffectivePermissionCache();
+        // Background: the grid stays on screen and each row swaps in place as its answer arrives.
+        await this.#reloadEffective(true);
+      },
+      (phase) => { this._refreshPhase = phase; },
+      [
+        UAP_EVENT_SOURCES.nodePermissions,
+        UAP_EVENT_SOURCES.access,
+      ],
+    );
   }
 
   override connectedCallback(): void {
@@ -140,6 +184,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
 
   // ── Data loading ─────────────────────────────────────────────────────────
 
+  /** Loads the verb list (grid columns) and the user-group display names used by the reasoning dialog. */
   async #loadMeta(): Promise<void> {
     try {
       const [verbs, roles] = await Promise.all([getVerbs(), getRoles()]);
@@ -157,12 +202,17 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     return this.#roleNames.get(alias) ?? alias;
   }
 
+  /** The key of the current subject (group alias or user key), or an empty string when nothing is selected. */
   get #subject(): string {
     if (this._activeSubject === 'role') return this._selectedRole?.alias ?? '';
     if (this._activeSubject === 'user') return this._selectedUser?.unique ?? '';
     return '';
   }
 
+  /**
+   * Builds the tree from scratch for the current subject and loads effective permissions for the
+   * root level. Used for the first load and whenever there is no tree to reload into.
+   */
   async #loadTree(): Promise<void> {
     if (!this.#subject) return;
 
@@ -202,8 +252,18 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   /**
    * Reloads effective permissions for all loaded nodes without rebuilding the tree.
    * Preserves expanded state and children.
+   *
+   * Two modes, because they answer different questions. A selection change (`background` false)
+   * blanks the grid and shows the loader: the rows on screen describe somebody else, so leaving
+   * them up would be wrong. A live or manual refresh (`background` true) is the same subject
+   * asked again, so the current values stay on screen, the loader stays away, and each row swaps
+   * in place only when its new answer has arrived. That keeps the reader's place on the page
+   * instead of flashing the whole grid for a refresh they never asked for.
+   * @param background True to refresh in place without any loading state.
+   * @returns A promise that resolves when done. In background mode it rejects if the refresh did
+   * not complete, so the refresh control does not claim the data was updated.
    */
-  async #reloadEffective(): Promise<void> {
+  async #reloadEffective(background = false): Promise<void> {
     if (!this.#subject || this._treeNodes.length === 0) return;
 
     // Cancel any in-flight load
@@ -211,28 +271,45 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     const controller = new AbortController();
     this.#loadAbortController = controller;
 
-    this._loading = true;
-    this._error = null;
+    let complete = true;
+    if (!background) {
+      this._loading = true;
+      this._error = null;
 
-    // Clear effective permissions on all loaded nodes
-    this.#clearEffectiveRecursive(this._treeNodes);
-    this._treeNodes = [...this._treeNodes]; // trigger re-render to show loading state
+      // Clear effective permissions on all loaded nodes
+      this.#clearEffectiveRecursive(this._treeNodes);
+      this._treeNodes = [...this._treeNodes]; // trigger re-render to show loading state
+    }
 
     try {
       // Reload effective permissions for root nodes
-      await this.#loadEffectiveBatch(this._treeNodes, controller.signal);
+      complete = (await this.#loadEffectiveBatch(this._treeNodes, controller.signal)) && complete;
       if (controller.signal.aborted) return;
 
       // Reload for any expanded children
-      await this.#reloadExpandedChildren(this._treeNodes, controller.signal);
+      complete = (await this.#reloadExpandedChildren(this._treeNodes, controller.signal)) && complete;
     } catch (err) {
       if (controller.signal.aborted) return;
       this._error = String(err);
+      if (background) throw err;
     } finally {
+      // Cleared by whichever load finishes un-superseded, background included. A background
+      // refresh aborts a selection load that was still showing the loader, and that load's own
+      // `finally` then skips clearing it, so leaving this to foreground loads would strand the
+      // grid behind the loader for good.
       if (!controller.signal.aborted) this._loading = false;
+    }
+
+    if (background && !complete && !controller.signal.aborted) {
+      throw new Error('Refreshing effective permissions failed for one or more rows.');
     }
   }
 
+  /**
+   * Blanks the effective permissions of every loaded node so a selection change never shows the
+   * previous subject's values while the new ones load.
+   * @param nodes The nodes to clear, recursing into their loaded children.
+   */
   #clearEffectiveRecursive(nodes: ViewerTreeNode[]): void {
     for (const node of nodes) {
       node.effectivePerms = null;
@@ -240,39 +317,55 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     }
   }
 
-  async #reloadExpandedChildren(nodes: ViewerTreeNode[], signal: AbortSignal): Promise<void> {
+  /**
+   * Reloads the effective permissions of every expanded node's children, depth first.
+   * @param nodes The nodes to walk.
+   * @param signal Aborts the walk when the load it belongs to is superseded.
+   * @returns True if every row loaded.
+   */
+  async #reloadExpandedChildren(nodes: ViewerTreeNode[], signal: AbortSignal): Promise<boolean> {
+    let ok = true;
     for (const node of nodes) {
       if (node.children && node.expanded) {
-        await this.#loadEffectiveBatch(node.children, signal);
-        if (signal.aborted) return;
-        await this.#reloadExpandedChildren(node.children, signal);
-        if (signal.aborted) return;
+        ok = (await this.#loadEffectiveBatch(node.children, signal)) && ok;
+        if (signal.aborted) return ok;
+        ok = (await this.#reloadExpandedChildren(node.children, signal)) && ok;
+        if (signal.aborted) return ok;
       }
     }
+    return ok;
   }
 
   /**
    * Loads effective permissions for a batch of nodes, throttled to avoid
    * flooding the server with too many simultaneous requests.
+   * @returns True if every node loaded.
    */
-  async #loadEffectiveBatch(nodes: ViewerTreeNode[], signal: AbortSignal): Promise<void> {
+  async #loadEffectiveBatch(nodes: ViewerTreeNode[], signal: AbortSignal): Promise<boolean> {
     const batchSize = 8;
+    let ok = true;
     for (let i = 0; i < nodes.length; i += batchSize) {
-      if (signal.aborted) return;
+      if (signal.aborted) return ok;
       const batch = nodes.slice(i, i + batchSize);
-      await Promise.all(batch.map((n) => this.#loadEffective(n, signal)));
+      const results = await Promise.all(batch.map((n) => this.#loadEffective(n, signal)));
+      ok = results.every(Boolean) && ok;
     }
+    return ok;
   }
 
-  async #loadEffective(node: ViewerTreeNode, signal?: AbortSignal): Promise<void> {
-    if (!this.#subject) return;
+  /**
+   * Loads one node's effective permissions and swaps them in when they arrive.
+   * @returns False if the request failed; true otherwise (including when superseded).
+   */
+  async #loadEffective(node: ViewerTreeNode, signal?: AbortSignal): Promise<boolean> {
+    if (!this.#subject) return true;
     try {
       const result =
         this._activeSubject === 'role'
           ? await getEffectiveForRole(this._selectedRole!.alias, node.key, signal)
           : await getEffectiveForUser(this._selectedUser!.unique, node.key, signal);
 
-      if (signal?.aborted) return;
+      if (signal?.aborted) return true;
 
       const permsMap = new Map<string, EffectivePermission>();
       for (const p of result.permissions) {
@@ -280,11 +373,18 @@ export class UapAccessViewerRootElement extends UmbLitElement {
       }
       node.effectivePerms = permsMap;
       this._treeNodes = [...this._treeNodes]; // trigger re-render
+      return true;
     } catch {
-      // Non-fatal: leave effectivePerms null (shows loading indicator)
+      // Non-fatal: a first load leaves effectivePerms null (shows loading indicator); a
+      // background refresh leaves the previous values in place. Reported so a refresh can say so.
+      return false;
     }
   }
 
+  /**
+   * Expands or collapses a node, fetching its children and their effective permissions the first time.
+   * @param node The node whose toggle was clicked.
+   */
   async #toggleExpand(node: ViewerTreeNode): Promise<void> {
     if (node.expanded) {
       this.#updateNode(node.key, { expanded: false });
@@ -315,13 +415,18 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     }
   }
 
-  /** Wrapper over the shared `updateNode` tree-op helper. */
+  /**
+   * Wrapper over the shared `updateNode` tree-op helper.
+   * @param key The key of the node to change.
+   * @param changes The fields to merge into it.
+   */
   #updateNode(key: string, changes: Partial<ViewerTreeNode>): void {
     this._treeNodes = updateNode(this._treeNodes, key, changes);
   }
 
   // ── Picker methods ────────────────────────────────────────────────────────
 
+  /** Lets the user pick a user group as the subject, then loads (or reloads) the grid for it. */
   async #openRolePicker(): Promise<void> {
     if (!this.#modalManager) return;
 
@@ -347,6 +452,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     }
   }
 
+  /** Lets the user pick a user as the subject, then loads (or reloads) the grid for them. */
   async #openUserPicker(): Promise<void> {
     if (!this.#modalManager) return;
 
@@ -374,6 +480,12 @@ export class UapAccessViewerRootElement extends UmbLitElement {
 
   // ── Reasoning dialog ──────────────────────────────────────────────────────
 
+  /**
+   * Opens the reasoning dialog for one cell and fills it with the inheritance path and the
+   * entries that contributed to the result.
+   * @param node The node whose cell was clicked.
+   * @param verb The verb whose cell was clicked.
+   */
   async #openReasoning(node: ViewerTreeNode, verb: string): Promise<void> {
     this._reasoningNode = node;
     this._reasoningVerb = verb;
@@ -484,6 +596,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
 
   // ── Selection panel ──────────────────────────────────────────────────────
 
+  /** The selector options for the selection panel: a user-group picker and a user picker, mutually exclusive. */
   get #selectionGroups(): UapSelectorGroup[] {
     return [
       {
@@ -505,6 +618,10 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     ];
   }
 
+  /**
+   * Routes a click on one of the selection panel's controls to its picker.
+   * @param id The id of the selector option that was clicked.
+   */
   #onSelectorClick(id: string): void {
     if (id === 'group') void this.#openRolePicker();
     else if (id === 'user') void this.#openUserPicker();
@@ -512,6 +629,14 @@ export class UapAccessViewerRootElement extends UmbLitElement {
 
   // ── Rendering ─────────────────────────────────────────────────────────────
 
+  /**
+   * Renders a level of the tree and, for expanded nodes, everything beneath it.
+   *
+   * Recursive and private, so the return type is annotated explicitly (CLAUDE.md #4).
+   * @param nodes The sibling nodes to render.
+   * @param depth The nesting depth, used for indentation.
+   * @returns One row per visible node, parents before children.
+   */
   #renderRows(nodes: ViewerTreeNode[], depth: number): TemplateResult[] {
     return nodes.flatMap((node) => [
       this.#renderRow(node, depth),
@@ -519,6 +644,12 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     ]);
   }
 
+  /**
+   * Renders one node's row: its expander, icon and name, then one effective-permission cell per verb.
+   * @param node The node to render.
+   * @param depth The nesting depth, used for indentation.
+   * @returns The table row.
+   */
   #renderRow(node: ViewerTreeNode, depth: number): TemplateResult {
     return html`
       <tr>
@@ -540,7 +671,14 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     `;
   }
 
-  #renderEffectiveCell(node: ViewerTreeNode, verb: string) {
+  /**
+   * Renders one effective-permission cell: a loading block until the node's answer has arrived,
+   * the resolved allow or deny after that.
+   * @param node The node the cell belongs to.
+   * @param verb The verb the cell is for.
+   * @returns The table cell.
+   */
+  #renderEffectiveCell(node: ViewerTreeNode, verb: string): TemplateResult {
     if (!node.effectivePerms) {
       return html`
         <td class="perm-td" title=${verb}>
@@ -579,6 +717,11 @@ export class UapAccessViewerRootElement extends UmbLitElement {
           clearLabel=${this.#localize.term('uap_clearSelection')}
           @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
           @uap-selection-clear=${() => this.#onClearSelection()}>
+          <uap-live-refresh
+            slot="actions"
+            .phase=${this._refreshPhase}
+            @uap-live-refresh=${() => void this.#liveEvents.refresh()}>
+          </uap-live-refresh>
           ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
           ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
           ${!this._loading && this._treeNodes.length > 0

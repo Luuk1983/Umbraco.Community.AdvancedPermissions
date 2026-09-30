@@ -208,5 +208,30 @@ export default {
     elementType_denyLabel: 'Deny (hidden from the Library)',
     elementType_previewInherit: 'No explicit rule. This element type is creatable in the Library by default.',
     elementType_previewSet: (action: string) => `${action} creating this element type in the Library.`,
+
+    // ── Live updates & conflicts ────────────────────────────────────────
+    liveUpdated: 'Updated just now',
+    liveRefresh: 'Refresh',
+    liveRefreshing: 'Updating…',
+    liveRefreshFailed: 'Refresh failed',
+    liveConflictTitle: 'Someone changed these permissions while you were editing',
+    liveConflictBody: '%0% of your unsaved changes collide with what is stored now. Nothing of yours has been changed.',
+    liveConflictBodyOne: 'One of your unsaved changes collides with what is stored now. Nothing of yours has been changed.',
+    liveLoadStored: 'Load stored values',
+    liveKeepMine: 'Keep my changes',
+    liveFlagLegend: 'Changed by someone else since you loaded',
+    conflictDialogTitle: 'Overwrite the stored changes?',
+    conflictDialogBody: 'Saving replaces what is stored now. %0% changes made by someone else will be lost, and this cannot be undone.',
+    conflictDialogBodyOne: 'Saving replaces what is stored now. One change made by someone else will be lost, and this cannot be undone.',
+    conflictStoredLabel: 'stored',
+    conflictYoursLabel: 'yours',
+    conflictOverwrite: 'Overwrite anyway',
+    conflictCancel: 'Cancel',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Discard unsaved changes?',
+    discardPromptBody: 'You have unsaved permission changes. If you continue, they will be discarded and cannot be recovered.',
+    discardPromptStay: 'Keep editing',
+    discardPromptConfirm: 'Discard changes',
   },
 } satisfies UmbLocalizationDictionary;

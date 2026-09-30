@@ -37,6 +37,12 @@ public sealed class ElementPermissionsPermissionController(
     /// <summary>
     /// Gets all stored element permission entries for a specific node and role.
     /// </summary>
+    /// <remarks>
+    /// The response carries an <c>ETag</c> header holding the concurrency stamp of the returned
+    /// entries, exactly as the content endpoint does. A client that later saves back what it loaded
+    /// here sends that stamp with the write; the server refuses the save if the stored entries have
+    /// moved since, rather than silently overwriting a change nobody has seen yet.
+    /// </remarks>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <param name="nodeKey">The element/folder key, or the virtual-root key for defaults.</param>
     /// <param name="roleAlias">The role alias to filter by.</param>
@@ -51,7 +57,12 @@ public sealed class ElementPermissionsPermissionController(
         string roleAlias)
     {
         var entries = await permissionService.GetEntriesAsync(nodeKey, roleAlias, cancellationToken);
-        return Ok(entries.Select(MapEntry).ToList());
+        var models = entries.Select(MapEntry).ToList();
+
+        // Computed from the mapped models — exactly what the body carries — so the stamp always
+        // describes what the client actually received.
+        Response.Headers.ETag = $"\"{models.ComputeFromResponse()}\"";
+        return Ok(models);
     }
 
     /// <summary>
@@ -73,61 +84,64 @@ public sealed class ElementPermissionsPermissionController(
     }
 
     /// <summary>
-    /// Saves (replaces) element permission entries for a node and role. Pass an empty <c>Entries</c> list
-    /// to remove all entries and revert to inherited behaviour.
+    /// Saves (replaces) element permission entries for a node and role.
+    /// Pass an empty <c>Entries</c> list to remove all entries and revert to inherited behavior.
     /// </summary>
     /// <param name="request">The entries to save.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
-    /// <returns><see cref="StatusCodes.Status200OK"/> on success.</returns>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> on success, or <see cref="StatusCodes.Status409Conflict"/>
+    /// when <see cref="SavePermissionsRequestModel.ExpectedStamp"/> no longer matches what is stored.
+    /// </returns>
     [HttpPut("element/permissions", Name = "PutElementPermissions")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<BatchSaveConflictResponseModel>(StatusCodes.Status409Conflict)]
     [EndpointSummary("Saves (replaces) element permission entries for a node and role.")]
-    public async Task<IActionResult> SavePermissions(
+    public Task<IActionResult> SavePermissions(
         [FromBody] SavePermissionsRequestModel request,
-        CancellationToken cancellationToken)
-    {
-        var mapped = new List<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>();
+        CancellationToken cancellationToken) =>
+        PermissionSaveRequests.SaveNodeAsync(
+            permissionService,
+            request,
+            AdvancedPermissionsConstants.ElementVerbs,
+            "element permission verb",
+            MapEntry,
+            cancellationToken);
 
-        foreach (var entry in request.Entries)
-        {
-            if (!Enum.TryParse<PermissionState>(entry.State, ignoreCase: true, out var state))
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Title = "Invalid state",
-                    Detail = $"'{entry.State}' is not a valid permission state. Use 'Allow' or 'Deny'.",
-                    Status = StatusCodes.Status400BadRequest,
-                });
-            }
-
-            if (!Enum.TryParse<PermissionScope>(entry.Scope, ignoreCase: true, out var scope))
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Title = "Invalid scope",
-                    Detail = $"'{entry.Scope}' is not a valid permission scope. Use 'ThisNodeOnly', 'ThisNodeAndDescendants', or 'DescendantsOnly'.",
-                    Status = StatusCodes.Status400BadRequest,
-                });
-            }
-
-            if (!AdvancedPermissionsConstants.ElementVerbs.Contains(entry.Verb, StringComparer.Ordinal))
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Title = "Invalid verb",
-                    Detail = $"'{entry.Verb}' is not a recognized element permission verb.",
-                    Status = StatusCodes.Status400BadRequest,
-                });
-            }
-
-            mapped.Add((entry.Verb, state, scope, entry.IsPriorityOverride));
-        }
-
-        await permissionService.SaveEntriesAsync(request.NodeKey, request.RoleAlias, mapped, cancellationToken);
-        return Ok();
-    }
+    /// <summary>
+    /// Replaces element permission entries for several nodes and user groups at once, refusing the
+    /// whole batch if any pair has changed since the client read it.
+    /// </summary>
+    /// <remarks>
+    /// All or nothing, deliberately. The editors change several nodes before saving, and a partial
+    /// write would leave a state nothing afterwards could interpret - not the client's, not the
+    /// server's, and not the next person's. The stamp check is made by the write itself, inside its
+    /// transaction, never in this controller.
+    /// </remarks>
+    /// <param name="request">The pairs to write, each with the stamp the client read.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> with the new stamp per pair, or
+    /// <see cref="StatusCodes.Status409Conflict"/> naming the pairs that moved.
+    /// </returns>
+    [HttpPut("element/permissions/batch", Name = "PutElementPermissionsBatch")]
+    [MapToApiVersion("1.0")]
+    [ProducesResponseType<IReadOnlyList<BatchSavedStamp>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<BatchSaveConflictResponseModel>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [EndpointSummary("Saves element permission entries for several nodes at once, all or nothing.")]
+    public Task<IActionResult> BatchSavePermissions(
+        [FromBody] BatchSavePermissionsRequestModel request,
+        CancellationToken cancellationToken) =>
+        PermissionSaveRequests.SaveNodeBatchAsync(
+            permissionService,
+            request,
+            AdvancedPermissionsConstants.ElementVerbs,
+            "element permission verb",
+            MapEntry,
+            cancellationToken);
 
     /// <summary>
     /// Gets the inheritance path from virtual root to a target node, along with all stored element

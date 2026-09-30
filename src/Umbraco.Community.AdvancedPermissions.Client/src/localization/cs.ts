@@ -196,5 +196,30 @@ export default {
     elementType_denyLabel: 'Zakázat (skryté z knihovny Library)',
     elementType_previewInherit: 'Žádné explicitní pravidlo. Tento typ elementu je ve výchozím nastavení vytvořitelný v knihovně Library.',
     elementType_previewSet: (action: string) => `${action} vytváření tohoto typu elementu v knihovně Library.`,
+
+    // ── Živé aktualizace a konflikty ────────────────────────────────────
+    liveUpdated: 'Právě aktualizováno',
+    liveRefresh: 'Obnovit',
+    liveRefreshing: 'Aktualizuje se…',
+    liveRefreshFailed: 'Aktualizace se nezdařila',
+    liveConflictTitle: 'Někdo změnil tato oprávnění, zatímco jste je upravovali',
+    liveConflictBody: '%0% vašich neuložených změn je v konfliktu s tím, co je nyní uloženo. Nic z vašich změn nebylo změněno.',
+    liveConflictBodyOne: 'Jedna z vašich neuložených změn je v konfliktu s tím, co je nyní uloženo. Nic z vašich změn nebylo změněno.',
+    liveLoadStored: 'Načíst uložené hodnoty',
+    liveKeepMine: 'Zachovat moje změny',
+    liveFlagLegend: 'Změněno někým jiným od doby, kdy jste to načetli',
+    conflictDialogTitle: 'Přepsat uložené změny?',
+    conflictDialogBody: 'Uložení nahradí to, co je nyní uloženo. %0% změn provedených někým jiným bude ztraceno, a to nelze vrátit.',
+    conflictDialogBodyOne: 'Uložení nahradí to, co je nyní uloženo. Jedna změna provedená někým jiným bude ztracena, a to nelze vrátit.',
+    conflictStoredLabel: 'uloženo',
+    conflictYoursLabel: 'vaše',
+    conflictOverwrite: 'Přesto přepsat',
+    conflictCancel: 'Zrušit',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Zahodit neuložené změny?',
+    discardPromptBody: 'Máte neuložené změny oprávnění. Pokud budete pokračovat, budou zahozeny a nelze je obnovit.',
+    discardPromptStay: 'Pokračovat v úpravách',
+    discardPromptConfirm: 'Zahodit změny',
   },
 } satisfies UmbLocalizationDictionary;

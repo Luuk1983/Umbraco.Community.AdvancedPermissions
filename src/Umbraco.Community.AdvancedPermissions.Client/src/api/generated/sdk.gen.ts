@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteElementPermissionData, DeleteElementPermissionErrors, DeleteElementPermissionResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypeAuditData, GetDocTypeAuditErrors, GetDocTypeAuditResponses, GetDocTypePathEntriesData, GetDocTypePathEntriesErrors, GetDocTypePathEntriesResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetElementChildrenData, GetElementChildrenErrors, GetElementChildrenResponses, GetElementEffectiveForCurrentUserData, GetElementEffectiveForCurrentUserErrors, GetElementEffectiveForCurrentUserResponses, GetElementEffectiveForRoleData, GetElementEffectiveForRoleErrors, GetElementEffectiveForRoleResponses, GetElementEffectiveForUserData, GetElementEffectiveForUserErrors, GetElementEffectiveForUserResponses, GetElementPermissionsByNodeData, GetElementPermissionsByNodeErrors, GetElementPermissionsByNodeResponses, GetElementPermissionsData, GetElementPermissionsErrors, GetElementPermissionsForPathData, GetElementPermissionsForPathErrors, GetElementPermissionsForPathResponses, GetElementPermissionsResponses, GetElementRootData, GetElementRootErrors, GetElementRootResponses, GetElementTypeAuditData, GetElementTypeAuditErrors, GetElementTypeAuditResponses, GetElementVerbsData, GetElementVerbsErrors, GetElementVerbsResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetLibraryElementTypesData, GetLibraryElementTypesErrors, GetLibraryElementTypesResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PutDocTypePermissionsData, PutDocTypePermissionsErrors, PutDocTypePermissionsResponses, PutElementPermissionsData, PutElementPermissionsErrors, PutElementPermissionsResponses, PutPermissionsData, PutPermissionsErrors, PutPermissionsResponses } from './types.gen';
+import type { DeleteElementPermissionData, DeleteElementPermissionErrors, DeleteElementPermissionResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypeAuditData, GetDocTypeAuditErrors, GetDocTypeAuditResponses, GetDocTypePathEntriesData, GetDocTypePathEntriesErrors, GetDocTypePathEntriesResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetElementChildrenData, GetElementChildrenErrors, GetElementChildrenResponses, GetElementEffectiveForCurrentUserData, GetElementEffectiveForCurrentUserErrors, GetElementEffectiveForCurrentUserResponses, GetElementEffectiveForRoleData, GetElementEffectiveForRoleErrors, GetElementEffectiveForRoleResponses, GetElementEffectiveForUserData, GetElementEffectiveForUserErrors, GetElementEffectiveForUserResponses, GetElementPermissionsByNodeData, GetElementPermissionsByNodeErrors, GetElementPermissionsByNodeResponses, GetElementPermissionsData, GetElementPermissionsErrors, GetElementPermissionsForPathData, GetElementPermissionsForPathErrors, GetElementPermissionsForPathResponses, GetElementPermissionsResponses, GetElementRootData, GetElementRootErrors, GetElementRootResponses, GetElementTypeAuditData, GetElementTypeAuditErrors, GetElementTypeAuditResponses, GetElementVerbsData, GetElementVerbsErrors, GetElementVerbsResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetLibraryElementTypesData, GetLibraryElementTypesErrors, GetLibraryElementTypesResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PutDocTypePermissionsBatchData, PutDocTypePermissionsBatchErrors, PutDocTypePermissionsBatchResponses, PutDocTypePermissionsData, PutDocTypePermissionsErrors, PutDocTypePermissionsResponses, PutElementPermissionsBatchData, PutElementPermissionsBatchErrors, PutElementPermissionsBatchResponses, PutElementPermissionsData, PutElementPermissionsErrors, PutElementPermissionsResponses, PutPermissionsBatchData, PutPermissionsBatchErrors, PutPermissionsBatchResponses, PutPermissionsData, PutPermissionsErrors, PutPermissionsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -47,6 +47,19 @@ export const getDocTypeAudit = <ThrowOnError extends boolean = false>(options?: 
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/audit-for-node',
     ...options
+});
+
+/**
+ * Saves doc-type permission entries for several node+role+content-type triples at once, all or nothing.
+ */
+export const putDocTypePermissionsBatch = <ThrowOnError extends boolean = false>(options: Options<PutDocTypePermissionsBatchData, ThrowOnError>) => (options.client ?? client).put<PutDocTypePermissionsBatchResponses, PutDocTypePermissionsBatchErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/batch',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -162,6 +175,19 @@ export const putElementPermissions = <ThrowOnError extends boolean = false>(opti
 });
 
 /**
+ * Saves element permission entries for several nodes at once, all or nothing.
+ */
+export const putElementPermissionsBatch = <ThrowOnError extends boolean = false>(options: Options<PutElementPermissionsBatchData, ThrowOnError>) => (options.client ?? client).put<PutElementPermissionsBatchResponses, PutElementPermissionsBatchErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/permissions/batch',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Gets all element permission entries for a node (all roles).
  */
 export const getElementPermissionsByNode = <ThrowOnError extends boolean = false>(options?: Options<GetElementPermissionsByNodeData, ThrowOnError>) => (options?.client ?? client).get<GetElementPermissionsByNodeResponses, GetElementPermissionsByNodeErrors, ThrowOnError>({
@@ -230,6 +256,19 @@ export const getPermissions = <ThrowOnError extends boolean = false>(options?: O
 export const putPermissions = <ThrowOnError extends boolean = false>(options: Options<PutPermissionsData, ThrowOnError>) => (options.client ?? client).put<PutPermissionsResponses, PutPermissionsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/management/api/v1/advanced-permissions/permissions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Saves permission entries for several nodes at once, all or nothing.
+ */
+export const putPermissionsBatch = <ThrowOnError extends boolean = false>(options: Options<PutPermissionsBatchData, ThrowOnError>) => (options.client ?? client).put<PutPermissionsBatchResponses, PutPermissionsBatchErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/permissions/batch',
     ...options,
     headers: {
         'Content-Type': 'application/json',

@@ -12,6 +12,9 @@ import type { CellInfo } from '../utils/cell-info.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
 import { UAP_USER_PICKER_MODAL } from '../access-viewer/user-picker-modal.token.js';
 import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
+import { UapSecurityEventsController, UAP_EVENT_SOURCES } from '../live/security-events.controller.js';
+import type { UapRefreshPhase } from '../live/refresh-phase.js';
+import '../live/uap-live-refresh.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
 import '../help/uap-page-intro.element.js';
@@ -35,6 +38,11 @@ const SURFACE_ID = 'library-insert-viewer';
  * Library element-type create-filtering is section-global (Umbraco supplies no parent context for
  * Library creates), so this is a flat list rather than a tree — every decision is resolved at the
  * virtual root.
+ *
+ * Reads the element-type audit, which belongs to the document-type table's element family: it
+ * answers from `Umb.Element.CreateOfType` entries, not from the element (library node) permissions
+ * the Library Access Viewer reads. It holds nothing of the user's, so a live or manual refresh
+ * just re-asks and swaps the rows in place; there is no client-side cache to drop.
  */
 @customElement('uap-library-insert-viewer-root')
 export class UapLibraryInsertViewerRootElement extends UmbLitElement {
@@ -43,19 +51,33 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
   /** Maps role alias → display name (for the reasoning dialog). */
   #roleNames = new Map<string, string>();
 
+  /** The user group being inspected, when the subject is a group. */
   @state() private _selectedRole: RoleInfo | null = null;
+  /** The user being inspected, when the subject is a user. */
   @state() private _selectedUser: UserItem | null = null;
+  /** Which subject was most recently picked; determines which audit query is made. */
   @state() private _activeSubject: 'role' | 'user' | null = null;
 
+  /** One row per library element type with whether the subject may create it; swapped in place on a refresh. */
   @state() private _rows: DocTypeAuditForNodeRow[] = [];
+  /** True only for a first load or a selection change, which hides the list behind the loader. A live refresh never sets it. */
   @state() private _loading = false;
+  /** The last load failure, shown above the list. */
   @state() private _error: string | null = null;
 
+  /** Where the refresh control is: idle, refreshing, or briefly confirming an update. */
+  @state() private _refreshPhase: UapRefreshPhase = 'idle';
+
   // ── Reasoning dialog state ─────────────────────────────────────────────────
+  /** The row whose cell opened the reasoning dialog. */
   @state() private _reasoningRow: DocTypeAuditForNodeRow | null = null;
+  /** The ancestor chain the dialog walks through; only the virtual root here. */
   @state() private _dialogPath: PathNode[] = [];
+  /** nodeKey → the user groups' entries that contributed to the result. */
   @state() private _dialogEntriesByNode: Map<string, ReasoningRoleEntries[]> = new Map();
+  /** True while the dialog's inheritance path is being fetched. */
   @state() private _dialogLoading = false;
+  /** Whether the dialog should show stars where groups at one node disagree. */
   @state() private _dialogShowStars = false;
 
   @query('uap-reasoning-dialog') private _reasoningDialog!: UapReasoningDialogElement;
@@ -63,17 +85,44 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #abort: AbortController | null = null;
 
+  /** Live-event subscription; also the entry point for the manual refresh control. */
+  #liveEvents: UapSecurityEventsController;
+
   constructor() {
     super();
     this.consumeContext(UMB_MODAL_MANAGER_CONTEXT, (ctx) => { this.#modalManager = ctx ?? undefined; });
+
+    // A viewer holds nothing of the user's, so it never asks and never flags — it just becomes
+    // correct again. The keys are ignored deliberately: a rule written on any node, or a change of
+    // group membership, can move any row, so there is no subset worth refetching.
+    // Sources: Shows which element types a subject may create, resolved from the element-type rules, so it
+    // listens for `elementTypePermissions` plus `access` (group membership and group deletion change
+    // who is covered by which rule). It must NOT listen to `docTypePermissions`: that is the
+    // Document Type editor's half of the same table. Element and folder permission writes belong to
+    // the library permission surfaces, not to this one.
+    this.#liveEvents = new UapSecurityEventsController(
+      this,
+      async () => {
+        if (!this.#subject) return;
+        // Background: the list stays on screen and the rows are swapped when the answer arrives.
+        await this.#load(true);
+      },
+      (phase) => { this._refreshPhase = phase; },
+      [
+        UAP_EVENT_SOURCES.elementTypePermissions,
+        UAP_EVENT_SOURCES.access,
+      ],
+    );
   }
 
+  /** Starts the surface: loads what it needs and restores the remembered selection. Paired with {@link disconnectedCallback}, which undoes everything started here. */
   override connectedCallback(): void {
     super.connectedCallback();
     void this.#loadMeta();
     this.#restoreSelection();
   }
 
+  /** Cancels any in-flight load, and detaches any navigation guard, so a dismounted surface does nothing on behalf of a page that is gone. */
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#abort?.abort();
@@ -110,9 +159,12 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     this._activeSubject = null;
     this._rows = [];
     this._error = null;
+    // A load aborted here never reaches its own `finally`, so the loader is cleared here.
+    this._loading = false;
     clearSelection(SURFACE_ID);
   }
 
+  /** Loads the user-group display names used by the reasoning dialog. */
   async #loadMeta(): Promise<void> {
     try {
       const roles = await getRoles();
@@ -132,7 +184,18 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
   /** Returns the role display name (used by the reasoning dialog). */
   #roleName = (alias: string): string => this.#roleNames.get(alias) ?? alias;
 
-  async #load(): Promise<void> {
+  /**
+   * Asks the server which library element types the current subject may create.
+   *
+   * Two modes, because they answer different questions. A first load or selection change
+   * (`background` false) shows the loader, since the rows on screen describe somebody else. A live
+   * or manual refresh (`background` true) asks the same question again, so the current rows stay on
+   * screen and are replaced only when the answer has arrived: no loader, no flash.
+   * @param background True to refresh in place without any loading state.
+   * @returns A promise that resolves when done. In background mode it rejects on failure, so the
+   * refresh control does not claim the data was updated.
+   */
+  async #load(background = false): Promise<void> {
     const subject = this.#subject;
     if (!subject) return;
 
@@ -140,8 +203,10 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     const controller = new AbortController();
     this.#abort = controller;
 
-    this._loading = true;
-    this._error = null;
+    if (!background) {
+      this._loading = true;
+      this._error = null;
+    }
     try {
       const result = await getElementTypeAudit(subject, controller.signal);
       if (controller.signal.aborted) return;
@@ -149,13 +214,19 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     } catch (err) {
       if (controller.signal.aborted) return;
       this._error = String(err);
+      if (background) throw err;
     } finally {
+      // Cleared by whichever load finishes un-superseded, background included. A background
+      // refresh aborts a selection load that was still showing the loader, and that load's own
+      // `finally` then skips clearing it, so leaving this to foreground loads would strand the
+      // list behind the loader for good.
       if (!controller.signal.aborted) this._loading = false;
     }
   }
 
   // ── Subject pickers ────────────────────────────────────────────────────────
 
+  /** Lets the user pick a user group as the subject, then loads the rows for it. */
   async #openRolePicker(): Promise<void> {
     if (!this.#modalManager) return;
     const modal = this.#modalManager.open(this, UAP_ROLE_PICKER_MODAL, {
@@ -170,6 +241,7 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     void this.#load();
   }
 
+  /** Lets the user pick a user as the subject, then loads the rows for them. */
   async #openUserPicker(): Promise<void> {
     if (!this.#modalManager) return;
     const modal = this.#modalManager.open(this, UAP_USER_PICKER_MODAL, {
@@ -186,6 +258,11 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
 
   // ── Reasoning dialog ─────────────────────────────────────────────────────
 
+  /**
+   * Opens the reasoning dialog for one element type and fills it with the entries that contributed
+   * to the result.
+   * @param row The audit row whose cell was clicked.
+   */
   async #openReasoning(row: DocTypeAuditForNodeRow): Promise<void> {
     this._reasoningRow = row;
     this._dialogPath = [];
@@ -261,6 +338,7 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     }
   }
 
+  /** Resets the dialog state when the user closes the reasoning dialog. */
   #onReasoningClose = (): void => {
     this._reasoningRow = null;
     this._dialogPath = [];
@@ -268,7 +346,10 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     this._dialogShowStars = false;
   };
 
-  /** The effective permission shown in the reasoning dialog banner. */
+  /**
+   * The effective permission shown in the reasoning dialog banner.
+   * @returns The open row's result shaped as an effective permission, or `null` when no row is open.
+   */
   #currentEffective() {
     const row = this._reasoningRow;
     if (!row) return null;
@@ -282,6 +363,10 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     };
   }
 
+  /**
+   * The subject's display name for the reasoning dialog banner.
+   * @returns The group or user name, or an empty string when nothing is selected.
+   */
   #currentSubjectName(): string {
     if (this._activeSubject === 'role') return this._selectedRole?.name ?? '';
     if (this._activeSubject === 'user') return this._selectedUser?.name ?? '';
@@ -290,6 +375,7 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
 
   // ── Selection panel ──────────────────────────────────────────────────────
 
+  /** The selector options for the selection panel: a user-group picker and a user picker, mutually exclusive. */
   get #selectionGroups(): UapSelectorGroup[] {
     return [
       {
@@ -311,6 +397,10 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     ];
   }
 
+  /**
+   * Routes a click on one of the selection panel's controls to its picker.
+   * @param id The id of the selector option that was clicked.
+   */
   #onSelectorClick(id: string): void {
     if (id === 'group') void this.#openRolePicker();
     else if (id === 'user') void this.#openUserPicker();
@@ -318,6 +408,7 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
 
   // ── Rendering ────────────────────────────────────────────────────────────
 
+  /** Renders the surface: the selection panel with its actions and grid, plus the dialogs that must layer above it. */
   override render(): TemplateResult {
     return html`
       <umb-body-layout headline=${this.#localize.term('uap_libraryInsertViewer_headline')}>
@@ -331,6 +422,11 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
           clearLabel=${this.#localize.term('uap_clearSelection')}
           @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
           @uap-selection-clear=${() => this.#onClearSelection()}>
+          <uap-live-refresh
+            slot="actions"
+            .phase=${this._refreshPhase}
+            @uap-live-refresh=${() => void this.#liveEvents.refresh()}>
+          </uap-live-refresh>
           ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
           ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
           ${!this._loading
@@ -364,6 +460,11 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     `;
   }
 
+  /**
+   * Renders one element type's row with its resolved allow or deny.
+   * @param row The audit row to render.
+   * @returns The row.
+   */
   #renderRow(row: DocTypeAuditForNodeRow): TemplateResult {
     const cls: 'allow' | 'deny' = row.isAllowed ? 'allow' : 'deny';
     const wasOverride = row.wasPriorityOverrideActive === true;

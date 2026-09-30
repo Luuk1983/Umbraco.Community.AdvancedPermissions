@@ -14,6 +14,7 @@ using Umbraco.Community.AdvancedPermissions.Data.Migrations;
 using Umbraco.Community.AdvancedPermissions.Filters;
 using Umbraco.Community.AdvancedPermissions.Migrations;
 using Umbraco.Community.AdvancedPermissions.Notifications;
+using Umbraco.Community.AdvancedPermissions.ServerEvents;
 using Umbraco.Community.AdvancedPermissions.Services;
 
 namespace Umbraco.Community.AdvancedPermissions.Composing;
@@ -124,6 +125,12 @@ public sealed class AdvancedPermissionsComposer : IComposer
         builder.Services.AddSingleton<IElementNodePermissionService, ElementNodePermissionService>();
         builder.Services.AddUnique<IElementPermissionService, AdvancedElementPermissionService>();
         builder.Services.AddUnique<IElementContainerPermissionService, AdvancedElementContainerPermissionService>();
+
+        // Server events: publish this package's changes on Umbraco's built-in hub. The authorizer
+        // is what makes the sources reachable at all - core delivers no source that no authorizer
+        // claims - so this line and AdvancedPermissionsEventAuthorizer are the whole access story.
+        // One authorizer claims every source, so there is no second list to fall out of step.
+        builder.EventSourceAuthorizers().Append<AdvancedPermissionsEventAuthorizer>();
     }
 
     /// <summary>
@@ -188,6 +195,29 @@ public sealed class AdvancedPermissionsComposer : IComposer
         builder.AddNotificationAsyncHandler<ElementDeletedNotification, ElementPermissionCleanup>();
         builder.AddNotificationAsyncHandler<EntityContainerDeletedNotification, ElementPermissionCleanup>();
         builder.AddNotificationAsyncHandler<UserGroupDeletedNotification, ElementPermissionCleanup>();
+
+        // Server-event handlers. Registered LAST, and that position is load-bearing: Umbraco runs
+        // the handlers for one notification in registration order, and every notification below that
+        // Umbraco raises is also handled by a cache invalidator above. A client that refetched on an
+        // event which overtook its invalidation would read the snapshot the change replaced - and,
+        // having consumed its one notification, would never ask again. Do not move these up, and add
+        // any new handler above this block, not below it. ServerEventRegistrationTests fails if either
+        // handler is registered before any other handler of the same notification.
+        builder.AddNotificationAsyncHandler<AdvancedPermissionsChangedNotification, AdvancedPermissionsServerEventHandler>();
+        builder.AddNotificationAsyncHandler<ElementPermissionsChangedNotification, AdvancedPermissionsServerEventHandler>();
+        builder.AddNotificationAsyncHandler<DocTypePermissionsChangedNotification, AdvancedPermissionsServerEventHandler>();
+        builder.AddNotificationAsyncHandler<UserGroupSavedNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<UserGroupDeletedNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<UserSavedNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<ContentMovedNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<ContentMovedToRecycleBinNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<ContentDeletedNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<ElementMovedNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<ElementMovedToRecycleBinNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<ElementDeletedNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<EntityContainerMovedNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<EntityContainerMovedToRecycleBinNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<EntityContainerDeletedNotification, AccessServerEventHandler>();
     }
 
     /// <summary>

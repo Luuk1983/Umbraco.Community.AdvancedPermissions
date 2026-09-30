@@ -195,5 +195,30 @@ export default {
     elementType_denyLabel: '거부 (라이브러리에서 숨김)',
     elementType_previewInherit: '명시적 규칙이 없습니다. 이 요소 유형은 기본적으로 라이브러리에서 생성 가능합니다.',
     elementType_previewSet: (action: string) => `라이브러리에서 이 요소 유형 생성을 ${action}.`,
+
+    // ── Live updates & conflicts ────────────────────────────────────────
+    liveUpdated: '방금 업데이트됨',
+    liveRefresh: '새로고침',
+    liveRefreshing: '업데이트 중…',
+    liveRefreshFailed: '업데이트하지 못했습니다',
+    liveConflictTitle: '편집하는 동안 다른 사람이 이 권한을 변경했습니다',
+    liveConflictBody: '저장되지 않은 변경사항 중 %0%개가 현재 저장된 내용과 충돌합니다. 사용자의 변경사항은 변경되지 않았습니다.',
+    liveConflictBodyOne: '저장되지 않은 변경사항 중 하나가 현재 저장된 내용과 충돌합니다. 사용자의 변경사항은 변경되지 않았습니다.',
+    liveLoadStored: '저장된 값 불러오기',
+    liveKeepMine: '내 변경사항 유지',
+    liveFlagLegend: '불러온 이후 다른 사람이 변경함',
+    conflictDialogTitle: '저장된 변경사항을 덮어쓰시겠습니까?',
+    conflictDialogBody: '저장하면 현재 저장된 내용이 대체됩니다. 다른 사람이 변경한 %0%개의 변경사항이 손실되며, 이 작업은 취소할 수 없습니다.',
+    conflictDialogBodyOne: '저장하면 현재 저장된 내용이 대체됩니다. 다른 사람이 변경한 변경사항 1개가 손실되며, 이 작업은 취소할 수 없습니다.',
+    conflictStoredLabel: '저장됨',
+    conflictYoursLabel: '내 것',
+    conflictOverwrite: '그래도 덮어쓰기',
+    conflictCancel: '취소',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: '저장되지 않은 변경 사항을 취소할까요?',
+    discardPromptBody: '저장되지 않은 권한 변경 사항이 있습니다. 계속하면 변경 사항이 취소되며 복구할 수 없습니다.',
+    discardPromptStay: '계속 편집',
+    discardPromptConfirm: '변경 사항 취소',
   },
 } satisfies UmbLocalizationDictionary;

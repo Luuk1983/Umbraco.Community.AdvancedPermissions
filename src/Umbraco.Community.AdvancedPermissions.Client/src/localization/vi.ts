@@ -195,5 +195,30 @@ export default {
     elementType_denyLabel: 'Từ chối (ẩn khỏi Library)',
     elementType_previewInherit: 'Không có quy tắc rõ ràng. Loại phần tử này có thể tạo trong Library theo mặc định.',
     elementType_previewSet: (action: string) => `${action} tạo loại phần tử này trong Library.`,
+
+    // ── Live updates & conflicts ────────────────────────────────────────
+    liveUpdated: 'Vừa được cập nhật',
+    liveRefresh: 'Làm mới',
+    liveRefreshing: 'Đang cập nhật…',
+    liveRefreshFailed: 'Cập nhật không thành công',
+    liveConflictTitle: 'Ai đó đã thay đổi các quyền này trong khi bạn đang chỉnh sửa',
+    liveConflictBody: '%0% thay đổi chưa lưu của bạn xung đột với dữ liệu đang được lưu hiện tại. Không có thay đổi nào của bạn bị thay đổi.',
+    liveConflictBodyOne: 'Một trong các thay đổi chưa lưu của bạn xung đột với dữ liệu đang được lưu hiện tại. Không có thay đổi nào của bạn bị thay đổi.',
+    liveLoadStored: 'Tải các giá trị đã lưu',
+    liveKeepMine: 'Giữ thay đổi của tôi',
+    liveFlagLegend: 'Đã bị người khác thay đổi từ khi bạn tải',
+    conflictDialogTitle: 'Ghi đè các thay đổi đã lưu?',
+    conflictDialogBody: 'Việc lưu sẽ thay thế dữ liệu đang được lưu hiện tại. %0% thay đổi do người khác thực hiện sẽ bị mất và không thể hoàn tác.',
+    conflictDialogBodyOne: 'Việc lưu sẽ thay thế dữ liệu đang được lưu hiện tại. Một thay đổi do người khác thực hiện sẽ bị mất và không thể hoàn tác.',
+    conflictStoredLabel: 'đã lưu',
+    conflictYoursLabel: 'của bạn',
+    conflictOverwrite: 'Vẫn ghi đè',
+    conflictCancel: 'Hủy',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Hủy các thay đổi chưa lưu?',
+    discardPromptBody: 'Bạn có các thay đổi quyền chưa được lưu. Nếu tiếp tục, các thay đổi sẽ bị hủy và không thể khôi phục.',
+    discardPromptStay: 'Tiếp tục chỉnh sửa',
+    discardPromptConfirm: 'Hủy thay đổi',
   },
 } satisfies UmbLocalizationDictionary;

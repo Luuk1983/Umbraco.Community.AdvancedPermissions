@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
@@ -5,20 +6,25 @@ using Umbraco.Community.AdvancedPermissions.Controllers;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Concurrency;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
+using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 
 namespace Umbraco.Community.AdvancedPermissions.Tests;
 
 /// <summary>
-/// Tests the doc-type batch save endpoint: the concurrency check, the shape of the refusal, the
-/// force bypass, and that a refused batch writes nothing at all.
+/// Tests the doc-type batch save endpoint's handling of the concurrency check: what it forwards to
+/// the service, and how the <see cref="DocTypePermissionConcurrencyException"/> the write raises
+/// becomes the 409 the client is written against.
 /// </summary>
 /// <remarks>
-/// Mirrors <see cref="BatchSavePermissionsTests"/>, but every key is a triple — node, user group
-/// AND document type — rather than a pair. Test case 3 exists specifically to catch a two-part key
-/// used where the three-part triple belongs: two entries sharing a node and role but differing only
-/// by content type must be treated as two distinct triples, never collapsed into one.
+/// Mirrors <see cref="BatchSavePermissionsTests"/>, including its reason for existing in this shape:
+/// the check moved into the repository's write transaction, so these tests drive the conflict by
+/// having a substitute service throw. The one structural difference is that every key is a triple —
+/// node, user group AND document type — rather than a pair. The multi-conflict test exists
+/// specifically to catch a two-part key used where the three-part triple belongs: two conflicts
+/// sharing a node and role but differing only by content type must both survive to the response,
+/// each carrying its own <c>contentTypeKey</c>.
 /// </remarks>
 public sealed class DocTypeBatchSaveTests
 {
@@ -45,21 +51,44 @@ public sealed class DocTypeBatchSaveTests
             Scope: PermissionScope.ThisNodeOnly,
             IsPriorityOverride: false);
 
-    /// <summary>Computes the stamp a stored set of doc-type entries would carry over the wire.</summary>
-    /// <param name="entries">The entries to hash.</param>
-    /// <returns>The stamp, as lowercase hex.</returns>
-    private static string StampOf(IEnumerable<DocTypePermissionEntry> entries) =>
-        PermissionStamp.ComputeFromNames(
-            entries.Select(e => (e.Verb, e.State.ToString(), e.Scope.ToString(), e.IsPriorityOverride)));
+    /// <summary>Builds the conflict a repository would report for a triple whose entries moved.</summary>
+    /// <param name="contentTypeKey">The conflicted content type.</param>
+    /// <param name="current">What is stored now.</param>
+    /// <returns>The conflict, carrying the stamp of <paramref name="current"/>.</returns>
+    private static DocTypePermissionConflict ConflictFor(Guid contentTypeKey, params DocTypePermissionEntry[] current) =>
+        new(NodeA, "editors", contentTypeKey, current, PermissionStamp.ComputeForDocType(current));
 
-    /// <summary>A matching stamp saves, and the write reaches the service as one batch.</summary>
+    /// <summary>
+    /// Makes every batch write on the substitute fail the way the repository fails when a triple's
+    /// stored entries no longer match its expected stamp.
+    /// </summary>
+    /// <param name="service">The substitute service.</param>
+    /// <param name="conflicts">The conflicts to report.</param>
+    private static void SaveManyConflictsWith(IDocTypePermissionService service, params DocTypePermissionConflict[] conflicts) =>
+        service
+            .SaveManyAsync(Arg.Any<IReadOnlyList<(Guid, string, Guid, IReadOnlyList<(string, PermissionState, PermissionScope, bool)>, string?)>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new DocTypePermissionConcurrencyException(conflicts)));
+
+    /// <summary>
+    /// Reads back the expected stamps the controller forwarded on its one batch write, in batch order.
+    /// </summary>
+    /// <param name="service">The substitute service.</param>
+    /// <returns>The forwarded stamps, one per triple.</returns>
+    private static IReadOnlyList<string?> ForwardedBatchStamps(IDocTypePermissionService service)
+    {
+        var call = Assert.Single(
+            service.ReceivedCalls(),
+            c => c.GetMethodInfo().Name == nameof(IDocTypePermissionService.SaveManyAsync));
+        var batch = Assert.IsAssignableFrom<IReadOnlyList<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)>>(
+            call.GetArguments()[0]);
+        return batch.Select(b => b.ExpectedStamp).ToList();
+    }
+
+    /// <summary>A save with stamps writes, and each triple's stamp reaches the service with the batch.</summary>
     [Fact]
-    public async Task BatchSave_MatchingStamp_Saves()
+    public async Task BatchSave_ForwardsExpectedStampsToTheService()
     {
         var service = Substitute.For<IDocTypePermissionService>();
-        var stored = new[] { Stored(NodeA, ContentTypeA) };
-        service.GetEditorEntriesAsync("editors", ContentTypeA, Arg.Any<CancellationToken>()).Returns(stored);
-
         var controller = BuildController(service);
         var request = new BatchSaveDocTypePermissionsRequestModel(
         [
@@ -68,25 +97,39 @@ public sealed class DocTypeBatchSaveTests
                 "editors",
                 ContentTypeA,
                 [new SavePermissionEntryItem(AdvancedPermissionsConstants.VerbCreateOfType, "Deny", "ThisNodeOnly")],
-                StampOf(stored)),
+                "stamp-a"),
+            new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeB, [], ExpectedStamp: null),
         ]);
 
         var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
-        await service.Received(1).SaveManyAsync(
-            Arg.Any<IReadOnlyList<(Guid, string, Guid, IReadOnlyList<(string, PermissionState, PermissionScope, bool)>)>>(),
-            Arg.Any<CancellationToken>());
+        Assert.Equal(["stamp-a", null], ForwardedBatchStamps(service));
     }
 
-    /// <summary>A stale stamp is refused with 409, and nothing is written.</summary>
+    /// <summary>
+    /// The controller performs no check of its own. Reading the stored entries first would be the
+    /// racy pre-check this design replaced.
+    /// </summary>
     [Fact]
-    public async Task BatchSave_StaleStamp_Returns409AndWritesNothing()
+    public async Task BatchSave_DoesNotReadStoredEntriesItself()
     {
         var service = Substitute.For<IDocTypePermissionService>();
-        service.GetEditorEntriesAsync("editors", ContentTypeA, Arg.Any<CancellationToken>())
-            .Returns(new[] { Stored(NodeA, ContentTypeA, PermissionState.Deny) });
+        var controller = BuildController(service);
+        var request = new BatchSaveDocTypePermissionsRequestModel(
+            [new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeA, [], "some-stamp")]);
 
+        await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
+
+        await service.DidNotReceiveWithAnyArgs().GetEditorEntriesAsync(default!, default, default);
+    }
+
+    /// <summary>A stale stamp — the write reports a conflict — is refused with 409 carrying what is stored now.</summary>
+    [Fact]
+    public async Task BatchSave_WriteReportsConflict_Returns409WithCurrentEntries()
+    {
+        var service = Substitute.For<IDocTypePermissionService>();
+        SaveManyConflictsWith(service, ConflictFor(ContentTypeA, Stored(NodeA, ContentTypeA, PermissionState.Deny)));
         var controller = BuildController(service);
         var request = new BatchSaveDocTypePermissionsRequestModel(
         [
@@ -95,7 +138,7 @@ public sealed class DocTypeBatchSaveTests
                 "editors",
                 ContentTypeA,
                 [new SavePermissionEntryItem(AdvancedPermissionsConstants.VerbCreateOfType, "Allow", "ThisNodeOnly")],
-                StampOf([Stored(NodeA, ContentTypeA)])),
+                PermissionStamp.ComputeForDocType([Stored(NodeA, ContentTypeA)])),
         ]);
 
         var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
@@ -107,55 +150,44 @@ public sealed class DocTypeBatchSaveTests
         Assert.Equal(ContentTypeA, conflicts[0].ContentTypeKey);
         Assert.Single(conflicts[0].CurrentEntries);
         Assert.Equal("Deny", conflicts[0].CurrentEntries[0].State);
-
-        await service.DidNotReceive().SaveManyAsync(
-            Arg.Any<IReadOnlyList<(Guid, string, Guid, IReadOnlyList<(string, PermissionState, PermissionScope, bool)>)>>(),
-            Arg.Any<CancellationToken>());
+        Assert.Equal(
+            PermissionStamp.ComputeForDocType([Stored(NodeA, ContentTypeA, PermissionState.Deny)]),
+            conflicts[0].CurrentStamp);
     }
 
     /// <summary>
-    /// Two triples sharing a node and role but differing only by content type: one fresh, one
-    /// stale. The whole batch is refused and only the stale triple is listed. If the content type
-    /// were dropped from any key comparison, these two triples would collapse into one and this
-    /// test would fail — either by missing the conflict entirely or by reporting the wrong triple.
+    /// Two conflicted triples sharing a node and role but differing only by content type both reach
+    /// the client, each under its own content type. If the content type were dropped from the
+    /// exception-to-response mapping, both would read as the same triple.
     /// </summary>
     [Fact]
-    public async Task BatchSave_OneStalePair_RefusesWholeBatch()
+    public async Task BatchSave_WriteReportsConflictsForTwoContentTypes_ReturnsBothAsDistinctTriples()
     {
         var service = Substitute.For<IDocTypePermissionService>();
-        var freshA = new[] { Stored(NodeA, ContentTypeA) };
-        service.GetEditorEntriesAsync("editors", ContentTypeA, Arg.Any<CancellationToken>()).Returns(freshA);
-        service.GetEditorEntriesAsync("editors", ContentTypeB, Arg.Any<CancellationToken>())
-            .Returns(new[] { Stored(NodeA, ContentTypeB, PermissionState.Deny) });
-
+        SaveManyConflictsWith(
+            service,
+            ConflictFor(ContentTypeA, Stored(NodeA, ContentTypeA, PermissionState.Deny)),
+            ConflictFor(ContentTypeB));
         var controller = BuildController(service);
         var request = new BatchSaveDocTypePermissionsRequestModel(
         [
-            new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeA, [], StampOf(freshA)),
-            new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeB, [], StampOf([])),
+            new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeA, [], "stale"),
+            new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeB, [], "stale"),
         ]);
 
         var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
 
-        var conflict = Assert.IsType<ConflictObjectResult>(result);
-        var conflicts = ConflictsOf(conflict);
-        Assert.Single(conflicts);
-        Assert.Equal(NodeA, conflicts[0].NodeKey);
-        Assert.Equal(ContentTypeB, conflicts[0].ContentTypeKey);
-
-        await service.DidNotReceive().SaveManyAsync(
-            Arg.Any<IReadOnlyList<(Guid, string, Guid, IReadOnlyList<(string, PermissionState, PermissionScope, bool)>)>>(),
-            Arg.Any<CancellationToken>());
+        var conflicts = ConflictsOf(Assert.IsType<ConflictObjectResult>(result));
+        Assert.Equal([ContentTypeA, ContentTypeB], conflicts.Select(c => c.ContentTypeKey));
+        Assert.Single(conflicts[0].CurrentEntries);
+        Assert.Empty(conflicts[1].CurrentEntries);
     }
 
-    /// <summary>Force writes through a stale stamp without asking.</summary>
+    /// <summary>Force withholds every stamp, so the write skips the check and overwrites whatever is stored.</summary>
     [Fact]
-    public async Task BatchSave_Force_SavesDespiteStaleStamp()
+    public async Task BatchSave_Force_ForwardsNoStamps()
     {
         var service = Substitute.For<IDocTypePermissionService>();
-        service.GetEditorEntriesAsync("editors", ContentTypeA, Arg.Any<CancellationToken>())
-            .Returns(new[] { Stored(NodeA, ContentTypeA, PermissionState.Deny) });
-
         var controller = BuildController(service);
         var request = new BatchSaveDocTypePermissionsRequestModel(
             [new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeA, [], "a-stamp-that-does-not-match")],
@@ -164,19 +196,14 @@ public sealed class DocTypeBatchSaveTests
         var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
-        await service.Received(1).SaveManyAsync(
-            Arg.Any<IReadOnlyList<(Guid, string, Guid, IReadOnlyList<(string, PermissionState, PermissionScope, bool)>)>>(),
-            Arg.Any<CancellationToken>());
+        Assert.Equal<string?>([null], ForwardedBatchStamps(service));
     }
 
-    /// <summary>A null stamp means an older client, which keeps its previous behaviour.</summary>
+    /// <summary>A null stamp means an older client, which keeps its previous behaviour: no check, a plain write.</summary>
     [Fact]
-    public async Task BatchSave_NullStamp_SkipsCheck()
+    public async Task BatchSave_NullStamp_ForwardsNoStamp()
     {
         var service = Substitute.For<IDocTypePermissionService>();
-        service.GetEditorEntriesAsync("editors", ContentTypeA, Arg.Any<CancellationToken>())
-            .Returns(new[] { Stored(NodeA, ContentTypeA, PermissionState.Deny) });
-
         var controller = BuildController(service);
         var request = new BatchSaveDocTypePermissionsRequestModel(
             [new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeA, [], ExpectedStamp: null)]);
@@ -184,9 +211,10 @@ public sealed class DocTypeBatchSaveTests
         var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
+        Assert.Equal<string?>([null], ForwardedBatchStamps(service));
     }
 
-    /// <summary>An unrecognised verb is still rejected as a bad request, before any stamp work.</summary>
+    /// <summary>An unrecognised verb is still rejected as a bad request, before any write is attempted.</summary>
     [Fact]
     public async Task BatchSave_InvalidVerb_ReturnsBadRequest()
     {
@@ -204,6 +232,7 @@ public sealed class DocTypeBatchSaveTests
         var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(result);
+        Assert.DoesNotContain(service.ReceivedCalls(), c => c.GetMethodInfo().Name == nameof(IDocTypePermissionService.SaveManyAsync));
     }
 
     /// <summary>
@@ -215,16 +244,14 @@ public sealed class DocTypeBatchSaveTests
     /// can never open.
     /// </summary>
     [Fact]
-    public async Task BatchSave_StaleStamp_409BodySurvivesUmbracoInterceptor()
+    public async Task BatchSave_Conflict_409BodySurvivesUmbracoInterceptor()
     {
         var service = Substitute.For<IDocTypePermissionService>();
-        service.GetEditorEntriesAsync("editors", ContentTypeA, Arg.Any<CancellationToken>())
-            .Returns(new[] { Stored(NodeA, ContentTypeA, PermissionState.Deny) });
-
+        SaveManyConflictsWith(service, ConflictFor(ContentTypeA, Stored(NodeA, ContentTypeA, PermissionState.Deny)));
         var controller = BuildController(service);
         var request = new BatchSaveDocTypePermissionsRequestModel(
         [
-            new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeA, [], StampOf([])),
+            new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeA, [], PermissionStamp.ComputeForDocType([])),
         ]);
 
         var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
@@ -237,6 +264,175 @@ public sealed class DocTypeBatchSaveTests
         Assert.Equal(StatusCodes.Status409Conflict, conflict.StatusCode);
         Assert.True(problem.Extensions.ContainsKey("conflicts"));
         Assert.Single(ConflictsOf(conflict));
+    }
+
+    /// <summary>
+    /// Serialised the way the Management API writes it, the 409 body carries <c>type</c>,
+    /// <c>title</c> and <c>status</c> at the top level alongside <c>conflicts</c>, and each
+    /// conflict keeps the property names the client reads.
+    /// </summary>
+    [Fact]
+    public async Task BatchSave_Conflict_409JsonIsFlatProblemDetailsWithConflicts()
+    {
+        var service = Substitute.For<IDocTypePermissionService>();
+        SaveManyConflictsWith(service, ConflictFor(ContentTypeA, Stored(NodeA, ContentTypeA, PermissionState.Deny)));
+        var controller = BuildController(service);
+        var request = new BatchSaveDocTypePermissionsRequestModel(
+            [new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeA, [], PermissionStamp.ComputeForDocType([]))]);
+
+        var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        var json = JsonSerializer.SerializeToElement(conflict.Value, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.Equal(JsonValueKind.String, json.GetProperty("type").ValueKind);
+        Assert.Equal(JsonValueKind.String, json.GetProperty("title").ValueKind);
+        Assert.Equal(StatusCodes.Status409Conflict, json.GetProperty("status").GetInt32());
+        var conflicts = json.GetProperty("conflicts");
+        Assert.Equal(JsonValueKind.Array, conflicts.ValueKind);
+        Assert.Equal(NodeA, conflicts[0].GetProperty("nodeKey").GetGuid());
+        Assert.Equal("editors", conflicts[0].GetProperty("roleAlias").GetString());
+        Assert.Equal(ContentTypeA, conflicts[0].GetProperty("contentTypeKey").GetGuid());
+        Assert.Equal("Deny", conflicts[0].GetProperty("currentEntries")[0].GetProperty("state").GetString());
+        Assert.Equal(
+            PermissionStamp.ComputeForDocType([Stored(NodeA, ContentTypeA, PermissionState.Deny)]),
+            conflicts[0].GetProperty("currentStamp").GetString());
+    }
+
+    /// <summary>The single-triple save forwards its stamp to the service instead of checking it itself.</summary>
+    [Fact]
+    public async Task Save_ForwardsExpectedStampAndReadsNothing()
+    {
+        var service = Substitute.For<IDocTypePermissionService>();
+        var controller = BuildController(service);
+        var request = new SaveDocTypePermissionsRequestModel(NodeA, "editors", ContentTypeA, [], "the-stamp");
+
+        var result = await controller.Save(request, CancellationToken.None);
+
+        Assert.IsType<OkResult>(result);
+        await service.Received(1).SaveEditorEntriesAsync(
+            NodeA, "editors", ContentTypeA, Arg.Any<IEnumerable<(string, PermissionState, PermissionScope, bool)>>(), "the-stamp", Arg.Any<CancellationToken>());
+        await service.DidNotReceiveWithAnyArgs().GetEditorEntriesAsync(default!, default, default);
+    }
+
+    /// <summary>Force on the single-triple save withholds the stamp, so the write skips the check.</summary>
+    [Fact]
+    public async Task Save_Force_ForwardsNoStamp()
+    {
+        var service = Substitute.For<IDocTypePermissionService>();
+        var controller = BuildController(service);
+        var request = new SaveDocTypePermissionsRequestModel(NodeA, "editors", ContentTypeA, [], "the-stamp", Force: true);
+
+        var result = await controller.Save(request, CancellationToken.None);
+
+        Assert.IsType<OkResult>(result);
+        await service.Received(1).SaveEditorEntriesAsync(
+            NodeA, "editors", ContentTypeA, Arg.Any<IEnumerable<(string, PermissionState, PermissionScope, bool)>>(), null, Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>A request that omits the stamp — a caller written before stamps existed — is written without a check.</summary>
+    [Fact]
+    public async Task Save_NullStamp_ForwardsNoStamp()
+    {
+        var service = Substitute.For<IDocTypePermissionService>();
+        var controller = BuildController(service);
+        var request = new SaveDocTypePermissionsRequestModel(NodeA, "editors", ContentTypeA, []);
+
+        var result = await controller.Save(request, CancellationToken.None);
+
+        Assert.IsType<OkResult>(result);
+        await service.Received(1).SaveEditorEntriesAsync(
+            NodeA, "editors", ContentTypeA, Arg.Any<IEnumerable<(string, PermissionState, PermissionScope, bool)>>(), null, Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>An unrecognised verb is still rejected as a bad request, before any write is attempted.</summary>
+    [Fact]
+    public async Task Save_InvalidVerb_ReturnsBadRequestWithoutWriting()
+    {
+        var service = Substitute.For<IDocTypePermissionService>();
+        var controller = BuildController(service);
+        var request = new SaveDocTypePermissionsRequestModel(
+            NodeA, "editors", ContentTypeA, [new SavePermissionEntryItem("Not.A.Real.Verb", "Allow", "ThisNodeOnly")], "the-stamp");
+
+        var result = await controller.Save(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.DoesNotContain(service.ReceivedCalls(), c => c.GetMethodInfo().Name == nameof(IDocTypePermissionService.SaveEditorEntriesAsync));
+    }
+
+    /// <summary>
+    /// The single-triple save returns the same interceptor-safe ProblemDetails shape as the batch
+    /// endpoint when the write reports a conflict, with <c>Type</c>, <c>Title</c> and <c>Status</c>
+    /// populated, because otherwise Umbraco replaces the body and the conflict dialog can never open.
+    /// </summary>
+    [Fact]
+    public async Task Save_Conflict_409BodySurvivesUmbracoInterceptor()
+    {
+        var service = Substitute.For<IDocTypePermissionService>();
+        service
+            .SaveEditorEntriesAsync(
+                Arg.Any<Guid>(),
+                Arg.Any<string>(),
+                Arg.Any<Guid>(),
+                Arg.Any<IEnumerable<(string, PermissionState, PermissionScope, bool)>>(),
+                Arg.Any<string?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new DocTypePermissionConcurrencyException(
+                [ConflictFor(ContentTypeA, Stored(NodeA, ContentTypeA, PermissionState.Deny))])));
+        var controller = BuildController(service);
+        var request = new SaveDocTypePermissionsRequestModel(NodeA, "editors", ContentTypeA, [], PermissionStamp.ComputeForDocType([]));
+
+        var result = await controller.Save(request, CancellationToken.None);
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        var problem = Assert.IsType<ProblemDetails>(conflict.Value);
+        Assert.False(string.IsNullOrWhiteSpace(problem.Type));
+        Assert.False(string.IsNullOrWhiteSpace(problem.Title));
+        Assert.Equal(StatusCodes.Status409Conflict, problem.Status);
+        Assert.Equal(StatusCodes.Status409Conflict, conflict.StatusCode);
+        var conflicts = ConflictsOf(conflict);
+        Assert.Single(conflicts);
+        Assert.Equal(NodeA, conflicts[0].NodeKey);
+        Assert.Equal(ContentTypeA, conflicts[0].ContentTypeKey);
+        Assert.Equal("Deny", conflicts[0].CurrentEntries[0].State);
+    }
+
+    /// <summary>
+    /// The single-triple 409, serialised the way the Management API writes it, is the same flat
+    /// ProblemDetails as the batch endpoint's: <c>type</c>, <c>title</c>, <c>status</c> and
+    /// <c>conflicts</c> at the top level, each conflict carrying its <c>contentTypeKey</c>.
+    /// </summary>
+    [Fact]
+    public async Task Save_Conflict_409JsonIsFlatProblemDetailsWithConflicts()
+    {
+        var service = Substitute.For<IDocTypePermissionService>();
+        service
+            .SaveEditorEntriesAsync(
+                Arg.Any<Guid>(),
+                Arg.Any<string>(),
+                Arg.Any<Guid>(),
+                Arg.Any<IEnumerable<(string, PermissionState, PermissionScope, bool)>>(),
+                Arg.Any<string?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new DocTypePermissionConcurrencyException(
+                [ConflictFor(ContentTypeA, Stored(NodeA, ContentTypeA, PermissionState.Deny))])));
+        var controller = BuildController(service);
+        var request = new SaveDocTypePermissionsRequestModel(NodeA, "editors", ContentTypeA, [], PermissionStamp.ComputeForDocType([]));
+
+        var result = await controller.Save(request, CancellationToken.None);
+
+        var problem = Assert.IsType<ProblemDetails>(Assert.IsType<ConflictObjectResult>(result).Value);
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var json = JsonSerializer.SerializeToElement(problem, options);
+        Assert.Equal(JsonValueKind.String, json.GetProperty("type").ValueKind);
+        Assert.Equal(JsonValueKind.String, json.GetProperty("title").ValueKind);
+        Assert.Equal(StatusCodes.Status409Conflict, json.GetProperty("status").GetInt32());
+        var conflicts = json.GetProperty("conflicts");
+        Assert.Equal(JsonValueKind.Array, conflicts.ValueKind);
+        Assert.Equal(NodeA, conflicts[0].GetProperty("nodeKey").GetGuid());
+        Assert.Equal("editors", conflicts[0].GetProperty("roleAlias").GetString());
+        Assert.Equal(ContentTypeA, conflicts[0].GetProperty("contentTypeKey").GetGuid());
+        Assert.Equal("Deny", conflicts[0].GetProperty("currentEntries")[0].GetProperty("state").GetString());
     }
 
     /// <summary>Extracts the conflict list from the <c>conflicts</c> extension of a 409 ProblemDetails.</summary>

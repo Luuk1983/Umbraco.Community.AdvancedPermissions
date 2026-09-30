@@ -138,4 +138,31 @@ public sealed class PermissionStampTests
 
         Assert.NotEqual(PermissionStamp.Compute([a]), PermissionStamp.Compute([a, aDuplicate]));
     }
+
+    /// <summary>
+    /// The doc-type entry point must agree with the node one for the same content, and with the
+    /// string-based one the wire uses. The repository computes a triple's current stamp with
+    /// <see cref="PermissionStamp.ComputeForDocType"/> from stored rows and compares it with the
+    /// stamp the client was handed, which the controller computed from response models; if the
+    /// three ever disagreed, every doc-type save would be refused as a conflict nobody caused.
+    /// </summary>
+    [Fact]
+    public void ComputeForDocType_AgreesWithComputeAndComputeFromNames_ForTheSameContent()
+    {
+        var docTypeEntries = new[]
+        {
+            new DocTypePermissionEntry(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "editors", "Umb.Document.CreateOfType", PermissionState.Deny, PermissionScope.ThisNodeAndDescendants, true),
+            new DocTypePermissionEntry(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "editors", "Umb.Document.CreateOfType", PermissionState.Allow, PermissionScope.DescendantsOnly, false),
+        };
+        var nodeEntries = docTypeEntries
+            .Select(e => Entry(e.Verb, e.State, e.Scope, e.IsPriorityOverride))
+            .ToArray();
+        var named = docTypeEntries.Select(e => (e.Verb, e.State.ToString(), e.Scope.ToString(), e.IsPriorityOverride));
+
+        var stamp = PermissionStamp.ComputeForDocType(docTypeEntries);
+
+        Assert.Equal(PermissionStamp.Compute(nodeEntries), stamp);
+        Assert.Equal(PermissionStamp.ComputeFromNames(named), stamp);
+        Assert.Equal(PermissionStamp.Compute([]), PermissionStamp.ComputeForDocType([]));
+    }
 }

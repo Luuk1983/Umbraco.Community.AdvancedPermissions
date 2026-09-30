@@ -1,4 +1,5 @@
 using Umbraco.Community.AdvancedPermissions.Caching;
+using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Services;
@@ -105,6 +106,7 @@ public sealed class AdvancedPermissionServiceNotificationTests
                 Arg.Any<Guid>(),
                 Arg.Any<string>(),
                 Arg.Any<IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>>(),
+                Arg.Any<string?>(),
                 Arg.Any<CancellationToken>()))
             .Do(_ => order.Add("write"));
 
@@ -160,10 +162,10 @@ public sealed class AdvancedPermissionServiceNotificationTests
         const string role1 = "editors";
         const string role2 = "writers";
 
-        var batch = new (Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)[]
+        var batch = new (Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)[]
         {
-            (nodeKey1, role1, [(VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false)]),
-            (nodeKey2, role2, [(VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false)]),
+            (nodeKey1, role1, [(VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false)], null),
+            (nodeKey2, role2, [(VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false)], null),
         };
 
         await _sut.SaveManyAsync(batch);
@@ -219,10 +221,10 @@ public sealed class AdvancedPermissionServiceNotificationTests
                 Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("Simulated handler failure.")));
 
-        var batch = new (Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)[]
+        var batch = new (Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)[]
         {
-            (nodeKey1, role1, [(VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false)]),
-            (nodeKey2, role2, [(VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false)]),
+            (nodeKey1, role1, [(VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false)], null),
+            (nodeKey2, role2, [(VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false)], null),
         };
 
         // Must not throw, and the second pair's notification must still have gone out.
@@ -244,6 +246,81 @@ public sealed class AdvancedPermissionServiceNotificationTests
         await _sut.SaveManyAsync([]);
 
         await _repository.DidNotReceiveWithAnyArgs().SaveManyAsync(default!, default);
+        await _eventAggregator.DidNotReceiveWithAnyArgs().PublishAsync(
+            Arg.Any<AdvancedPermissionsChangedNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// A write the repository refuses because the stored entries moved changed nothing, so nothing
+    /// may be announced. Publishing a change that did not happen would send every other editor to
+    /// refetch for nothing; invalidating the caches would throw away entries that are still correct.
+    /// The exception must reach the caller untouched, because the controller turns it into the 409.
+    /// </summary>
+    [Fact]
+    public async Task SaveEntriesAsync_RepositoryReportsConflict_PropagatesWithoutInvalidatingOrPublishing()
+    {
+        var nodeKey = Guid.NewGuid();
+        var conflict = new PermissionConcurrencyException([new PermissionConflict(nodeKey, "editors", [], "current")]);
+        _repository
+            .SaveAsync(
+                Arg.Any<Guid>(),
+                Arg.Any<string>(),
+                Arg.Any<IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>>(),
+                Arg.Any<string?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(conflict));
+
+        var thrown = await Assert.ThrowsAsync<PermissionConcurrencyException>(() =>
+            _sut.SaveEntriesAsync(nodeKey, "editors", [], "stale"));
+
+        Assert.Same(conflict, thrown);
+        await _eventAggregator.DidNotReceiveWithAnyArgs().PublishAsync(
+            Arg.Any<AdvancedPermissionsChangedNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// The expected stamp has to reach the repository, because that is where the check is made —
+    /// atomically with the write. A service that dropped it would silently turn every checked save
+    /// into an unchecked one.
+    /// </summary>
+    [Fact]
+    public async Task SaveEntriesAsync_ForwardsExpectedStampToRepository()
+    {
+        var nodeKey = Guid.NewGuid();
+
+        await _sut.SaveEntriesAsync(nodeKey, "editors", [], "the-stamp");
+
+        await _repository.Received(1).SaveAsync(
+            nodeKey,
+            "editors",
+            Arg.Any<IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>>(),
+            "the-stamp",
+            Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// A batch the repository refuses on a stale stamp likewise propagates the exception and
+    /// announces nothing — not even for the pairs that would have written cleanly, because the
+    /// batch is all or nothing and none of them were written.
+    /// </summary>
+    [Fact]
+    public async Task SaveManyAsync_RepositoryReportsConflict_PropagatesWithoutPublishing()
+    {
+        var nodeKey = Guid.NewGuid();
+        _repository
+            .SaveManyAsync(
+                Arg.Any<IEnumerable<(Guid NodeKey, string RoleAlias, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new PermissionConcurrencyException([new PermissionConflict(nodeKey, "editors", [], "current")])));
+
+        var batch = new (Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)[]
+        {
+            (nodeKey, "editors", [(VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false)], "stale"),
+            (Guid.NewGuid(), "writers", [(VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false)], "fine"),
+        };
+
+        await Assert.ThrowsAsync<PermissionConcurrencyException>(() => _sut.SaveManyAsync(batch));
+
         await _eventAggregator.DidNotReceiveWithAnyArgs().PublishAsync(
             Arg.Any<AdvancedPermissionsChangedNotification>(), Arg.Any<CancellationToken>());
     }

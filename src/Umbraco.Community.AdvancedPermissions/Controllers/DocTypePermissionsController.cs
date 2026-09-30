@@ -9,6 +9,7 @@ using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Concurrency;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
+using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 
@@ -97,11 +98,15 @@ public sealed class DocTypePermissionsController(
     /// </summary>
     /// <param name="request">The entries to save.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
-    /// <returns><see cref="StatusCodes.Status200OK"/> on success.</returns>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> on success, or <see cref="StatusCodes.Status409Conflict"/>
+    /// when <see cref="SaveDocTypePermissionsRequestModel.ExpectedStamp"/> no longer matches what is stored.
+    /// </returns>
     [HttpPut("doc-type-permissions")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<BatchSaveDocTypeConflictResponseModel>(StatusCodes.Status409Conflict)]
     [EndpointSummary("Saves (replaces) doc-type permission entries for a node+role+content-type triple.")]
     public async Task<IActionResult> Save(
         [FromBody] SaveDocTypePermissionsRequestModel request,
@@ -112,12 +117,24 @@ public sealed class DocTypePermissionsController(
             return BadRequest(problem);
         }
 
-        await docTypeService.SaveEditorEntriesAsync(
-            request.NodeKey,
-            request.RoleAlias,
-            request.ContentTypeKey,
-            mapped,
-            cancellationToken);
+        // The stamp is checked by the write itself, inside its transaction, not here. A check made
+        // here and a write made afterwards are two operations, and two saves carrying the same
+        // stamp could both pass the first and then both perform the second. Force withholds the
+        // stamp, which is what tells the write to skip the check.
+        try
+        {
+            await docTypeService.SaveEditorEntriesAsync(
+                request.NodeKey,
+                request.RoleAlias,
+                request.ContentTypeKey,
+                mapped,
+                request.Force ? null : request.ExpectedStamp,
+                cancellationToken);
+        }
+        catch (DocTypePermissionConcurrencyException ex)
+        {
+            return ConflictResult(ex);
+        }
 
         return Ok();
     }
@@ -152,7 +169,7 @@ public sealed class DocTypePermissionsController(
         // Validate everything first. A batch that cannot be mapped is a client bug, not a
         // conflict, and reporting it as one would send the user to a dialog about somebody else's
         // changes when nobody else has changed anything.
-        var pending = new List<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)>();
+        var pending = new List<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)>();
 
         foreach (var node in request.Nodes)
         {
@@ -161,7 +178,7 @@ public sealed class DocTypePermissionsController(
                 return BadRequest(problem);
             }
 
-            pending.Add((node.NodeKey, node.RoleAlias, node.ContentTypeKey, mapped));
+            pending.Add((node.NodeKey, node.RoleAlias, node.ContentTypeKey, mapped, request.Force ? null : node.ExpectedStamp));
         }
 
         // A repeated (NodeKey, RoleAlias, ContentTypeKey) triple is a malformed request, the same
@@ -186,47 +203,18 @@ public sealed class DocTypePermissionsController(
             }
         }
 
-        if (!request.Force)
+        // The stamps are checked by the write, inside its transaction — not by a pass over the
+        // stored entries here, which would be a separate operation two saves could both pass. The
+        // exception, when it comes, lists every conflicted triple and guarantees nothing was
+        // written for any of them. Force withholds the stamps, which tells the write to skip the check.
+        try
         {
-            var conflicts = new List<BatchSaveDocTypeConflict>();
-
-            foreach (var node in request.Nodes)
-            {
-                if (node.ExpectedStamp is null)
-                {
-                    continue;
-                }
-
-                // Scoped by (RoleAlias, ContentTypeKey) at the service call, then filtered to this
-                // node — the triple's full key, never just the node and role.
-                var storedForRoleAndType = await docTypeService.GetEditorEntriesAsync(
-                    node.RoleAlias, node.ContentTypeKey, cancellationToken);
-                var storedForTriple = storedForRoleAndType
-                    .Where(e => e.NodeKey == node.NodeKey)
-                    .Select(MapDocTypeEntry)
-                    .ToList();
-                var currentStamp = storedForTriple.ComputeFromResponse();
-
-                if (string.Equals(currentStamp, node.ExpectedStamp, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                conflicts.Add(new BatchSaveDocTypeConflict(
-                    node.NodeKey,
-                    node.RoleAlias,
-                    node.ContentTypeKey,
-                    storedForTriple,
-                    currentStamp));
-            }
-
-            if (conflicts.Count > 0)
-            {
-                return Conflict(ConflictProblemDetails.Create<BatchSaveDocTypeConflict>(conflicts));
-            }
+            await docTypeService.SaveManyAsync(pending, cancellationToken);
         }
-
-        await docTypeService.SaveManyAsync(pending, cancellationToken);
+        catch (DocTypePermissionConcurrencyException ex)
+        {
+            return ConflictResult(ex);
+        }
 
         // The new stamps, so the client can keep editing without a further read. Computed from
         // what was written rather than re-read, because the write just made them equal and a
@@ -242,6 +230,26 @@ public sealed class DocTypePermissionsController(
 
         return Ok(saved);
     }
+
+    /// <summary>
+    /// Turns the exception a stale write raises into the <c>409 Conflict</c> the client is written
+    /// against: a <see cref="ProblemDetails"/> carrying the conflicts as its <c>conflicts</c>
+    /// extension. The single copy of this mapping, shared by <see cref="Save"/> and
+    /// <see cref="BatchSaveDocTypePermissions"/>, so the two endpoints cannot drift into different
+    /// bodies. The body's shape is a wire contract — see <see cref="ConflictProblemDetails"/>.
+    /// </summary>
+    /// <param name="exception">The exception listing every conflicted triple.</param>
+    /// <returns>The 409 result.</returns>
+    private ConflictObjectResult ConflictResult(DocTypePermissionConcurrencyException exception) =>
+        Conflict(ConflictProblemDetails.Create<BatchSaveDocTypeConflict>(
+            exception.Conflicts
+                .Select(c => new BatchSaveDocTypeConflict(
+                    c.NodeKey,
+                    c.RoleAlias,
+                    c.ContentTypeKey,
+                    c.CurrentEntries.Select(MapDocTypeEntry).ToList(),
+                    c.CurrentStamp))
+                .ToList()));
 
     /// <summary>
     /// Validates and maps the entries of one save, or produces the problem describing why it

@@ -769,7 +769,7 @@ public sealed class AdvancedPermissionServiceTests
 
         await _sut.SaveEntriesAsync(nodeKey, role, entries);
 
-        await _repository.Received(1).SaveAsync(nodeKey, role, entries, Arg.Any<CancellationToken>());
+        await _repository.Received(1).SaveAsync(nodeKey, role, entries, null, Arg.Any<CancellationToken>());
     }
 
     // ─── DeleteEntryAsync ─────────────────────────────────────────────────────

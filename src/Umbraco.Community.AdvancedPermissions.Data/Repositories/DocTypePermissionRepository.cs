@@ -1,4 +1,7 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
+using Umbraco.Community.AdvancedPermissions.Core.Concurrency;
+using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 using Umbraco.Community.AdvancedPermissions.Data.Context;
@@ -48,49 +51,54 @@ public sealed class DocTypePermissionRepository(IDbContextFactory<AdvancedPermis
         return entities.ConvertAll(MapToDomain);
     }
 
-    /// <inheritdoc />
-    public async Task SaveAsync(
+    /// <summary>
+    /// Saves the entries for a triple with no concurrency check, by delegating to the stamped
+    /// overload with a null stamp.
+    /// </summary>
+    /// <param name="nodeKey">The node key.</param>
+    /// <param name="roleAlias">The user group alias.</param>
+    /// <param name="contentTypeKey">The document type key.</param>
+    /// <param name="entries">The replacement entries.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    // Not marked [Obsolete] here: this class is not part of the published contract, and the
+    // obsolete warning fires on the interface member, which is where every caller is steered away
+    // from it. Implementing an obsolete interface member does not itself raise a warning.
+    public Task SaveAsync(
         Guid nodeKey,
         string roleAlias,
         Guid contentTypeKey,
         IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
-        CancellationToken cancellationToken = default)
-    {
-        var newEntries = entries.ToList();
+        CancellationToken cancellationToken = default) =>
+        SaveAsync(nodeKey, roleAlias, contentTypeKey, entries, (string?)null, cancellationToken);
 
-        await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-
-        // Remove all existing entries for this triple in a single DELETE statement
-        await db.DocTypePermissions
-            .Where(p => p.NodeKey == nodeKey
-                     && p.RoleAlias == roleAlias
-                     && p.ContentTypeKey == contentTypeKey)
-            .ExecuteDeleteAsync(cancellationToken);
-
-        if (newEntries.Count > 0)
-        {
-            foreach (var (verb, state, scope, isPriorityOverride) in newEntries)
-            {
-                db.DocTypePermissions.Add(new DocTypePermissionEntity
-                {
-                    Id = Guid.NewGuid(),
-                    NodeKey = nodeKey,
-                    ContentTypeKey = contentTypeKey,
-                    RoleAlias = roleAlias,
-                    Verb = verb,
-                    State = state,
-                    Scope = scope,
-                    IsPriorityOverride = isPriorityOverride,
-                });
-            }
-
-            await db.SaveChangesAsync(cancellationToken);
-        }
-    }
+    /// <summary>
+    /// Saves the entries for a triple, refusing the write if the stored entries no longer match
+    /// <paramref name="expectedStamp"/>. This is the real implementation of the interface's stamped
+    /// overload - it overrides the interface's default implementation, which would ignore the stamp.
+    /// </summary>
+    /// <param name="nodeKey">The node key.</param>
+    /// <param name="roleAlias">The user group alias.</param>
+    /// <param name="contentTypeKey">The document type key.</param>
+    /// <param name="entries">The replacement entries.</param>
+    /// <param name="expectedStamp">The stamp the writer read, or <see langword="null"/> to skip the check.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    public Task SaveAsync(
+        Guid nodeKey,
+        string roleAlias,
+        Guid contentTypeKey,
+        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
+        string? expectedStamp,
+        CancellationToken cancellationToken = default) =>
+        // A single-triple batch, so there is exactly one copy of the delete-then-insert logic, it
+        // is always atomic, and the stamp is verified inside the same serializable transaction as
+        // the write. This used to delete and then insert as two separate operations outside any
+        // transaction: an insert that failed after the delete succeeded left the triple's
+        // permissions wiped — not stale, gone.
+        SaveManyAsync([(nodeKey, roleAlias, contentTypeKey, entries, expectedStamp)], cancellationToken);
 
     /// <inheritdoc />
     public async Task SaveManyAsync(
-        IEnumerable<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)> batch,
+        IEnumerable<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)> batch,
         CancellationToken cancellationToken = default)
     {
         var triples = batch.ToList();
@@ -113,15 +121,55 @@ public sealed class DocTypePermissionRepository(IDbContextFactory<AdvancedPermis
         }
 
         await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-        foreach (var (nodeKey, roleAlias, contentTypeKey, entries) in triples)
+        // Serializable, so the expected-stamp check below and the delete that follows it are one
+        // atomic operation rather than two steps with a gap another writer can slip into. The
+        // provider-by-provider reasoning — SQLite's up-front write lock, SQL Server's key-range
+        // locks, and the accepted deadlock trade-off — is set out on
+        // AdvancedPermissionRepository.SaveManyAsync and applies here unchanged. The range read
+        // below filters on NodeKey, RoleAlias and ContentTypeKey, all of which lead the unique
+        // index, so on SQL Server it locks exactly this triple's range.
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+
+        // Check every triple before writing any, so the exception lists all the conflicts and a
+        // refused batch has written nothing when it is thrown. A null stamp skips the check and
+        // the read.
+        var conflicts = new List<DocTypePermissionConflict>();
+        foreach (var (nodeKey, roleAlias, contentTypeKey, _, expectedStamp) in triples)
+        {
+            if (expectedStamp is null)
+            {
+                continue;
+            }
+
+            var stored = (await db.DocTypePermissions
+                .Where(p => p.NodeKey == nodeKey && p.RoleAlias == roleAlias && p.ContentTypeKey == contentTypeKey)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken))
+                .ConvertAll(MapToDomain);
+            var currentStamp = PermissionStamp.ComputeForDocType(stored);
+
+            if (!string.Equals(currentStamp, expectedStamp, StringComparison.Ordinal))
+            {
+                conflicts.Add(new DocTypePermissionConflict(nodeKey, roleAlias, contentTypeKey, stored, currentStamp));
+            }
+        }
+
+        if (conflicts.Count > 0)
+        {
+            // Leaving the method disposes the transaction, which rolls it back. Nothing has been
+            // written yet in any case: every triple is checked before the first delete below.
+            throw new DocTypePermissionConcurrencyException(conflicts);
+        }
+
+        foreach (var (nodeKey, roleAlias, contentTypeKey, entries, _) in triples)
         {
             // Remove all existing entries for this triple in a single DELETE statement, executed
-            // immediately — the same mechanism SaveAsync uses. This makes the delete provably
-            // precede the insert of the replacement rows below: without it, replacing an entry with
-            // the same verb+scope but a different state would depend on EF Core's internal
-            // command-batch ordering to avoid colliding with the unique index.
+            // immediately. This makes the delete provably precede the insert of the replacement
+            // rows below: without it, replacing an entry with the same verb+scope but a different
+            // state would depend on EF Core's internal command-batch ordering to avoid colliding
+            // with the unique index. It must stay a predicate delete — see the note on
+            // AdvancedPermissionRepository.SaveManyAsync; ReplaceWriteStatementTests guards it.
             await db.DocTypePermissions
                 .Where(p => p.NodeKey == nodeKey && p.RoleAlias == roleAlias && p.ContentTypeKey == contentTypeKey)
                 .ExecuteDeleteAsync(cancellationToken);

@@ -37,11 +37,18 @@ public sealed record DocTypePermissionEntryResponseModel(
 /// <param name="RoleAlias">The role alias.</param>
 /// <param name="ContentTypeKey">The doc-type key.</param>
 /// <param name="Entries">The verb-state-scope tuples. Empty list clears all entries for the triple.</param>
+/// <param name="ExpectedStamp">
+/// The stamp this client was given when it read these entries. When null the concurrency check is
+/// skipped, which is how a client written before stamps existed keeps working.
+/// </param>
+/// <param name="Force">Whether to write through a stale stamp. Only sent after a user confirms.</param>
 public sealed record SaveDocTypePermissionsRequestModel(
     Guid NodeKey,
     string RoleAlias,
     Guid ContentTypeKey,
-    IReadOnlyList<SavePermissionEntryItem> Entries);
+    IReadOnlyList<SavePermissionEntryItem> Entries,
+    string? ExpectedStamp = null,
+    bool Force = false);
 
 /// <summary>
 /// A non-element doc-type that may appear in the editor's "document type" picker.

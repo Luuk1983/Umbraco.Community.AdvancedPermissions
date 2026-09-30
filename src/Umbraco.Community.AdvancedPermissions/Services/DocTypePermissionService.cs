@@ -91,15 +91,51 @@ public sealed class DocTypePermissionService(
         CancellationToken cancellationToken = default) =>
         repository.GetByRoleAndContentTypeAsync(roleAlias, contentTypeKey, cancellationToken);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Saves the entries for a triple with no concurrency check, by delegating to the stamped
+    /// overload with a null stamp.
+    /// </summary>
+    /// <param name="nodeKey">The node key.</param>
+    /// <param name="roleAlias">The user group alias.</param>
+    /// <param name="contentTypeKey">The document type key.</param>
+    /// <param name="entries">The replacement entries.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    // Not marked [Obsolete] here: this class is not part of the published contract, and the
+    // obsolete warning fires on the interface member, which is where every caller is steered away
+    // from it. Implementing an obsolete interface member does not itself raise a warning.
+    public Task SaveEditorEntriesAsync(
+        Guid nodeKey,
+        string roleAlias,
+        Guid contentTypeKey,
+        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
+        CancellationToken cancellationToken = default) =>
+        SaveEditorEntriesAsync(nodeKey, roleAlias, contentTypeKey, entries, (string?)null, cancellationToken);
+
+    /// <summary>
+    /// Saves the entries for a triple, refusing the write if the stored entries no longer match
+    /// <paramref name="expectedStamp"/>, then invalidates caches and announces the change. This is
+    /// the real implementation of the interface's stamped overload - it overrides the interface's
+    /// default implementation, which would ignore the stamp.
+    /// </summary>
+    /// <param name="nodeKey">The node key.</param>
+    /// <param name="roleAlias">The user group alias.</param>
+    /// <param name="contentTypeKey">The document type key.</param>
+    /// <param name="entries">The replacement entries.</param>
+    /// <param name="expectedStamp">The stamp the caller read, or <see langword="null"/> to skip the check.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
     public async Task SaveEditorEntriesAsync(
         Guid nodeKey,
         string roleAlias,
         Guid contentTypeKey,
         IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
+        string? expectedStamp,
         CancellationToken cancellationToken = default)
     {
-        await repository.SaveAsync(nodeKey, roleAlias, contentTypeKey, entries, cancellationToken);
+        // The stamp check happens inside the repository's write transaction. A
+        // DocTypePermissionConcurrencyException propagates from here untouched — deliberately before
+        // the invalidation and notification below, because nothing was written and announcing a
+        // change that did not happen would send every other editor to refetch for nothing.
+        await repository.SaveAsync(nodeKey, roleAlias, contentTypeKey, entries, expectedStamp, cancellationToken);
 
         cache.InvalidateRoleEntries(roleAlias);
         cache.InvalidateAllResolved();
@@ -114,7 +150,7 @@ public sealed class DocTypePermissionService(
 
     /// <inheritdoc />
     public async Task SaveManyAsync(
-        IReadOnlyList<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)> batch,
+        IReadOnlyList<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)> batch,
         CancellationToken cancellationToken = default)
     {
         // Nothing was written, so nothing is stale — skip the transaction and the L2 flush.
@@ -125,7 +161,8 @@ public sealed class DocTypePermissionService(
 
         await repository.SaveManyAsync(
             batch.Select(b => (b.NodeKey, b.RoleAlias, b.ContentTypeKey,
-                (IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>)b.Entries)),
+                (IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>)b.Entries,
+                b.ExpectedStamp)),
             cancellationToken);
 
         // Invalidated once for the whole batch rather than per triple: L2 is dropped wholesale
@@ -141,7 +178,7 @@ public sealed class DocTypePermissionService(
         // same granularity it would from a single save. Each publish is wrapped individually
         // (inside the loop) so one bad triple's handler failure does not stop the remaining triples
         // from being announced.
-        foreach (var (nodeKey, roleAlias, contentTypeKey, _) in batch)
+        foreach (var (nodeKey, roleAlias, contentTypeKey, _, _) in batch)
         {
             await PublishSafelyAsync(
                 new DocTypePermissionsChangedNotification(nodeKey, roleAlias, [contentTypeKey]),

@@ -125,11 +125,42 @@ public sealed class AdvancedPermissionService(
         return resolver.ResolveAll(context, verbList);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Saves the entries for a node and user group without a concurrency check. Kept only because
+    /// <see cref="IAdvancedPermissionService"/> still declares it (obsolete) for the sake of
+    /// implementations written against earlier releases; it forwards to the stamped overload with a
+    /// <see langword="null"/> stamp, so it does exactly what it always did.
+    /// </summary>
+    /// <param name="nodeKey">The node key.</param>
+    /// <param name="roleAlias">The user group alias.</param>
+    /// <param name="entries">The replacement entries.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    // Not marked [Obsolete] here: this class is not part of the published contract, and the
+    // obsolete warning fires on the interface member, which is where every caller is steered away
+    // from it. Implementing an obsolete interface member does not itself raise a warning.
+    public Task SaveEntriesAsync(
+        Guid nodeKey,
+        string roleAlias,
+        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
+        CancellationToken cancellationToken = default) =>
+        SaveEntriesAsync(nodeKey, roleAlias, entries, (string?)null, cancellationToken);
+
+    /// <summary>
+    /// Saves the entries for a node and user group, refusing the write if the stored entries no
+    /// longer match <paramref name="expectedStamp"/>, then invalidates caches and announces the
+    /// change. This is the real implementation of the interface's stamped overload - it overrides
+    /// the interface's default implementation, which would ignore the stamp.
+    /// </summary>
+    /// <param name="nodeKey">The node key.</param>
+    /// <param name="roleAlias">The user group alias.</param>
+    /// <param name="entries">The replacement entries.</param>
+    /// <param name="expectedStamp">The stamp the caller read, or <see langword="null"/> to skip the check.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
     public async Task SaveEntriesAsync(
         Guid nodeKey,
         string roleAlias,
         IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
+        string? expectedStamp,
         CancellationToken cancellationToken = default)
     {
         // Materialised once: the sequence is enumerated by the repository and again for the
@@ -137,7 +168,11 @@ public sealed class AdvancedPermissionService(
         var materialised = entries as IList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>
             ?? entries.ToList();
 
-        await repository.SaveAsync(nodeKey, roleAlias, materialised, cancellationToken);
+        // The stamp check happens inside the repository's write transaction. A
+        // PermissionConcurrencyException propagates from here untouched — deliberately before the
+        // invalidation and notification below, because nothing was written and announcing a change
+        // that did not happen would send every other editor to refetch for nothing.
+        await repository.SaveAsync(nodeKey, roleAlias, materialised, expectedStamp, cancellationToken);
 
         // Invalidate L1 for this role (entries changed), and ALL L2 (any user's resolution may be stale)
         cache.InvalidateRoleEntries(roleAlias);
@@ -175,7 +210,7 @@ public sealed class AdvancedPermissionService(
 
     /// <inheritdoc />
     public async Task SaveManyAsync(
-        IReadOnlyList<(Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)> batch,
+        IReadOnlyList<(Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)> batch,
         CancellationToken cancellationToken = default)
     {
         // Nothing was written, so nothing is stale — skip the transaction and the L2 flush.
@@ -186,7 +221,8 @@ public sealed class AdvancedPermissionService(
 
         await repository.SaveManyAsync(
             batch.Select(b => (b.NodeKey, b.RoleAlias,
-                (IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>)b.Entries)),
+                (IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>)b.Entries,
+                b.ExpectedStamp)),
             cancellationToken);
 
         // Invalidated once for the whole batch rather than per pair: L2 is dropped wholesale
@@ -202,7 +238,7 @@ public sealed class AdvancedPermissionService(
         // same granularity it would from a single save. Each publish is wrapped individually
         // (inside the loop) so one bad pair's handler failure does not stop the remaining pairs
         // from being announced.
-        foreach (var (nodeKey, roleAlias, entries) in batch)
+        foreach (var (nodeKey, roleAlias, entries, _) in batch)
         {
             await PublishSafelyAsync(
                 new AdvancedPermissionsChangedNotification(

@@ -12,23 +12,39 @@ using Umbraco.Community.AdvancedPermissions.ServerEvents;
 namespace Umbraco.Community.AdvancedPermissions.Tests;
 
 /// <summary>
-/// Tests that this package's notifications reach the server-event hub under the right source and key.
+/// Tests that this package's own change notifications reach the server-event hub under the right
+/// source and key, and that a failure to route one can never propagate back into the write that
+/// raised it.
 /// </summary>
 public sealed class ServerEventHandlerTests
 {
+    /// <summary>The router the handler under test routes through.</summary>
+    private readonly IServerEventRouter _router = Substitute.For<IServerEventRouter>();
+
+    /// <summary>The logger the handler under test records a swallowed failure to.</summary>
+    private readonly ILogger<AdvancedPermissionsServerEventHandler> _logger = Substitute.For<ILogger<AdvancedPermissionsServerEventHandler>>();
+
+    /// <summary>Builds the handler under test.</summary>
+    /// <returns>A handler wired to the substitute router and logger.</returns>
+    private AdvancedPermissionsServerEventHandler CreateHandler() => new(_router, _logger);
+
+    /// <summary>Gets whether the handler logged an error.</summary>
+    /// <returns><see langword="true"/> if an error-level log entry was written.</returns>
+    private bool LoggedAnError() =>
+        _logger.ReceivedCalls().Any(c =>
+            c.GetMethodInfo().Name == nameof(ILogger.Log) && c.GetArguments()[0] is LogLevel.Error);
+
     /// <summary>A permission change is routed under the node-permissions source, keyed by node.</summary>
     [Fact]
     public async Task PermissionChanged_RoutesNodePermissionsEvent()
     {
-        var router = Substitute.For<IServerEventRouter>();
-        var handler = new AdvancedPermissionsServerEventHandler(router);
         var nodeKey = Guid.Parse("77777777-7777-7777-7777-777777777777");
 
-        await handler.HandleAsync(
+        await CreateHandler().HandleAsync(
             new AdvancedPermissionsChangedNotification(nodeKey, "editors", ["Umb.Document.Read"]),
             CancellationToken.None);
 
-        await router.Received(1).RouteEventAsync(Arg.Is<ServerEvent>(e =>
+        await _router.Received(1).RouteEventAsync(Arg.Is<ServerEvent>(e =>
             e.EventSource == AdvancedPermissionsServerEvents.NodePermissionsSource &&
             e.EventType == AdvancedPermissionsServerEvents.EventType.Updated &&
             e.Key == nodeKey));
@@ -38,18 +54,91 @@ public sealed class ServerEventHandlerTests
     [Fact]
     public async Task DocTypePermissionChanged_RoutesDocTypePermissionsEvent()
     {
-        var router = Substitute.For<IServerEventRouter>();
-        var handler = new AdvancedPermissionsServerEventHandler(router);
         var nodeKey = Guid.Parse("88888888-8888-8888-8888-888888888888");
 
-        await handler.HandleAsync(
+        await CreateHandler().HandleAsync(
             new DocTypePermissionsChangedNotification(nodeKey, "editors", [Guid.NewGuid()]),
             CancellationToken.None);
 
-        await router.Received(1).RouteEventAsync(Arg.Is<ServerEvent>(e =>
+        await _router.Received(1).RouteEventAsync(Arg.Is<ServerEvent>(e =>
             e.EventSource == AdvancedPermissionsServerEvents.DocTypePermissionsSource &&
             e.Key == nodeKey));
     }
+
+    /// <summary>
+    /// The router throwing must not propagate out of the handler: these notifications are published by
+    /// the permission services after their write has committed, and an escaping exception would report
+    /// a false failure for a save that succeeded. It is logged instead.
+    /// </summary>
+    /// <param name="notification">The notification to handle, of each kind the handler accepts.</param>
+    [Theory]
+    [MemberData(nameof(OwnNotifications))]
+    public async Task RouterThrows_DoesNotPropagate_AndIsLogged(object notification)
+    {
+        _router
+            .RouteEventAsync(Arg.Any<ServerEvent>())
+            .Returns(Task.FromException(new InvalidOperationException("Simulated hub failure.")));
+
+        await HandleAsync(CreateHandler(), notification, CancellationToken.None);
+
+        Assert.True(LoggedAnError());
+    }
+
+    /// <summary>
+    /// A router that throws synchronously, rather than returning a faulted task, is isolated too: the
+    /// handler must not depend on which of the two ways a router happens to fail.
+    /// </summary>
+    /// <param name="notification">The notification to handle, of each kind the handler accepts.</param>
+    [Theory]
+    [MemberData(nameof(OwnNotifications))]
+    public async Task RouterThrowsSynchronously_DoesNotPropagate_AndIsLogged(object notification)
+    {
+        _router
+            .RouteEventAsync(Arg.Any<ServerEvent>())
+            .Returns<Task>(_ => throw new InvalidOperationException("Simulated hub failure."));
+
+        await HandleAsync(CreateHandler(), notification, CancellationToken.None);
+
+        Assert.True(LoggedAnError());
+    }
+
+    /// <summary>
+    /// A cancelled request is not a handler failure and must not be swallowed: hiding a genuine
+    /// cancellation would leave the caller running on.
+    /// </summary>
+    /// <param name="notification">The notification to handle, of each kind the handler accepts.</param>
+    [Theory]
+    [MemberData(nameof(OwnNotifications))]
+    public async Task RouterCancelled_RethrowsOperationCanceled(object notification)
+    {
+        _router
+            .RouteEventAsync(Arg.Any<ServerEvent>())
+            .Returns(Task.FromException(new OperationCanceledException()));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            HandleAsync(CreateHandler(), notification, CancellationToken.None));
+    }
+
+    /// <summary>One notification of each kind this handler accepts, for the theories above.</summary>
+    /// <returns>The test cases.</returns>
+    public static TheoryData<object> OwnNotifications() =>
+    [
+        new AdvancedPermissionsChangedNotification(Guid.NewGuid(), "editors", []),
+        new DocTypePermissionsChangedNotification(Guid.NewGuid(), "editors", [Guid.NewGuid()]),
+    ];
+
+    /// <summary>Dispatches a notification to the handler method that accepts its type.</summary>
+    /// <param name="handler">The handler.</param>
+    /// <param name="notification">The notification.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <returns>The handler's task.</returns>
+    private static Task HandleAsync(AdvancedPermissionsServerEventHandler handler, object notification, CancellationToken cancellationToken) =>
+        notification switch
+        {
+            AdvancedPermissionsChangedNotification n => handler.HandleAsync(n, cancellationToken),
+            DocTypePermissionsChangedNotification n => handler.HandleAsync(n, cancellationToken),
+            _ => throw new ArgumentException($"Unexpected notification {notification.GetType().Name}.", nameof(notification)),
+        };
 }
 
 /// <summary>

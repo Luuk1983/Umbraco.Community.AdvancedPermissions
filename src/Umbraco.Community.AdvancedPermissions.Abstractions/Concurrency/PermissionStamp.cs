@@ -55,6 +55,24 @@ public static class PermissionStamp
         ComputeCore(entries.Select(e => (e.Verb, (int)e.State, (int)e.Scope, e.IsPriorityOverride)));
 
     /// <summary>
+    /// Computes the stamp for a set of document-type entries.
+    /// </summary>
+    /// <remarks>
+    /// The stamp deliberately covers the same four fields as the node-level overload — verb, state,
+    /// scope and priority override — and not the node, user group or document type. Those three
+    /// identify which set is being stamped and are already fixed by the caller, so the value a
+    /// client was handed over the wire (computed from response models) matches the one computed
+    /// here from stored rows. A distinct name rather than an overload of <c>Compute</c>, so an empty
+    /// collection expression (<c>Compute([])</c>) stays unambiguous.
+    /// </remarks>
+    /// <param name="entries">
+    /// The stored entries for one node, user group and document type triple, in any order.
+    /// </param>
+    /// <returns>The stamp, as lowercase hex.</returns>
+    public static string ComputeForDocType(IEnumerable<DocTypePermissionEntry> entries) =>
+        ComputeCore(entries.Select(e => (e.Verb, (int)e.State, (int)e.Scope, e.IsPriorityOverride)));
+
+    /// <summary>
     /// Computes the stamp from entries whose state and scope are already strings, as the API
     /// response models carry them.
     /// </summary>

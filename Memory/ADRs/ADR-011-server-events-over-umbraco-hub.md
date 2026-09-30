@@ -55,12 +55,11 @@ a bug with no stack trace: just a screen that quietly stops updating.
 ### 1. Events must be raised strictly after cache invalidation
 
 The server event for a write is raised only after the corresponding cache invalidation has
-completed — never from a handler registered as a sibling of the invalidator on the same
-notification, and never from a code path that publishes before the cache is told.
+completed — never from a synchronous handler that could run alongside the invalidator, and never
+from a code path that publishes before the cache is told.
 
-Umbraco runs the handlers of one notification in registration order. A client that refetches on
-an event which overtook the invalidation reads the very snapshot the change was meant to
-replace — and, having consumed its one notification, never asks again. Nothing corrects the
+A client that refetches on an event which overtook the invalidation reads the very snapshot the
+change was meant to replace — and, having consumed its one notification, never asks again. Nothing corrects the
 screen afterwards; it is wrong until some unrelated change happens to refresh it, if ever.
 `ProudNerds.Umbraco.Vision` hit exactly this ordering bug, which is why it is called out here
 before this package repeats it.
@@ -71,11 +70,25 @@ Two places enforce it:
   `IEventAggregator.Publish(...)` call for a changed-permissions notification sits **after**
   the `cache.InvalidateRoleEntries` / `cache.InvalidateAllResolved` calls it follows, in the
   same method, not from a separate handler racing them.
-- In `AdvancedPermissionsComposer.RegisterNotificationHandlers`, the server-event handlers
-  (`AdvancedPermissionsServerEventHandler`, `AccessServerEventHandler`) are registered **last**,
-  appended at the very end of the method, after every cache invalidator for the notifications
-  they also handle (`UserGroupSaved`, `ContentMoved`, and so on). Do not move these registrations
-  earlier when editing that method.
+- For the Umbraco-raised notifications the package also handles (`UserGroupSaved`,
+  `ContentMoved`, and so on), the ordering comes from how Umbraco's `EventAggregator` dispatches,
+  **not** from registration order. It runs **every synchronous** `INotificationHandler` for a
+  notification **before any asynchronous** `INotificationAsyncHandler`: `Publish` calls
+  `PublishNotifications` (the synchronous handlers) and only then `PublishNotificationsAsync` (the
+  asynchronous ones), and `PublishAsync` does the same. The cache invalidators
+  (`AdvancedPermissionCacheInvalidator`, `DocTypePermissionCacheInvalidator`) are synchronous
+  handlers and the server-event handlers (`AdvancedPermissionsServerEventHandler`,
+  `AccessServerEventHandler`) are asynchronous ones, so the invalidation always runs first,
+  wherever the registrations sit. The guarantee therefore depends on **the invalidators staying
+  synchronous**: an invalidator turned into an `INotificationAsyncHandler` would fall back to
+  being ordered by registration alone.
+
+  Registration order still matters **among the asynchronous handlers**, which run one after
+  another in the order they were registered. In `AdvancedPermissionsComposer.RegisterNotificationHandlers`
+  the server-event handlers are therefore registered **last**, after the orphan cleanup and the
+  user-group seeder that handle the same notifications, so a client refetching on an event sees
+  their effects too. This is harmless with respect to the cache and correct with respect to the
+  other asynchronous handlers. Do not move these registrations earlier when editing that method.
 
 ### 2. `ServerEvent` carries no payload
 
@@ -125,16 +138,24 @@ form are not obvious from the code alone:
   some other way. This is not a new class of problem for this package — `AdvancedPermissionCache`
   is already an in-memory, per-instance cache with the same limitation — but it is stated here so
   it is not instead discovered in production and mistaken for the feature being broken.
-- Handler registration order in `AdvancedPermissionsComposer.RegisterNotificationHandlers`, and
-  publish-after-invalidate order inside the permission services, are now load-bearing and must
-  be preserved across future edits to either.
+- Publish-after-invalidate order inside the permission services is load-bearing and must be
+  preserved across future edits. So must the cache invalidators staying synchronous handlers, which is
+  what puts them ahead of the asynchronous server-event handlers. The server-event handlers' position
+  at the end of `AdvancedPermissionsComposer.RegisterNotificationHandlers` is load-bearing only among
+  the asynchronous handlers, and stays there.
 
 ## Tests
 
 - `AdvancedPermissionsEventAuthorizerTests` — the authorizer claims every source the package
   publishes.
+- `AdvancedPermissionsEventAuthorizerTests` also compares the authorizer with the source
+  constants found by reflection and with the literal wire strings, and
+  `ServerEventSourceCoverageTests` drives every notification through the real handlers and checks
+  the sources routed are exactly the sources claimed, because a source no authorizer claims is
+  silently never delivered.
 - `ServerEventHandlerTests` — each notification routes the expected `ServerEvent`, with the
-  right source and key.
+  right source and key, and a routing failure is logged and never propagates (a cancellation is
+  rethrown). Both server-event handlers route through `ServerEventRouting`, which enforces that.
 - `AdvancedPermissionServiceNotificationTests` — the changed-notification is published only
   after both cache invalidations have run.
 - `PermissionStampTests` — canonicalisation is order-independent, every covered field changes

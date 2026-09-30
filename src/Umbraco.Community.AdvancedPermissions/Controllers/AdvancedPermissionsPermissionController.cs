@@ -9,6 +9,7 @@ using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Concurrency;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
+using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 
@@ -107,25 +108,24 @@ public sealed class AdvancedPermissionsPermissionController(
             return BadRequest(problem);
         }
 
-        if (!request.Force && request.ExpectedStamp is not null)
+        // The stamp is checked by the write itself, inside its transaction, not here. A check made
+        // here and a write made afterwards are two operations, and two saves carrying the same
+        // stamp could both pass the first and then both perform the second. Force withholds the
+        // stamp, which is what tells the write to skip the check.
+        try
         {
-            var stored = await permissionService.GetEntriesAsync(request.NodeKey, request.RoleAlias, cancellationToken);
-            var currentStamp = PermissionStamp.Compute(stored);
-
-            if (!string.Equals(currentStamp, request.ExpectedStamp, StringComparison.Ordinal))
-            {
-                return Conflict(ConflictProblemDetails.Create<BatchSaveConflict>(
-                [
-                    new BatchSaveConflict(
-                        request.NodeKey,
-                        request.RoleAlias,
-                        stored.Select(MapEntry).ToList(),
-                        currentStamp),
-                ]));
-            }
+            await permissionService.SaveEntriesAsync(
+                request.NodeKey,
+                request.RoleAlias,
+                mapped,
+                request.Force ? null : request.ExpectedStamp,
+                cancellationToken);
+        }
+        catch (PermissionConcurrencyException ex)
+        {
+            return ConflictResult(ex);
         }
 
-        await permissionService.SaveEntriesAsync(request.NodeKey, request.RoleAlias, mapped, cancellationToken);
         return Ok();
     }
 
@@ -157,7 +157,7 @@ public sealed class AdvancedPermissionsPermissionController(
         // Validate everything first. A batch that cannot be mapped is a client bug, not a
         // conflict, and reporting it as one would send the user to a dialog about somebody
         // else's changes when nobody else has changed anything.
-        var pending = new List<(Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)>();
+        var pending = new List<(Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)>();
 
         foreach (var node in request.Nodes)
         {
@@ -166,7 +166,7 @@ public sealed class AdvancedPermissionsPermissionController(
                 return BadRequest(problem);
             }
 
-            pending.Add((node.NodeKey, node.RoleAlias, mapped));
+            pending.Add((node.NodeKey, node.RoleAlias, mapped, request.Force ? null : node.ExpectedStamp));
         }
 
         // A repeated (NodeKey, RoleAlias) pair is a malformed request, the same class of problem
@@ -189,39 +189,17 @@ public sealed class AdvancedPermissionsPermissionController(
             }
         }
 
-        if (!request.Force)
+        // As with the single save, the stamps are checked by the write, inside its transaction —
+        // not by a pass over the stored entries here. The exception, when it comes, lists every
+        // conflicted pair and guarantees nothing was written for any of them.
+        try
         {
-            var conflicts = new List<BatchSaveConflict>();
-
-            foreach (var node in request.Nodes)
-            {
-                if (node.ExpectedStamp is null)
-                {
-                    continue;
-                }
-
-                var stored = await permissionService.GetEntriesAsync(node.NodeKey, node.RoleAlias, cancellationToken);
-                var currentStamp = PermissionStamp.Compute(stored);
-
-                if (string.Equals(currentStamp, node.ExpectedStamp, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                conflicts.Add(new BatchSaveConflict(
-                    node.NodeKey,
-                    node.RoleAlias,
-                    stored.Select(MapEntry).ToList(),
-                    currentStamp));
-            }
-
-            if (conflicts.Count > 0)
-            {
-                return Conflict(ConflictProblemDetails.Create<BatchSaveConflict>(conflicts));
-            }
+            await permissionService.SaveManyAsync(pending, cancellationToken);
         }
-
-        await permissionService.SaveManyAsync(pending, cancellationToken);
+        catch (PermissionConcurrencyException ex)
+        {
+            return ConflictResult(ex);
+        }
 
         // The new stamps, so the client can keep editing without a further read. Computed from
         // what was written rather than re-read, because the write just made them equal and a
@@ -236,6 +214,23 @@ public sealed class AdvancedPermissionsPermissionController(
 
         return Ok(saved);
     }
+
+    /// <summary>
+    /// Turns the exception a stale write raises into the <c>409 Conflict</c> the client is written
+    /// against: a <see cref="ProblemDetails"/> carrying the conflicts as its <c>conflicts</c>
+    /// extension. The body's shape is a wire contract — see <see cref="ConflictProblemDetails"/>.
+    /// </summary>
+    /// <param name="exception">The exception listing every conflicted pair.</param>
+    /// <returns>The 409 result.</returns>
+    private ConflictObjectResult ConflictResult(PermissionConcurrencyException exception) =>
+        Conflict(ConflictProblemDetails.Create<BatchSaveConflict>(
+            exception.Conflicts
+                .Select(c => new BatchSaveConflict(
+                    c.NodeKey,
+                    c.RoleAlias,
+                    c.CurrentEntries.Select(MapEntry).ToList(),
+                    c.CurrentStamp))
+                .ToList()));
 
     /// <summary>
     /// Validates and maps the entries of one save, or produces the problem describing why it

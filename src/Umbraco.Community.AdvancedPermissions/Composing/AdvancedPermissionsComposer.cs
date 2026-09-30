@@ -182,11 +182,17 @@ public sealed class AdvancedPermissionsComposer : IComposer
         builder.AddNotificationAsyncHandler<ContentTypeDeletedNotification, DocTypePermissionCleanup>();
         builder.AddNotificationAsyncHandler<UserGroupDeletedNotification, DocTypePermissionCleanup>();
 
-        // Server-event handlers. Registered LAST, and that position is load-bearing: Umbraco runs
-        // the handlers for one notification in registration order, and every notification below is
-        // also handled by a cache invalidator above. A client that refetched on an event which
-        // overtook its invalidation would read the snapshot the change replaced — and, having
-        // consumed its one notification, would never ask again. Do not move these up.
+        // Server-event handlers. Every notification below is also handled by a cache invalidator
+        // above, and a client that refetched on an event which overtook that invalidation would read
+        // the snapshot the change replaced and, having consumed its one notification, never ask
+        // again. What guarantees the invalidation goes first is NOT the order of these lines:
+        // Umbraco's EventAggregator runs every synchronous INotificationHandler for a notification
+        // before any asynchronous INotificationAsyncHandler (Publish calls PublishNotifications and
+        // then PublishNotificationsAsync). The invalidators are synchronous and these handlers are
+        // asynchronous, so the invalidators always win, wherever these lines sit. Registration order
+        // does still decide the order among the asynchronous handlers (the orphan cleanup and the
+        // user-group seeder above), so they stay last: harmless, and right if an invalidator ever
+        // becomes asynchronous. Do not move them up.
         builder.AddNotificationAsyncHandler<AdvancedPermissionsChangedNotification, AdvancedPermissionsServerEventHandler>();
         builder.AddNotificationAsyncHandler<DocTypePermissionsChangedNotification, AdvancedPermissionsServerEventHandler>();
         builder.AddNotificationAsyncHandler<UserGroupSavedNotification, AccessServerEventHandler>();

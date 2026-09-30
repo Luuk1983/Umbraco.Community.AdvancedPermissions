@@ -74,8 +74,8 @@ public sealed class AdvancedPermissionRepositoryBatchTests : IAsyncLifetime
 
         await _repository.SaveManyAsync(
         [
-            (node1, role, new[] { (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false) }),
-            (node2, role, new[] { (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false) }),
+            (node1, role, new[] { (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeAndDescendants, false) }, null),
+            (node2, role, new[] { (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false) }, null),
         ]);
 
         var node1Results = await _repository.GetByNodeAndRoleAsync(node1, role);
@@ -114,18 +114,18 @@ public sealed class AdvancedPermissionRepositoryBatchTests : IAsyncLifetime
         var node2 = Guid.NewGuid();
         const string role = "editors";
 
-        var batch = new (Guid NodeKey, string RoleAlias, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)[]
+        var batch = new (Guid NodeKey, string RoleAlias, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)[]
         {
             (node1, role, new[]
             {
                 (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
-            }),
+            }, null),
             (node2, role, new[]
             {
                 // Two rows with the same NodeKey+RoleAlias+Verb+Scope: violates IX_AdvancedPermission_Unique.
                 (AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
                 (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
-            }),
+            }, null),
         };
 
         await Assert.ThrowsAsync<DbUpdateException>(() => _repository.SaveManyAsync(batch));
@@ -159,19 +159,19 @@ public sealed class AdvancedPermissionRepositoryBatchTests : IAsyncLifetime
             (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
         ]);
 
-        var batch = new (Guid NodeKey, string RoleAlias, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)[]
+        var batch = new (Guid NodeKey, string RoleAlias, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)[]
         {
             // Replaces the seeded entry: its delete executes immediately, its insert stays staged.
             (node1, role, new[]
             {
                 (AdvancedPermissionsConstants.VerbRead, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
-            }),
+            }, null),
             (node2, role, new[]
             {
                 // Two rows with the same NodeKey+RoleAlias+Verb+Scope: violates IX_AdvancedPermission_Unique.
                 (AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
                 (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
-            }),
+            }, null),
         };
 
         await Assert.ThrowsAsync<DbUpdateException>(() => _repository.SaveManyAsync(batch));
@@ -201,7 +201,7 @@ public sealed class AdvancedPermissionRepositoryBatchTests : IAsyncLifetime
 
         await _repository.SaveManyAsync(
         [
-            (nodeKey, role, new[] { (AdvancedPermissionsConstants.VerbRead, PermissionState.Deny, PermissionScope.ThisNodeOnly, false) }),
+            (nodeKey, role, new[] { (AdvancedPermissionsConstants.VerbRead, PermissionState.Deny, PermissionScope.ThisNodeOnly, false) }, null),
         ]);
 
         var results = await _repository.GetByNodeAndRoleAsync(nodeKey, role);
@@ -234,7 +234,7 @@ public sealed class AdvancedPermissionRepositoryBatchTests : IAsyncLifetime
             {
                 (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
                 (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
-            }),
+            }, null),
         ]);
 
         var results = await _repository.GetByNodeAndRoleAsync(nodeKey, role);
@@ -257,10 +257,10 @@ public sealed class AdvancedPermissionRepositoryBatchTests : IAsyncLifetime
         var nodeKey = Guid.NewGuid();
         const string role = "editors";
 
-        var batch = new (Guid NodeKey, string RoleAlias, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)[]
+        var batch = new (Guid NodeKey, string RoleAlias, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)[]
         {
-            (nodeKey, role, new[] { (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false) }),
-            (nodeKey, role, new[] { (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false) }),
+            (nodeKey, role, new[] { (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false) }, null),
+            (nodeKey, role, new[] { (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false) }, null),
         };
 
         await Assert.ThrowsAsync<ArgumentException>(() => _repository.SaveManyAsync(batch));
@@ -304,7 +304,7 @@ public sealed class AdvancedPermissionRepositoryBatchTests : IAsyncLifetime
                 e.IsPriorityOverride))
             .ToArray();
 
-        await _repository.SaveManyAsync([(nodeKey, role, toSave)]);
+        await _repository.SaveManyAsync([(nodeKey, role, toSave, null)]);
 
         var stored = await _repository.GetByNodeAndRoleAsync(nodeKey, role);
 

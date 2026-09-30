@@ -1,5 +1,5 @@
+using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
-using Umbraco.Cms.Core.Models.ServerEvents;
 using Umbraco.Cms.Core.ServerEvents;
 using Umbraco.Community.AdvancedPermissions.Notifications;
 
@@ -19,27 +19,31 @@ namespace Umbraco.Community.AdvancedPermissions.ServerEvents;
 /// makes this safe. A client refetching on an event that overtook the invalidation would read the
 /// snapshot the write replaced and — having consumed its one notification — never ask again.
 /// </para>
+/// <para>
+/// A routing failure is logged and swallowed, and never propagates: see <c>ServerEventRouting</c>.
+/// These handlers run inline in Umbraco's notification pipeline, so this class does not rely on the
+/// publisher of the notification having wrapped the publish itself.
+/// </para>
 /// </remarks>
 /// <param name="router">Umbraco's server-event router, registered by the management API.</param>
-public sealed class AdvancedPermissionsServerEventHandler(IServerEventRouter router) :
+/// <param name="logger">Used to record a route failure without letting it escape this handler.</param>
+public sealed class AdvancedPermissionsServerEventHandler(
+    IServerEventRouter router,
+    ILogger<AdvancedPermissionsServerEventHandler> logger) :
     INotificationAsyncHandler<AdvancedPermissionsChangedNotification>,
     INotificationAsyncHandler<DocTypePermissionsChangedNotification>
 {
     /// <inheritdoc />
     public Task HandleAsync(AdvancedPermissionsChangedNotification notification, CancellationToken cancellationToken) =>
-        router.RouteEventAsync(new ServerEvent
-        {
-            EventType = AdvancedPermissionsServerEvents.EventType.Updated,
-            EventSource = AdvancedPermissionsServerEvents.NodePermissionsSource,
-            Key = notification.NodeKey,
-        });
+        ServerEventRouting.RouteAllAsync(
+            router,
+            logger,
+            [(AdvancedPermissionsServerEvents.NodePermissionsSource, notification.NodeKey)]);
 
     /// <inheritdoc />
     public Task HandleAsync(DocTypePermissionsChangedNotification notification, CancellationToken cancellationToken) =>
-        router.RouteEventAsync(new ServerEvent
-        {
-            EventType = AdvancedPermissionsServerEvents.EventType.Updated,
-            EventSource = AdvancedPermissionsServerEvents.DocTypePermissionsSource,
-            Key = notification.NodeKey,
-        });
+        ServerEventRouting.RouteAllAsync(
+            router,
+            logger,
+            [(AdvancedPermissionsServerEvents.DocTypePermissionsSource, notification.NodeKey)]);
 }

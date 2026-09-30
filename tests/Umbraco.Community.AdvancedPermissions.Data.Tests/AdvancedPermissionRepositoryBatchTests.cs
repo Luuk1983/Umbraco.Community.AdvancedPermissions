@@ -135,6 +135,54 @@ public sealed class AdvancedPermissionRepositoryBatchTests : IAsyncLifetime
     }
 
     /// <summary>
+    /// Proves the explicit transaction is load-bearing, not decorative: the per-pair deletes run
+    /// immediately while the inserts stay staged, so a failure midway would leave a pair's previous
+    /// entries deleted and nothing written in their place unless the transaction rolls the deletes back.
+    /// </summary>
+    /// <remarks>
+    /// <c>SaveManyAsync_FailureMidway_WritesNothing</c> alone cannot catch a missing transaction: its
+    /// first pair has nothing stored beforehand, so "wrote nothing" holds whether or not the batch is
+    /// atomic. Deleting <c>BeginTransactionAsync</c> from the repository leaves that test green. This
+    /// test seeds the first pair with an entry, so the immediate <c>ExecuteDeleteAsync</c> has
+    /// something to destroy; without the transaction the seeded entry is gone after the failure, and
+    /// with it the entry survives untouched. Do not weaken this test back to an empty first pair.
+    /// </remarks>
+    [Fact]
+    public async Task SaveManyAsync_FailureMidway_LeavesPreviouslyStoredEntriesIntact()
+    {
+        var node1 = Guid.NewGuid();
+        var node2 = Guid.NewGuid();
+        const string role = "editors";
+
+        await _repository.SaveAsync(node1, role,
+        [
+            (AdvancedPermissionsConstants.VerbRead, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
+        ]);
+
+        var batch = new (Guid NodeKey, string RoleAlias, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)[]
+        {
+            // Replaces the seeded entry: its delete executes immediately, its insert stays staged.
+            (node1, role, new[]
+            {
+                (AdvancedPermissionsConstants.VerbRead, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
+            }),
+            (node2, role, new[]
+            {
+                // Two rows with the same NodeKey+RoleAlias+Verb+Scope: violates IX_AdvancedPermission_Unique.
+                (AdvancedPermissionsConstants.VerbDelete, PermissionState.Allow, PermissionScope.ThisNodeOnly, false),
+                (AdvancedPermissionsConstants.VerbDelete, PermissionState.Deny, PermissionScope.ThisNodeOnly, false),
+            }),
+        };
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => _repository.SaveManyAsync(batch));
+
+        var survivors = await _repository.GetByNodeAndRoleAsync(node1, role);
+        Assert.Single(survivors);
+        Assert.Equal(AdvancedPermissionsConstants.VerbRead, survivors[0].Verb);
+        Assert.Equal(PermissionState.Allow, survivors[0].State);
+    }
+
+    /// <summary>
     /// Proves the ordinary save: replacing an existing entry with the same verb and scope but a
     /// different state (flipping Allow to Deny) is the everyday shape of a Permissions Editor save,
     /// and it collides with <c>IX_AdvancedPermission_Unique</c> unless the delete for the old row

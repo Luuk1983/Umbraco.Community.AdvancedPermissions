@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Uzasadnienie',
     docTypePermissions_defaultAllow: 'Domyślnie dozwolone',
     docTypePermissions_viaDefault: 'z wiersza domyślnego',
+
+    // ── Aktualizacje na żywo i konflikty ──────────────────────────────────
+    uap_liveUpdated: 'Zaktualizowano przed chwilą',
+    uap_liveConflictTitle: 'Ktoś zmienił te uprawnienia w trakcie ich edytowania',
+    uap_liveConflictBody: '%0% niezapisanych zmian jest w konflikcie z tym, co jest teraz zapisane. Żadna z Twoich zmian nie została zmieniona.',
+    uap_liveConflictBodyOne: 'Jedna z niezapisanych zmian jest w konflikcie z tym, co jest teraz zapisane. Żadna z Twoich zmian nie została zmieniona.',
+    uap_liveLoadStored: 'Wczytaj zapisane wartości',
+    uap_liveKeepMine: 'Zachowaj moje zmiany',
+    uap_liveFlagLegend: 'Zmienione przez kogoś innego od czasu wczytania',
+    uap_conflictDialogTitle: 'Zastąpić zapisane zmiany?',
+    uap_conflictDialogBody: 'Zapisanie zastąpi to, co jest teraz zapisane. %0% zmian wprowadzonych przez kogoś innego zostanie utraconych, a tej operacji nie można cofnąć.',
+    uap_conflictDialogBodyOne: 'Zapisanie zastąpi to, co jest teraz zapisane. Jedna zmiana wprowadzona przez kogoś innego zostanie utracona, a tej operacji nie można cofnąć.',
+    uap_conflictStoredLabel: 'zapisane',
+    uap_conflictYoursLabel: 'Twoje',
+    uap_conflictOverwrite: 'Zastąp mimo to',
+    uap_conflictCancel: 'Anuluj',
   },
 } satisfies UmbLocalizationDictionary;

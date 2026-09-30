@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'הנמקה',
     docTypePermissions_defaultAllow: 'מותר כברירת מחדל',
     docTypePermissions_viaDefault: 'משורת ברירת המחדל',
+
+    // ── עדכונים בזמן אמת והתנגשויות ─────────────────────────────────────
+    uap_liveUpdated: 'עודכן לפני רגע',
+    uap_liveConflictTitle: 'מישהו שינה הרשאות אלו בזמן שערכת אותן',
+    uap_liveConflictBody: '%0% מהשינויים שלך שלא נשמרו מתנגשים עם מה שנשמר כעת. שום דבר משלך לא השתנה.',
+    uap_liveConflictBodyOne: 'אחד מהשינויים שלך שלא נשמרו מתנגש עם מה שנשמר כעת. שום דבר משלך לא השתנה.',
+    uap_liveLoadStored: 'טען את הערכים השמורים',
+    uap_liveKeepMine: 'שמור על השינויים שלי',
+    uap_liveFlagLegend: 'שונה על ידי מישהו אחר מאז שטענת',
+    uap_conflictDialogTitle: 'להחליף את השינויים השמורים?',
+    uap_conflictDialogBody: 'שמירה תחליף את מה שנשמר כעת. %0% שינויים שנעשו על ידי מישהו אחר יאבדו, ולא ניתן לבטל זאת.',
+    uap_conflictDialogBodyOne: 'שמירה תחליף את מה שנשמר כעת. שינוי אחד שנעשה על ידי מישהו אחר יאבד, ולא ניתן לבטל זאת.',
+    uap_conflictStoredLabel: 'שמור',
+    uap_conflictYoursLabel: 'שלך',
+    uap_conflictOverwrite: 'החלף בכל זאת',
+    uap_conflictCancel: 'בטל',
   },
 } satisfies UmbLocalizationDictionary;

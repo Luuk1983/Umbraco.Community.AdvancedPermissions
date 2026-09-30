@@ -35,6 +35,8 @@ export interface TreeNode {
   icon: string | null;
   hasChildren: boolean;
   entries: PermissionEntry[];
+  /** The concurrency stamp of this node's entries, sent back on save. */
+  stamp: string;
 }
 
 /** A tree node augmented with client-side expand/load state. */
@@ -114,8 +116,58 @@ export interface PathEntriesResponse {
   entries: PermissionEntry[];
 }
 
+/**
+ * Stored entries for a node+role pair, together with their concurrency stamp.
+ * The stamp comes from the response's `ETag` header rather than the JSON body — see
+ * `getPermissionsWithStamp` in the API layer for why. An empty `stamp` means the server sent no
+ * `ETag`, and the caller must treat that as "no stamp available" rather than a real value.
+ */
+export interface PermissionEntriesWithStamp {
+  entries: PermissionEntry[];
+  stamp: string;
+}
+
 /** A pending verb-level change for a node in the Security Editor. */
 export interface PendingVerbChange {
   /** Entries to set for this verb. Empty array means "clear/inherit". */
   entries: Array<{ state: PermissionState; scope: PermissionScope; isPriorityOverride: boolean }>;
 }
+
+/** One node-and-user-group pair in a batch save, with the stamp the client read. */
+export interface BatchSaveNode {
+  /** The content node key, or VIRTUAL_ROOT_NODE_KEY for the virtual root. */
+  nodeKey: string;
+  /** The user group alias. */
+  roleAlias: string;
+  /** The replacement entries. An empty list removes all entries for the pair. */
+  entries: Array<{ verb: string; state: PermissionState; scope: PermissionScope; isPriorityOverride: boolean }>;
+  /** The stamp this client was given when it read these entries. */
+  expectedStamp: string | undefined;
+}
+
+/** One pair's new stamp after a successful batch save. */
+export interface BatchSavedStamp {
+  /** The content node key. */
+  nodeKey: string;
+  /** The user group alias. */
+  roleAlias: string;
+  /** The stamp of what was just written. */
+  stamp: string;
+}
+
+/** One pair the server refused because its stored entries moved. */
+export interface BatchSaveConflict {
+  /** The content node key. */
+  nodeKey: string;
+  /** The user group alias. */
+  roleAlias: string;
+  /** What is stored right now — what the dialog shows as "stored". */
+  currentEntries: PermissionEntry[];
+  /** The stamp of `currentEntries`, so a resolved conflict can retry without a further read. */
+  currentStamp: string;
+}
+
+/** The result of a batch save: either it wrote, or it named what moved. */
+export type BatchSaveResult =
+  | { ok: true; stamps: ReadonlyMap<string, string> }
+  | { ok: false; conflicts: BatchSaveConflict[] };

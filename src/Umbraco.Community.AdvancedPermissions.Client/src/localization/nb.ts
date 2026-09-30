@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Begrunnelse',
     docTypePermissions_defaultAllow: 'Tillatt som standard',
     docTypePermissions_viaDefault: 'fra standardrad',
+
+    // ── Sanntidsoppdateringer og konflikter ───────────────────────────────
+    uap_liveUpdated: 'Oppdatert akkurat nå',
+    uap_liveConflictTitle: 'Noen endret disse tillatelsene mens du redigerte',
+    uap_liveConflictBody: '%0% av dine ulagrede endringer er i konflikt med det som er lagret nå. Ingenting av dine endringer er blitt endret.',
+    uap_liveConflictBodyOne: 'En av dine ulagrede endringer er i konflikt med det som er lagret nå. Ingenting av dine endringer er blitt endret.',
+    uap_liveLoadStored: 'Last inn lagrede verdier',
+    uap_liveKeepMine: 'Behold mine endringer',
+    uap_liveFlagLegend: 'Endret av noen andre siden du lastet inn',
+    uap_conflictDialogTitle: 'Overskrive de lagrede endringene?',
+    uap_conflictDialogBody: 'Lagring erstatter det som er lagret nå. %0% endringer gjort av noen andre vil gå tapt, og dette kan ikke angres.',
+    uap_conflictDialogBodyOne: 'Lagring erstatter det som er lagret nå. En endring gjort av noen andre vil gå tapt, og dette kan ikke angres.',
+    uap_conflictStoredLabel: 'lagret',
+    uap_conflictYoursLabel: 'ditt',
+    uap_conflictOverwrite: 'Overskriv likevel',
+    uap_conflictCancel: 'Avbryt',
   },
 } satisfies UmbLocalizationDictionary;

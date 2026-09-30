@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Обоснование',
     docTypePermissions_defaultAllow: 'Разрешено по умолчанию',
     docTypePermissions_viaDefault: 'из строки по умолчанию',
+
+    // ── Обновления в реальном времени и конфликты ──────────────────────────
+    uap_liveUpdated: 'Обновлено только что',
+    uap_liveConflictTitle: 'Кто-то изменил эти разрешения, пока вы их редактировали',
+    uap_liveConflictBody: '%0% ваших несохранённых изменений конфликтуют с тем, что сохранено сейчас. Ничего из ваших изменений не было изменено.',
+    uap_liveConflictBodyOne: 'Одно из ваших несохранённых изменений конфликтует с тем, что сохранено сейчас. Ничего из ваших изменений не было изменено.',
+    uap_liveLoadStored: 'Загрузить сохранённые значения',
+    uap_liveKeepMine: 'Оставить мои изменения',
+    uap_liveFlagLegend: 'Изменено другим пользователем с момента загрузки',
+    uap_conflictDialogTitle: 'Перезаписать сохранённые изменения?',
+    uap_conflictDialogBody: 'Сохранение заменит то, что сохранено сейчас. %0% изменений, внесённых другим пользователем, будут потеряны, и это невозможно отменить.',
+    uap_conflictDialogBodyOne: 'Сохранение заменит то, что сохранено сейчас. Одно изменение, внесённое другим пользователем, будет потеряно, и это невозможно отменить.',
+    uap_conflictStoredLabel: 'сохранено',
+    uap_conflictYoursLabel: 'ваше',
+    uap_conflictOverwrite: 'Всё равно перезаписать',
+    uap_conflictCancel: 'Отмена',
   },
 } satisfies UmbLocalizationDictionary;

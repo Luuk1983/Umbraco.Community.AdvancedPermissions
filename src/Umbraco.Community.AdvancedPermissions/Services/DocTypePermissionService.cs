@@ -1,8 +1,11 @@
+using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Community.AdvancedPermissions.Caching;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Notifications;
 
 namespace Umbraco.Community.AdvancedPermissions.Services;
 
@@ -14,11 +17,22 @@ namespace Umbraco.Community.AdvancedPermissions.Services;
 /// <param name="resolver">The pure doc-type permission resolver.</param>
 /// <param name="userService">The Umbraco user service used to look up group memberships.</param>
 /// <param name="cache">The two-level doc-type permission cache.</param>
+/// <param name="eventAggregator">
+/// Used to publish permission-change notifications after a write has been persisted and the cache
+/// invalidated, so other packages (and the SignalR relay) can react without depending on how the
+/// write happened.
+/// </param>
+/// <param name="logger">
+/// Used to record a notification handler's failure without letting it propagate — see
+/// <see cref="PublishSafelyAsync"/>.
+/// </param>
 public sealed class DocTypePermissionService(
     IDocTypePermissionRepository repository,
     IDocTypePermissionResolver resolver,
     IUserService userService,
-    DocTypePermissionCache cache)
+    DocTypePermissionCache cache,
+    IEventAggregator eventAggregator,
+    ILogger<DocTypePermissionService> logger)
     : IDocTypePermissionService
 {
     /// <inheritdoc />
@@ -89,6 +103,89 @@ public sealed class DocTypePermissionService(
 
         cache.InvalidateRoleEntries(roleAlias);
         cache.InvalidateAllResolved();
+
+        // Strictly after invalidation, for the reason set out on AdvancedPermissionService: a
+        // handler that refetched on this while the cache still held the old value would read the
+        // snapshot this write replaced, and would never be told again.
+        await PublishSafelyAsync(
+            new DocTypePermissionsChangedNotification(nodeKey, roleAlias, [contentTypeKey]),
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task SaveManyAsync(
+        IReadOnlyList<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)> batch,
+        CancellationToken cancellationToken = default)
+    {
+        // Nothing was written, so nothing is stale — skip the transaction and the L2 flush.
+        if (batch.Count == 0)
+        {
+            return;
+        }
+
+        await repository.SaveManyAsync(
+            batch.Select(b => (b.NodeKey, b.RoleAlias, b.ContentTypeKey,
+                (IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>)b.Entries)),
+            cancellationToken);
+
+        // Invalidated once for the whole batch rather than per triple: L2 is dropped wholesale
+        // anyway, and doing it per triple would drop it N times for no further effect.
+        foreach (var roleAlias in batch.Select(b => b.RoleAlias).Distinct(StringComparer.Ordinal))
+        {
+            cache.InvalidateRoleEntries(roleAlias);
+        }
+
+        cache.InvalidateAllResolved();
+
+        // Again strictly after invalidation, and one notification per triple so a handler sees the
+        // same granularity it would from a single save. Each publish is wrapped individually
+        // (inside the loop) so one bad triple's handler failure does not stop the remaining triples
+        // from being announced.
+        foreach (var (nodeKey, roleAlias, contentTypeKey, _) in batch)
+        {
+            await PublishSafelyAsync(
+                new DocTypePermissionsChangedNotification(nodeKey, roleAlias, [contentTypeKey]),
+                cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Publishes a doc-type permission-change notification, swallowing any exception thrown by a
+    /// handler so it cannot mask a successful write.
+    /// </summary>
+    /// <remarks>
+    /// By the time this runs, the write has already committed and the cache has already been
+    /// invalidated — the change is real and already visible to every other reader. Letting a
+    /// handler's failure propagate from here would turn a successful save into a reported failure.
+    /// A degraded live update (silently not going out) is the correct failure mode here; a false
+    /// negative on the save itself is not. <see cref="OperationCanceledException"/> is deliberately
+    /// not caught: a cancelled request is not a handler failure, and swallowing it would hide a
+    /// genuine cancellation.
+    /// </remarks>
+    /// <param name="notification">The notification to publish.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    private async Task PublishSafelyAsync(
+        DocTypePermissionsChangedNotification notification,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await eventAggregator.PublishAsync(notification, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to publish {Notification} for node {NodeKey} and user group {RoleAlias}. " +
+                "The write already committed and the cache was already invalidated — only the live-update notification was lost.",
+                nameof(DocTypePermissionsChangedNotification),
+                notification.NodeKey,
+                notification.RoleAlias);
+        }
     }
 
     /// <summary>

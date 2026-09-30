@@ -51,6 +51,21 @@ public interface IDocTypePermissionRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Replaces the entries for several node, user group and document type triples in a single
+    /// transaction.
+    /// </summary>
+    /// <remarks>
+    /// All or nothing, for the same reason as <see cref="IAdvancedPermissionRepository.SaveManyAsync"/>:
+    /// the editor changes several at once, and a partial write leaves a state nothing afterwards
+    /// can read.
+    /// </remarks>
+    /// <param name="batch">The triple and replacement entries for each.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    Task SaveManyAsync(
+        IEnumerable<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)> batch,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Removes all entries that reference the given node, across all roles, content types, and verbs.
     /// Called from the content-deletion cleanup handler.
     /// </summary>

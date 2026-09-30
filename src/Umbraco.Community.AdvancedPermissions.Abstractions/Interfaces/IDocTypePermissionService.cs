@@ -75,4 +75,20 @@ public interface IDocTypePermissionService
         Guid contentTypeKey,
         IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Replaces the entries for several node, user group and document type triples in a single
+    /// transaction, invalidating the affected caches once for the whole batch and publishing one
+    /// change notification per triple.
+    /// </summary>
+    /// <remarks>
+    /// All or nothing, for the same reason as <see cref="IAdvancedPermissionService.SaveManyAsync"/>:
+    /// the editor changes several at once, and a partial write leaves a state nothing afterwards
+    /// can read.
+    /// </remarks>
+    /// <param name="batch">The triple and replacement entries for each.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    Task SaveManyAsync(
+        IReadOnlyList<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)> batch,
+        CancellationToken cancellationToken = default);
 }

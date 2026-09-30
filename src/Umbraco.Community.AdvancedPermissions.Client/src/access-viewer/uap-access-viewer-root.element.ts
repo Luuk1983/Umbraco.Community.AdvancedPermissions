@@ -19,6 +19,8 @@ import { UAP_USER_PICKER_MODAL } from './user-picker-modal.token.js';
 import type { CellInfo } from '../utils/cell-info.js';
 import { updateNode } from '../utils/tree-ops.js';
 import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
+import { clearEffectivePermissionCache } from '../conditions/document-user-permission.condition.js';
+import { UapSecurityEventsController } from '../live/security-events.controller.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
 import '../help/uap-page-intro.element.js';
@@ -77,11 +79,17 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   /** Whether the dialog should show stars on deny entries (deny trumping allow). */
   @state() private _dialogShowStars = false;
 
+  /** Set after a live refresh, to show the "updated" pill. */
+  @state() private _liveRefreshedAt: number | null = null;
+
   @query('uap-reasoning-dialog') private _reasoningDialog!: UapReasoningDialogElement;
 
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #loadAbortController: AbortController | null = null;
+
+  /** Clears `_liveRefreshedAt` after the pill has had a moment to be seen. */
+  #liveRefreshedTimer: ReturnType<typeof setTimeout> | undefined = undefined;
 
   constructor() {
     super();
@@ -91,6 +99,32 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     this.consumeContext(UMB_MODAL_MANAGER_CONTEXT, (ctx) => {
       this.#modalManager = ctx ?? undefined;
     });
+
+    // A viewer holds nothing of the user's, so it never asks and never flags — it just becomes
+    // correct again. The keys are ignored deliberately: a permission written on an ancestor moves
+    // what every descendant on screen resolves to, so there is no subset worth refetching.
+    new UapSecurityEventsController(this, async () => {
+      if (!this._activeSubject) return;
+      clearEffectivePermissionCache();
+      await this.#reloadEffective();
+      this.#markLiveRefreshed();
+    });
+  }
+
+  /**
+   * Records a silent live refresh and shows the "updated" pill for a few seconds.
+   *
+   * Timed out rather than left standing: the pill says "Updated just now", and leaving that
+   * claim on screen indefinitely turns it into a lie the moment a few minutes pass with nothing
+   * happening. A fresh event before the timer fires restarts the clock instead of stacking a
+   * second one.
+   */
+  #markLiveRefreshed(): void {
+    this._liveRefreshedAt = Date.now();
+    clearTimeout(this.#liveRefreshedTimer);
+    this.#liveRefreshedTimer = setTimeout(() => {
+      this._liveRefreshedAt = null;
+    }, 5000);
   }
 
   override connectedCallback(): void {
@@ -136,6 +170,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#loadAbortController?.abort();
+    clearTimeout(this.#liveRefreshedTimer);
   }
 
   // ── Data loading ─────────────────────────────────────────────────────────
@@ -579,6 +614,9 @@ export class UapAccessViewerRootElement extends UmbLitElement {
           clearLabel=${this.#localize.term('uap_clearSelection')}
           @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
           @uap-selection-clear=${() => this.#onClearSelection()}>
+          ${this._liveRefreshedAt
+            ? html`<span slot="actions" class="live-pill"><uui-icon name="icon-sync"></uui-icon>${this.#localize.term('uap_liveUpdated')}</span>`
+            : nothing}
           ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
           ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
           ${!this._loading && this._treeNodes.length > 0
@@ -654,6 +692,17 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     .error-msg {
       padding: 12px 18px;
       color: var(--uui-color-danger, #b91c1c);
+    }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 4px;
+      font-size: 12px;
+      background: var(--uui-color-surface-alt);
+      color: var(--uui-color-text-alt);
     }
 
     /* ── Table ────────────────────────────────────────────────── */

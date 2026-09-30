@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Justification',
     docTypePermissions_defaultAllow: 'Autorisé par défaut',
     docTypePermissions_viaDefault: 'depuis la ligne par défaut',
+
+    // ── Mises à jour en direct et conflits ────────────────────────────────
+    uap_liveUpdated: 'Mis à jour à l’instant',
+    uap_liveConflictTitle: 'Quelqu’un a modifié ces permissions pendant que vous les modifiiez',
+    uap_liveConflictBody: '%0% de vos modifications non enregistrées entrent en conflit avec ce qui est enregistré actuellement. Rien de vos modifications n’a été changé.',
+    uap_liveConflictBodyOne: 'Une de vos modifications non enregistrées entre en conflit avec ce qui est enregistré actuellement. Rien de vos modifications n’a été changé.',
+    uap_liveLoadStored: 'Charger les valeurs enregistrées',
+    uap_liveKeepMine: 'Conserver mes modifications',
+    uap_liveFlagLegend: 'Modifié par quelqu’un d’autre depuis votre chargement',
+    uap_conflictDialogTitle: 'Écraser les modifications enregistrées ?',
+    uap_conflictDialogBody: 'L’enregistrement remplace ce qui est enregistré actuellement. %0% modifications effectuées par quelqu’un d’autre seront perdues, et cette action est irréversible.',
+    uap_conflictDialogBodyOne: 'L’enregistrement remplace ce qui est enregistré actuellement. Une modification effectuée par quelqu’un d’autre sera perdue, et cette action est irréversible.',
+    uap_conflictStoredLabel: 'enregistré',
+    uap_conflictYoursLabel: 'le vôtre',
+    uap_conflictOverwrite: 'Écraser quand même',
+    uap_conflictCancel: 'Annuler',
   },
 } satisfies UmbLocalizationDictionary;

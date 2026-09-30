@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Justificare',
     docTypePermissions_defaultAllow: 'Permis în mod implicit',
     docTypePermissions_viaDefault: 'din rândul implicit',
+
+    // ── Actualizări live și conflicte ─────────────────────────────────────
+    uap_liveUpdated: 'Actualizat chiar acum',
+    uap_liveConflictTitle: 'Altcineva a modificat aceste permisiuni în timp ce le editați',
+    uap_liveConflictBody: '%0% din modificările dvs. nesalvate intră în conflict cu ceea ce este salvat acum. Nimic din modificările dvs. nu a fost schimbat.',
+    uap_liveConflictBodyOne: 'Una dintre modificările dvs. nesalvate intră în conflict cu ceea ce este salvat acum. Nimic din modificările dvs. nu a fost schimbat.',
+    uap_liveLoadStored: 'Încarcă valorile salvate',
+    uap_liveKeepMine: 'Păstrează modificările mele',
+    uap_liveFlagLegend: 'Modificat de altcineva de când ați încărcat',
+    uap_conflictDialogTitle: 'Se suprascriu modificările salvate?',
+    uap_conflictDialogBody: 'Salvarea înlocuiește ceea ce este salvat acum. %0% modificări făcute de altcineva se vor pierde, iar această acțiune nu poate fi anulată.',
+    uap_conflictDialogBodyOne: 'Salvarea înlocuiește ceea ce este salvat acum. O modificare făcută de altcineva se va pierde, iar această acțiune nu poate fi anulată.',
+    uap_conflictStoredLabel: 'salvat',
+    uap_conflictYoursLabel: 'al dvs.',
+    uap_conflictOverwrite: 'Suprascrie totuși',
+    uap_conflictCancel: 'Anulează',
   },
 } satisfies UmbLocalizationDictionary;

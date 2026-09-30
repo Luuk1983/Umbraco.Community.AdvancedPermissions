@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Motivering',
     docTypePermissions_defaultAllow: 'Tillåts som standard',
     docTypePermissions_viaDefault: 'från standardrad',
+
+    // ── Direktuppdateringar och konflikter ────────────────────────────────
+    uap_liveUpdated: 'Uppdaterad just nu',
+    uap_liveConflictTitle: 'Någon ändrade dessa behörigheter medan du redigerade dem',
+    uap_liveConflictBody: '%0% av dina osparade ändringar krockar med det som är sparat nu. Inget av dina ändringar har ändrats.',
+    uap_liveConflictBodyOne: 'En av dina osparade ändringar krockar med det som är sparat nu. Inget av dina ändringar har ändrats.',
+    uap_liveLoadStored: 'Läs in sparade värden',
+    uap_liveKeepMine: 'Behåll mina ändringar',
+    uap_liveFlagLegend: 'Ändrat av någon annan sedan du läste in',
+    uap_conflictDialogTitle: 'Skriva över de sparade ändringarna?',
+    uap_conflictDialogBody: 'Att spara ersätter det som är sparat nu. %0% ändringar gjorda av någon annan går förlorade, och detta kan inte ångras.',
+    uap_conflictDialogBodyOne: 'Att spara ersätter det som är sparat nu. En ändring gjord av någon annan går förlorad, och detta kan inte ångras.',
+    uap_conflictStoredLabel: 'sparat',
+    uap_conflictYoursLabel: 'ditt',
+    uap_conflictOverwrite: 'Skriv över trots det',
+    uap_conflictCancel: 'Avbryt',
   },
 } satisfies UmbLocalizationDictionary;

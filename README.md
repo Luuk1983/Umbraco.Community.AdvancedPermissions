@@ -26,6 +26,8 @@ Umbraco's built-in permissions cover the everyday cases well: you grant a user g
 
 - **See exactly why a permission resolved the way it did.** The Access Viewer shows the effective permission for any user or group at any node, with a full reasoning chain: which group contributed, from which node, and whether it was explicit or inherited. Every result is fully explainable.
 
+- **Know the moment something changes.** Every editor and viewer updates live when someone else saves a permission that affects what it's showing. A viewer just refreshes; an editor with unsaved changes is never silently overwritten, and never silently overwrites — see [Real-time updates](#real-time-updates) below.
+
 - **Start exactly where you already are.** On first boot the package imports your existing user-group permissions, and seeds new groups automatically afterwards. Day one matches what you had before, so there is nothing to reconfigure by hand.
 
 ## Prerequisites
@@ -110,6 +112,16 @@ The counterpart audit screen. Pick a user or user group, then pick a document ty
 As in the Access Viewer, click a cell for the full reasoning behind the result.
 
 ![Insert Options Viewer: which document types a user or group can create at a node](https://raw.githubusercontent.com/Luuk1983/Umbraco.Community.AdvancedPermissions/main/docs/screenshots/insert_options_viewer.jpg)
+
+### Real-time updates
+
+Every editor and viewer reacts immediately when someone else saves a permission that affects what it's currently showing — no manual refresh required.
+
+- **Viewers** (Access Viewer, Insert Options Viewer) and a **clean editor** refresh themselves silently and show an "Updated just now" pill. They have nothing of yours to lose, so they never ask.
+- An **editor holding unsaved changes** is never silently overwritten. It refetches, works out which of your changes collide with what is stored now, and flags only those cells with an outline. A banner offers **Load stored values** (resolves just the flagged cells, leaving your other edits untouched) or **Keep my changes** (dismisses the banner and keeps your work on screen — this does not mean your changes have won; saving will still ask you to confirm before overwriting anything).
+- **Saving is checked on the server too**, not only warned about on screen. If the stored values moved since you last read them, the save is refused and a dialog names exactly what would be lost, letting you cancel, load the stored values, or overwrite anyway.
+
+**Load-balancing limitation:** this rides Umbraco's own server-events hub, which has no distributed backplane configured. In a load-balanced deployment, only clients connected to the *same server* as the one that saved the change receive the live update — clients on other servers won't see it until they otherwise refetch. This is the same limitation the package's in-memory permission cache already has, so it isn't a new failure mode, but it's worth knowing before you meet it in production and assume the feature is broken.
 
 ### How conflicts are resolved
 

@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'السبب',
     docTypePermissions_defaultAllow: 'مسموح به افتراضيًا',
     docTypePermissions_viaDefault: 'من الصف الافتراضي',
+
+    // ── التحديثات الفورية والتعارضات ──────────────────────────────────────
+    uap_liveUpdated: 'تم التحديث الآن',
+    uap_liveConflictTitle: 'قام شخص آخر بتغيير هذه الأذونات أثناء تحريرك لها',
+    uap_liveConflictBody: '%0% من تغييراتك غير المحفوظة تتعارض مع ما هو محفوظ الآن. لم يتم تغيير أي شيء من تغييراتك.',
+    uap_liveConflictBodyOne: 'يتعارض أحد تغييراتك غير المحفوظة مع ما هو محفوظ الآن. لم يتم تغيير أي شيء من تغييراتك.',
+    uap_liveLoadStored: 'تحميل القيم المحفوظة',
+    uap_liveKeepMine: 'الاحتفاظ بتغييراتي',
+    uap_liveFlagLegend: 'تم تغييره من قِبل شخص آخر منذ أن قمت بتحميله',
+    uap_conflictDialogTitle: 'استبدال التغييرات المحفوظة؟',
+    uap_conflictDialogBody: 'الحفظ يستبدل ما هو محفوظ الآن. سيتم فقدان %0% من التغييرات التي أجراها شخص آخر، ولا يمكن التراجع عن ذلك.',
+    uap_conflictDialogBodyOne: 'الحفظ يستبدل ما هو محفوظ الآن. سيتم فقدان تغيير واحد أجراه شخص آخر، ولا يمكن التراجع عن ذلك.',
+    uap_conflictStoredLabel: 'المحفوظ',
+    uap_conflictYoursLabel: 'الخاص بك',
+    uap_conflictOverwrite: 'الاستبدال مع ذلك',
+    uap_conflictCancel: 'إلغاء',
   },
 } satisfies UmbLocalizationDictionary;

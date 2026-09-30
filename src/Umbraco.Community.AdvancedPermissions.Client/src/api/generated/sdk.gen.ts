@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuditForNodeData, AuditForNodeErrors, AuditForNodeResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PathEntriesData, PathEntriesErrors, PathEntriesResponses, SaveData, SaveErrors, SavePermissionsData, SavePermissionsErrors, SavePermissionsResponses, SaveResponses } from './types.gen';
+import type { AuditForNodeData, AuditForNodeErrors, AuditForNodeResponses, BatchSaveDocTypePermissionsData, BatchSaveDocTypePermissionsErrors, BatchSaveDocTypePermissionsResponses, BatchSavePermissionsData, BatchSavePermissionsErrors, BatchSavePermissionsResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PathEntriesData, PathEntriesErrors, PathEntriesResponses, SaveData, SaveErrors, SavePermissionsData, SavePermissionsErrors, SavePermissionsResponses, SaveResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -68,6 +68,26 @@ export class AdvancedPermissionsService {
             ],
             url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/audit-for-node',
             ...options
+        });
+    }
+    
+    /**
+     * Saves doc-type permission entries for several node+role+content-type triples at once, all or nothing.
+     */
+    public static batchSaveDocTypePermissions<ThrowOnError extends boolean = false>(options?: Options<BatchSaveDocTypePermissionsData, ThrowOnError>) {
+        return (options?.client ?? client).put<BatchSaveDocTypePermissionsResponses, BatchSaveDocTypePermissionsErrors, ThrowOnError>({
+            security: [
+                {
+                    scheme: 'bearer',
+                    type: 'http'
+                }
+            ],
+            url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/batch',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers
+            }
         });
     }
     
@@ -179,6 +199,26 @@ export class AdvancedPermissionsService {
                 }
             ],
             url: '/umbraco/management/api/v1/advanced-permissions/permissions',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers
+            }
+        });
+    }
+    
+    /**
+     * Saves permission entries for several nodes at once, all or nothing.
+     */
+    public static batchSavePermissions<ThrowOnError extends boolean = false>(options?: Options<BatchSavePermissionsData, ThrowOnError>) {
+        return (options?.client ?? client).put<BatchSavePermissionsResponses, BatchSavePermissionsErrors, ThrowOnError>({
+            security: [
+                {
+                    scheme: 'bearer',
+                    type: 'http'
+                }
+            ],
+            url: '/umbraco/management/api/v1/advanced-permissions/permissions/batch',
             ...options,
             headers: {
                 'Content-Type': 'application/json',

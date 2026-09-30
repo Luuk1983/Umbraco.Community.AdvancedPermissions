@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Reasoning',
     docTypePermissions_defaultAllow: 'Allowed by default',
     docTypePermissions_viaDefault: 'from default row',
+
+    // ── Live updates & conflicts ────────────────────────────────────────
+    uap_liveUpdated: 'Updated just now',
+    uap_liveConflictTitle: 'Someone changed these permissions while you were editing',
+    uap_liveConflictBody: '%0% of your unsaved changes collide with what is stored now. Nothing of yours has been changed.',
+    uap_liveConflictBodyOne: 'One of your unsaved changes collides with what is stored now. Nothing of yours has been changed.',
+    uap_liveLoadStored: 'Load stored values',
+    uap_liveKeepMine: 'Keep my changes',
+    uap_liveFlagLegend: 'Changed by someone else since you loaded',
+    uap_conflictDialogTitle: 'Overwrite the stored changes?',
+    uap_conflictDialogBody: 'Saving replaces what is stored now. %0% changes made by someone else will be lost, and this cannot be undone.',
+    uap_conflictDialogBodyOne: 'Saving replaces what is stored now. One change made by someone else will be lost, and this cannot be undone.',
+    uap_conflictStoredLabel: 'stored',
+    uap_conflictYoursLabel: 'yours',
+    uap_conflictOverwrite: 'Overwrite anyway',
+    uap_conflictCancel: 'Cancel',
   },
 } satisfies UmbLocalizationDictionary;

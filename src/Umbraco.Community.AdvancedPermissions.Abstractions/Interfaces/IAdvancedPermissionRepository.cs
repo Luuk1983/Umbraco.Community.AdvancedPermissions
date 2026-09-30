@@ -103,6 +103,26 @@ public interface IAdvancedPermissionRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Replaces the entries for several node-and-user-group pairs in a single transaction.
+    /// </summary>
+    /// <remarks>
+    /// All or nothing. The editors save many nodes at once, and a partial write — some nodes
+    /// updated, some not — is a worse outcome than either completing or refusing, because nothing
+    /// afterwards can tell which half landed.
+    /// </remarks>
+    /// <param name="batch">The node key, user group alias and replacement entries for each pair.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <exception cref="ArgumentException">
+    /// Thrown before any database work if <paramref name="batch"/> contains more than one entry for
+    /// the same node key and user group alias. A well-behaved caller groups by node first, so this
+    /// should never fire in practice; it exists so a caller that fails to do so gets a loud, specific
+    /// error rather than a silent merge of the two entry sets (or a confusing unique-index violation).
+    /// </exception>
+    Task SaveManyAsync(
+        IEnumerable<(Guid NodeKey, string RoleAlias, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)> batch,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Removes a specific permission entry, reverting it to the inherited/default state.
     /// </summary>
     /// <param name="nodeKey">

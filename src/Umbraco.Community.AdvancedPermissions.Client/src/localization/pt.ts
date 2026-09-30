@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Justificação',
     docTypePermissions_defaultAllow: 'Permitido por predefinição',
     docTypePermissions_viaDefault: 'a partir da linha predefinida',
+
+    // ── Atualizações em tempo real e conflitos ────────────────────────────
+    uap_liveUpdated: 'Atualizado agora mesmo',
+    uap_liveConflictTitle: 'Alguém alterou estas permissões enquanto as estava a editar',
+    uap_liveConflictBody: '%0% das suas alterações não guardadas entram em conflito com o que está guardado agora. Nada do que é seu foi alterado.',
+    uap_liveConflictBodyOne: 'Uma das suas alterações não guardadas entra em conflito com o que está guardado agora. Nada do que é seu foi alterado.',
+    uap_liveLoadStored: 'Carregar os valores guardados',
+    uap_liveKeepMine: 'Manter as minhas alterações',
+    uap_liveFlagLegend: 'Alterado por outra pessoa desde que carregou',
+    uap_conflictDialogTitle: 'Substituir as alterações guardadas?',
+    uap_conflictDialogBody: 'Guardar substitui o que está guardado agora. %0% alterações feitas por outra pessoa serão perdidas, e esta ação não pode ser anulada.',
+    uap_conflictDialogBodyOne: 'Guardar substitui o que está guardado agora. Uma alteração feita por outra pessoa será perdida, e esta ação não pode ser anulada.',
+    uap_conflictStoredLabel: 'guardado',
+    uap_conflictYoursLabel: 'seu',
+    uap_conflictOverwrite: 'Substituir mesmo assim',
+    uap_conflictCancel: 'Cancelar',
   },
 } satisfies UmbLocalizationDictionary;

@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: '推理',
     docTypePermissions_defaultAllow: '默认允许',
     docTypePermissions_viaDefault: '来自默认行',
+
+    // ── Live updates & conflicts ────────────────────────────────────────
+    uap_liveUpdated: '刚刚更新',
+    uap_liveConflictTitle: '在您编辑期间，其他人更改了这些权限',
+    uap_liveConflictBody: '您有 %0% 项未保存的更改与当前保存的内容冲突。您的更改未被修改。',
+    uap_liveConflictBodyOne: '您有一项未保存的更改与当前保存的内容冲突。您的更改未被修改。',
+    uap_liveLoadStored: '加载已保存的值',
+    uap_liveKeepMine: '保留我的更改',
+    uap_liveFlagLegend: '自您加载后已被其他人更改',
+    uap_conflictDialogTitle: '要覆盖已保存的更改吗？',
+    uap_conflictDialogBody: '保存将替换当前保存的内容。其他人所做的 %0% 项更改将丢失，且无法撤销。',
+    uap_conflictDialogBodyOne: '保存将替换当前保存的内容。其他人所做的一项更改将丢失，且无法撤销。',
+    uap_conflictStoredLabel: '已保存',
+    uap_conflictYoursLabel: '您的',
+    uap_conflictOverwrite: '仍要覆盖',
+    uap_conflictCancel: '取消',
   },
 } satisfies UmbLocalizationDictionary;

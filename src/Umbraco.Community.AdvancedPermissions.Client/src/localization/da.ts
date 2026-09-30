@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Begrundelse',
     docTypePermissions_defaultAllow: 'Tilladt som standard',
     docTypePermissions_viaDefault: 'fra standardrække',
+
+    // ── Live opdateringer og konflikter ─────────────────────────────────
+    uap_liveUpdated: 'Opdateret for et øjeblik siden',
+    uap_liveConflictTitle: 'Nogen har ændret disse tilladelser, mens du redigerede',
+    uap_liveConflictBody: '%0% af dine ugemte ændringer er i konflikt med det, der er gemt nu. Intet af dit er blevet ændret.',
+    uap_liveConflictBodyOne: 'En af dine ugemte ændringer er i konflikt med det, der er gemt nu. Intet af dit er blevet ændret.',
+    uap_liveLoadStored: 'Indlæs gemte værdier',
+    uap_liveKeepMine: 'Behold mine ændringer',
+    uap_liveFlagLegend: 'Ændret af en anden, siden du indlæste',
+    uap_conflictDialogTitle: 'Overskriv de gemte ændringer?',
+    uap_conflictDialogBody: 'Hvis du gemmer, erstattes det, der er gemt nu. %0% ændringer foretaget af en anden går tabt, og dette kan ikke fortrydes.',
+    uap_conflictDialogBodyOne: 'Hvis du gemmer, erstattes det, der er gemt nu. En ændring foretaget af en anden går tabt, og dette kan ikke fortrydes.',
+    uap_conflictStoredLabel: 'gemt',
+    uap_conflictYoursLabel: 'dit',
+    uap_conflictOverwrite: 'Overskriv alligevel',
+    uap_conflictCancel: 'Fortryd',
   },
 } satisfies UmbLocalizationDictionary;

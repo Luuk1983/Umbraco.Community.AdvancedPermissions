@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Begr\u00fcndung',
     docTypePermissions_defaultAllow: 'Standardm\u00e4\u00dfig erlaubt',
     docTypePermissions_viaDefault: 'aus Standardzeile',
+
+    // ── Live-Aktualisierungen und Konflikte ───────────────────────────────
+    uap_liveUpdated: 'Gerade aktualisiert',
+    uap_liveConflictTitle: 'Jemand hat diese Berechtigungen geändert, während Sie sie bearbeitet haben',
+    uap_liveConflictBody: '%0% Ihrer ungespeicherten Änderungen stehen im Konflikt mit dem, was jetzt gespeichert ist. An Ihren Änderungen wurde nichts geändert.',
+    uap_liveConflictBodyOne: 'Eine Ihrer ungespeicherten Änderungen steht im Konflikt mit dem, was jetzt gespeichert ist. An Ihren Änderungen wurde nichts geändert.',
+    uap_liveLoadStored: 'Gespeicherte Werte laden',
+    uap_liveKeepMine: 'Meine Änderungen behalten',
+    uap_liveFlagLegend: 'Von jemand anderem geändert, seit Sie geladen haben',
+    uap_conflictDialogTitle: 'Die gespeicherten Änderungen überschreiben?',
+    uap_conflictDialogBody: 'Beim Speichern wird ersetzt, was jetzt gespeichert ist. %0% von jemand anderem vorgenommene Änderungen gehen verloren, und dies kann nicht rückgängig gemacht werden.',
+    uap_conflictDialogBodyOne: 'Beim Speichern wird ersetzt, was jetzt gespeichert ist. Eine von jemand anderem vorgenommene Änderung geht verloren, und dies kann nicht rückgängig gemacht werden.',
+    uap_conflictStoredLabel: 'gespeichert',
+    uap_conflictYoursLabel: 'Ihre',
+    uap_conflictOverwrite: 'Trotzdem überschreiben',
+    uap_conflictCancel: 'Abbrechen',
   },
 } satisfies UmbLocalizationDictionary;

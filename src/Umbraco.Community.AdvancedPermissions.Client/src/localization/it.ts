@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Motivazione',
     docTypePermissions_defaultAllow: 'Consentito per impostazione predefinita',
     docTypePermissions_viaDefault: 'dalla riga predefinita',
+
+    // ── Aggiornamenti in tempo reale e conflitti ──────────────────────────
+    uap_liveUpdated: 'Aggiornato proprio ora',
+    uap_liveConflictTitle: 'Qualcuno ha modificato questi permessi mentre li stavi modificando',
+    uap_liveConflictBody: 'Il %0% delle tue modifiche non salvate è in conflitto con quanto salvato ora. Nessuna delle tue modifiche è stata cambiata.',
+    uap_liveConflictBodyOne: 'Una delle tue modifiche non salvate è in conflitto con quanto salvato ora. Nessuna delle tue modifiche è stata cambiata.',
+    uap_liveLoadStored: 'Carica i valori salvati',
+    uap_liveKeepMine: 'Mantieni le mie modifiche',
+    uap_liveFlagLegend: 'Modificato da qualcun altro da quando hai caricato',
+    uap_conflictDialogTitle: 'Sovrascrivere le modifiche salvate?',
+    uap_conflictDialogBody: 'Il salvataggio sostituisce quanto salvato ora. %0% modifiche effettuate da qualcun altro andranno perse e non sarà possibile annullare l’operazione.',
+    uap_conflictDialogBodyOne: 'Il salvataggio sostituisce quanto salvato ora. Una modifica effettuata da qualcun altro andrà persa e non sarà possibile annullare l’operazione.',
+    uap_conflictStoredLabel: 'salvato',
+    uap_conflictYoursLabel: 'tuo',
+    uap_conflictOverwrite: 'Sovrascrivi comunque',
+    uap_conflictCancel: 'Annulla',
   },
 } satisfies UmbLocalizationDictionary;

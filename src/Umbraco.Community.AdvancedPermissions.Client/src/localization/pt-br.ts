@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Motivo',
     docTypePermissions_defaultAllow: 'Permitido por padrão',
     docTypePermissions_viaDefault: 'da linha padrão',
+
+    // ── Atualizações em tempo real e conflitos ────────────────────────────
+    uap_liveUpdated: 'Atualizado agora mesmo',
+    uap_liveConflictTitle: 'Alguém alterou essas permissões enquanto você estava editando',
+    uap_liveConflictBody: '%0% das suas alterações não salvas conflitam com o que está salvo agora. Nada do que é seu foi alterado.',
+    uap_liveConflictBodyOne: 'Uma das suas alterações não salvas conflita com o que está salvo agora. Nada do que é seu foi alterado.',
+    uap_liveLoadStored: 'Carregar os valores salvos',
+    uap_liveKeepMine: 'Manter minhas alterações',
+    uap_liveFlagLegend: 'Alterado por outra pessoa desde que você carregou',
+    uap_conflictDialogTitle: 'Substituir as alterações salvas?',
+    uap_conflictDialogBody: 'Salvar substitui o que está salvo agora. %0% alterações feitas por outra pessoa serão perdidas, e essa ação não pode ser desfeita.',
+    uap_conflictDialogBodyOne: 'Salvar substitui o que está salvo agora. Uma alteração feita por outra pessoa será perdida, e essa ação não pode ser desfeita.',
+    uap_conflictStoredLabel: 'salvo',
+    uap_conflictYoursLabel: 'seu',
+    uap_conflictOverwrite: 'Substituir mesmo assim',
+    uap_conflictCancel: 'Cancelar',
   },
 } satisfies UmbLocalizationDictionary;

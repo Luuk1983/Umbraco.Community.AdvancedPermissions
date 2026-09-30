@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: '原因',
     docTypePermissions_defaultAllow: '預設允許',
     docTypePermissions_viaDefault: '來自預設列',
+
+    // ── 即時更新與衝突 ───────────────────────────────────────────────────
+    uap_liveUpdated: '剛剛已更新',
+    uap_liveConflictTitle: '在您編輯期間，其他人已變更這些權限',
+    uap_liveConflictBody: '您有 %0% 項未儲存的變更與目前已儲存的內容衝突。您的變更並未被修改。',
+    uap_liveConflictBodyOne: '您有一項未儲存的變更與目前已儲存的內容衝突。您的變更並未被修改。',
+    uap_liveLoadStored: '載入已儲存的值',
+    uap_liveKeepMine: '保留我的變更',
+    uap_liveFlagLegend: '自您載入後已被其他人變更',
+    uap_conflictDialogTitle: '要覆寫已儲存的變更嗎？',
+    uap_conflictDialogBody: '儲存將取代目前已儲存的內容。其他人所做的 %0% 項變更將會遺失，且無法復原。',
+    uap_conflictDialogBodyOne: '儲存將取代目前已儲存的內容。其他人所做的一項變更將會遺失，且無法復原。',
+    uap_conflictStoredLabel: '已儲存',
+    uap_conflictYoursLabel: '您的',
+    uap_conflictOverwrite: '仍要覆寫',
+    uap_conflictCancel: '取消',
   },
 } satisfies UmbLocalizationDictionary;

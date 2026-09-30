@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Rhesymu',
     docTypePermissions_defaultAllow: 'Caniateir yn ddiofyn',
     docTypePermissions_viaDefault: 'o’r rhes ddiofyn',
+
+    // ── Diweddariadau byw a gwrthdrawiadau ──────────────────────────────
+    uap_liveUpdated: 'Wedi diweddaru dim ond nawr',
+    uap_liveConflictTitle: 'Newidiodd rhywun yr hawliau hyn tra roeddech chi’n golygu',
+    uap_liveConflictBody: 'Mae %0% o’ch newidiadau heb eu hachub yn gwrthdaro â’r hyn sydd wedi’i achub nawr. Nid oes dim o’ch newidiadau chi wedi newid.',
+    uap_liveConflictBodyOne: 'Mae un o’ch newidiadau heb eu hachub yn gwrthdaro â’r hyn sydd wedi’i achub nawr. Nid oes dim o’ch newidiadau chi wedi newid.',
+    uap_liveLoadStored: 'Llwytho’r gwerthoedd wedi’u hachub',
+    uap_liveKeepMine: 'Cadw fy newidiadau',
+    uap_liveFlagLegend: 'Newidiwyd gan rywun arall ers i chi lwytho',
+    uap_conflictDialogTitle: 'Trosysgrifo’r newidiadau wedi’u hachub?',
+    uap_conflictDialogBody: 'Mae achub yn disodli’r hyn sydd wedi’i achub nawr. Bydd %0% o newidiadau a wnaed gan rywun arall yn cael eu colli, ac ni ellir dad-wneud hyn.',
+    uap_conflictDialogBodyOne: 'Mae achub yn disodli’r hyn sydd wedi’i achub nawr. Bydd un newid a wnaed gan rywun arall yn cael ei golli, ac ni ellir dad-wneud hyn.',
+    uap_conflictStoredLabel: 'wedi’i achub',
+    uap_conflictYoursLabel: 'chi',
+    uap_conflictOverwrite: 'Trosysgrifo eto',
+    uap_conflictCancel: 'Canslo',
   },
 } satisfies UmbLocalizationDictionary;

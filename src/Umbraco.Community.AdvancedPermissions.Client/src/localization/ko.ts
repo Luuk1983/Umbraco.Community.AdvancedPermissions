@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: '근거',
     docTypePermissions_defaultAllow: '기본적으로 허용됨',
     docTypePermissions_viaDefault: '기본 행에서',
+
+    // ── Live updates & conflicts ────────────────────────────────────────
+    uap_liveUpdated: '방금 업데이트됨',
+    uap_liveConflictTitle: '편집하는 동안 다른 사람이 이 권한을 변경했습니다',
+    uap_liveConflictBody: '저장되지 않은 변경사항 중 %0%개가 현재 저장된 내용과 충돌합니다. 사용자의 변경사항은 변경되지 않았습니다.',
+    uap_liveConflictBodyOne: '저장되지 않은 변경사항 중 하나가 현재 저장된 내용과 충돌합니다. 사용자의 변경사항은 변경되지 않았습니다.',
+    uap_liveLoadStored: '저장된 값 불러오기',
+    uap_liveKeepMine: '내 변경사항 유지',
+    uap_liveFlagLegend: '불러온 이후 다른 사람이 변경함',
+    uap_conflictDialogTitle: '저장된 변경사항을 덮어쓰시겠습니까?',
+    uap_conflictDialogBody: '저장하면 현재 저장된 내용이 대체됩니다. 다른 사람이 변경한 %0%개의 변경사항이 손실되며, 이 작업은 취소할 수 없습니다.',
+    uap_conflictDialogBodyOne: '저장하면 현재 저장된 내용이 대체됩니다. 다른 사람이 변경한 변경사항 1개가 손실되며, 이 작업은 취소할 수 없습니다.',
+    uap_conflictStoredLabel: '저장됨',
+    uap_conflictYoursLabel: '내 것',
+    uap_conflictOverwrite: '그래도 덮어쓰기',
+    uap_conflictCancel: '취소',
   },
 } satisfies UmbLocalizationDictionary;

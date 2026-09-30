@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Onderbouwing',
     docTypePermissions_defaultAllow: 'Standaard toegestaan',
     docTypePermissions_viaDefault: 'via standaardregel',
+
+    // ── Live updates en conflicten ───────────────────────────────────────
+    uap_liveUpdated: 'Zojuist bijgewerkt',
+    uap_liveConflictTitle: 'Iemand heeft deze machtigingen gewijzigd tijdens het bewerken',
+    uap_liveConflictBody: '%0% van je niet-opgeslagen wijzigingen komt in conflict met wat er nu is opgeslagen. Er is niets van jouw wijzigingen aangepast.',
+    uap_liveConflictBodyOne: 'Eén van je niet-opgeslagen wijzigingen komt in conflict met wat er nu is opgeslagen. Er is niets van jouw wijzigingen aangepast.',
+    uap_liveLoadStored: 'Opgeslagen waarden laden',
+    uap_liveKeepMine: 'Mijn wijzigingen behouden',
+    uap_liveFlagLegend: 'Gewijzigd door iemand anders sinds je het laadde',
+    uap_conflictDialogTitle: 'De opgeslagen wijzigingen overschrijven?',
+    uap_conflictDialogBody: 'Opslaan vervangt wat er nu is opgeslagen. %0% wijzigingen van iemand anders gaan verloren, en dit kan niet ongedaan worden gemaakt.',
+    uap_conflictDialogBodyOne: 'Opslaan vervangt wat er nu is opgeslagen. Eén wijziging van iemand anders gaat verloren, en dit kan niet ongedaan worden gemaakt.',
+    uap_conflictStoredLabel: 'opgeslagen',
+    uap_conflictYoursLabel: 'van jou',
+    uap_conflictOverwrite: 'Toch overschrijven',
+    uap_conflictCancel: 'Annuleren',
   },
 } satisfies UmbLocalizationDictionary;

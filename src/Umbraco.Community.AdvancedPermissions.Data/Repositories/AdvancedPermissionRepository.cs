@@ -155,6 +155,69 @@ public sealed class AdvancedPermissionRepository(IDbContextFactory<AdvancedPermi
     }
 
     /// <inheritdoc />
+    public async Task SaveManyAsync(
+        IEnumerable<(Guid NodeKey, string RoleAlias, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)> batch,
+        CancellationToken cancellationToken = default)
+    {
+        var pairs = batch.ToList();
+
+        // Guard against duplicate (NodeKey, RoleAlias) pairs before touching the database. Each
+        // pair's delete runs immediately (see below) while its inserts stay staged, so a second
+        // pair for the same node+role would not see the first pair's unflushed inserts: the two
+        // sets would either silently merge (non-overlapping verbs) or collide on the unique index
+        // with a confusing exception (overlapping verbs). A well-behaved caller groups by node
+        // first, so this should never fire in practice — which is exactly why it must be loud.
+        var seenPairs = new HashSet<(Guid NodeKey, string RoleAlias)>();
+        foreach (var pair in pairs)
+        {
+            if (!seenPairs.Add((pair.NodeKey, pair.RoleAlias)))
+            {
+                throw new ArgumentException(
+                    $"Batch contains more than one entry for node '{pair.NodeKey}' and role '{pair.RoleAlias}'. " +
+                    "Each node+role pair must appear at most once in a single SaveManyAsync call.",
+                    nameof(batch));
+            }
+        }
+
+        await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        foreach (var (nodeKey, roleAlias, entries) in pairs)
+        {
+            // Remove all existing entries for this node+role combination in a single DELETE
+            // statement, executed immediately — the same mechanism SaveAsync uses. This makes
+            // the delete provably precede the insert of the replacement rows below: without it,
+            // replacing an entry with the same verb+scope but a different state (the everyday
+            // Permissions Editor save) would depend on EF Core's internal command-batch ordering
+            // to avoid colliding with IX_AdvancedPermission_Unique.
+            await db.Permissions
+                .Where(p => p.NodeKey == nodeKey && p.RoleAlias == roleAlias)
+                .ExecuteDeleteAsync(cancellationToken);
+
+            foreach (var (verb, state, scope, isPriorityOverride) in entries)
+            {
+                db.Permissions.Add(new AdvancedPermissionEntity
+                {
+                    Id = Guid.NewGuid(),
+                    NodeKey = nodeKey,
+                    RoleAlias = roleAlias,
+                    Verb = verb,
+                    State = state,
+                    Scope = scope,
+                    IsPriorityOverride = isPriorityOverride,
+                });
+            }
+        }
+
+        // The deletes above already executed immediately against the database; the inserts are
+        // still staged on the change tracker. That split is exactly why the explicit transaction
+        // is load-bearing rather than belt-and-braces: it is the only thing making each pair's
+        // immediate delete and deferred insert — and every pair in the batch — atomic together.
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task DeleteAsync(
         Guid nodeKey,
         string roleAlias,

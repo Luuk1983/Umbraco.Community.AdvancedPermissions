@@ -26,6 +26,13 @@ export type AllowedMediaTypeModel = {
     icon?: string | null;
 };
 
+export type AllowedMemberTypeModel = {
+    id: string;
+    name: string;
+    description?: string | null;
+    icon?: string | null;
+};
+
 export type AuditLogResponseModel = {
     user: ReferenceByIdModel;
     timestamp: string;
@@ -103,6 +110,67 @@ export type BatchResponseModelMediaTypeResponseModel = {
 export type BatchResponseModelMemberTypeResponseModel = {
     total: number;
     items: Array<MemberTypeResponseModel>;
+};
+
+export type BatchSaveConflictModel = {
+    nodeKey: string;
+    roleAlias: string;
+    currentEntries: Array<PermissionEntryResponseModel>;
+    currentStamp: string;
+};
+
+export type BatchSaveConflictResponseModel = {
+    conflicts: Array<BatchSaveConflictModel>;
+};
+
+export type BatchSaveDocTypeConflictModel = {
+    nodeKey: string;
+    roleAlias: string;
+    contentTypeKey: string;
+    currentEntries: Array<DocTypePermissionEntryResponseModel>;
+    currentStamp: string;
+};
+
+export type BatchSaveDocTypeConflictResponseModel = {
+    conflicts: Array<BatchSaveDocTypeConflictModel>;
+};
+
+export type BatchSaveDocTypePermissionsNodeModel = {
+    nodeKey: string;
+    roleAlias: string;
+    contentTypeKey: string;
+    entries: Array<SavePermissionEntryItemModel>;
+    expectedStamp?: string | null;
+};
+
+export type BatchSaveDocTypePermissionsRequestModel = {
+    nodes: Array<BatchSaveDocTypePermissionsNodeModel>;
+    force: boolean;
+};
+
+export type BatchSavePermissionsNodeModel = {
+    nodeKey: string;
+    roleAlias: string;
+    entries: Array<SavePermissionEntryItemModel>;
+    expectedStamp?: string | null;
+};
+
+export type BatchSavePermissionsRequestModel = {
+    nodes: Array<BatchSavePermissionsNodeModel>;
+    force: boolean;
+};
+
+export type BatchSavedDocTypeStampModel = {
+    nodeKey: string;
+    roleAlias: string;
+    contentTypeKey: string;
+    stamp: string;
+};
+
+export type BatchSavedStampModel = {
+    nodeKey: string;
+    roleAlias: string;
+    stamp: string;
 };
 
 export type CalculatedUserStartNodesResponseModel = {
@@ -546,6 +614,22 @@ export type DataTypeResponseModel = {
     canIgnoreStartNodes: boolean;
 };
 
+export type DataTypeSchemaItemResponseModel = {
+    id: string;
+    valueTypeName?: string | null;
+    jsonSchema?: {
+        [key: string]: JsonNode;
+    } | null;
+    error?: string | null;
+};
+
+export type DataTypeSchemaResponseModel = {
+    valueTypeName?: string | null;
+    jsonSchema?: {
+        [key: string]: JsonNode;
+    } | null;
+};
+
 export type DataTypeTreeItemResponseModel = {
     hasChildren: boolean;
     id: string;
@@ -653,8 +737,14 @@ export type DocTypeAuditForNodeRowResponseModel = {
     isExplicit: boolean;
     isInAllowedChildren: boolean;
     reasoning: Array<ReasoningItemModel>;
-    wasPriorityOverrideActive?: boolean;
+    wasPriorityOverrideActive: boolean;
     suppressedReasoning?: Array<ReasoningItemModel> | null;
+};
+
+export type DocTypeEditorNodeResponseModel = {
+    nodeKey: string;
+    entries: Array<DocTypePermissionEntryResponseModel>;
+    stamp: string;
 };
 
 export type DocTypeListItemModel = {
@@ -1102,6 +1192,11 @@ export enum EventMessageTypeModel {
     WARNING = 'Warning'
 }
 
+export type FetchResponseModelDataTypeSchemaItemResponseModel = {
+    total: number;
+    items: Array<DataTypeSchemaItemResponseModel>;
+};
+
 export type FieldPresentationModel = {
     name: string;
     values: Array<string>;
@@ -1228,6 +1323,7 @@ export type IndexResponseModel = {
     providerProperties?: {
         [key: string]: unknown;
     } | null;
+    uniqueKeyFieldName?: string | null;
 };
 
 export type InstallRequestModel = {
@@ -1282,6 +1378,16 @@ export type ItemReferenceByIdResponseModel = {
 export type ItemSortingRequestModel = {
     id: string;
     sortOrder: number;
+};
+
+export type JsonNode = {
+    options?: JsonNodeOptions | null;
+    parent?: JsonNode | null;
+    root: JsonNode;
+};
+
+export type JsonNodeOptions = {
+    propertyNameCaseInsensitive: boolean;
 };
 
 export type LanguageItemResponseModel = {
@@ -1584,7 +1690,8 @@ export type MemberItemResponseModel = {
 
 export enum MemberKindModel {
     DEFAULT = 'Default',
-    API = 'Api'
+    API = 'Api',
+    EXTERNAL_ONLY = 'ExternalOnly'
 }
 
 export type MemberReferenceResponseModel = {
@@ -1611,6 +1718,7 @@ export type MemberResponseModel = {
     lastPasswordChangeDate?: string | null;
     groups: Array<string>;
     kind: MemberKindModel;
+    profileData?: string | null;
 };
 
 export type MemberTypeCompositionModel = {
@@ -1885,6 +1993,11 @@ export type PagedAllowedDocumentTypeModel = {
 export type PagedAllowedMediaTypeModel = {
     total: number;
     items: Array<AllowedMediaTypeModel>;
+};
+
+export type PagedAllowedMemberTypeModel = {
+    total: number;
+    items: Array<AllowedMemberTypeModel>;
 };
 
 export type PagedAuditLogResponseModel = {
@@ -2221,6 +2334,16 @@ export type PasswordConfigurationResponseModel = {
     requireUppercase: boolean;
 };
 
+export type PatchDocumentRequestModel = {
+    operations: Array<PatchOperationRequestModel>;
+};
+
+export type PatchOperationRequestModel = {
+    op: string;
+    path: string;
+    value?: unknown;
+};
+
 export type PathEntriesResponseModel = {
     path: Array<PathNodeModel>;
     entries: Array<PermissionEntryResponseModel>;
@@ -2445,13 +2568,15 @@ export type SavePermissionEntryItemModel = {
     verb: string;
     state: string;
     scope: string;
-    isPriorityOverride?: boolean;
+    isPriorityOverride: boolean;
 };
 
 export type SavePermissionsRequestModel = {
     nodeKey: string;
     roleAlias: string;
     entries: Array<SavePermissionEntryItemModel>;
+    expectedStamp?: string | null;
+    force: boolean;
 };
 
 export type SavedLogSearchRequestModel = {
@@ -2523,6 +2648,7 @@ export type ServerConfigurationResponseModel = {
     versionCheckPeriod: number;
     allowLocalLogin: boolean;
     umbracoCssPath: string;
+    signalR: SignalRClientSettingsResponseModel;
 };
 
 export type ServerInformationResponseModel = {
@@ -2542,6 +2668,10 @@ export type ServerTroubleshootingResponseModel = {
 
 export type SetAvatarRequestModel = {
     file: ReferenceByIdModel;
+};
+
+export type SignalRClientSettingsResponseModel = {
+    skipNegotiation: boolean;
 };
 
 export type SortingRequestModel = {
@@ -2788,6 +2918,7 @@ export type TreeNodeResponseModel = {
     icon?: string | null;
     hasChildren: boolean;
     entries: Array<PermissionEntryResponseModel>;
+    stamp: string;
 };
 
 export type UnknownTypePermissionPresentationModel = {
@@ -2802,6 +2933,10 @@ export type UnlockUsersRequestModel = {
 
 export type UnpublishDocumentRequestModel = {
     cultures?: Array<string> | null;
+};
+
+export type UpdateCurrentUserRequestModel = {
+    languageIsoCode: string;
 };
 
 export type UpdateDataTypeRequestModel = {
@@ -3342,6 +3477,10 @@ export type DocumentVariantResponseModelWritable = {
     flags: Array<FlagModel>;
 };
 
+export type JsonNodeWritable = {
+    [key: string]: never;
+};
+
 export type PackageDefinitionResponseModelWritable = {
     name: string;
     contentNodeId?: string | null;
@@ -3420,7 +3559,7 @@ export type GetForEditorResponses = {
     /**
      * OK
      */
-    200: Array<DocTypePermissionEntryResponseModel>;
+    200: Array<DocTypeEditorNodeResponseModel>;
 };
 
 export type GetForEditorResponse = GetForEditorResponses[keyof GetForEditorResponses];
@@ -3497,6 +3636,43 @@ export type AuditForNodeResponses = {
 
 export type AuditForNodeResponse = AuditForNodeResponses[keyof AuditForNodeResponses];
 
+export type BatchSaveDocTypePermissionsData = {
+    body?: BatchSaveDocTypePermissionsRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/batch';
+};
+
+export type BatchSaveDocTypePermissionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Conflict
+     */
+    409: BatchSaveDocTypeConflictResponseModel;
+};
+
+export type BatchSaveDocTypePermissionsError = BatchSaveDocTypePermissionsErrors[keyof BatchSaveDocTypePermissionsErrors];
+
+export type BatchSaveDocTypePermissionsResponses = {
+    /**
+     * OK
+     */
+    200: Array<BatchSavedDocTypeStampModel>;
+};
+
+export type BatchSaveDocTypePermissionsResponse = BatchSaveDocTypePermissionsResponses[keyof BatchSaveDocTypePermissionsResponses];
+
 export type GetDocTypesData = {
     body?: never;
     path?: never;
@@ -3569,10 +3745,6 @@ export type GetEffectiveForUserErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
 };
 
 export type GetEffectiveForUserResponses = {
@@ -3693,6 +3865,10 @@ export type SavePermissionsErrors = {
      * The authenticated user does not have access to this resource
      */
     403: unknown;
+    /**
+     * Conflict
+     */
+    409: BatchSaveConflictResponseModel;
 };
 
 export type SavePermissionsError = SavePermissionsErrors[keyof SavePermissionsErrors];
@@ -3703,6 +3879,43 @@ export type SavePermissionsResponses = {
      */
     200: unknown;
 };
+
+export type BatchSavePermissionsData = {
+    body?: BatchSavePermissionsRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/management/api/v1/advanced-permissions/permissions/batch';
+};
+
+export type BatchSavePermissionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Conflict
+     */
+    409: BatchSaveConflictResponseModel;
+};
+
+export type BatchSavePermissionsError = BatchSavePermissionsErrors[keyof BatchSavePermissionsErrors];
+
+export type BatchSavePermissionsResponses = {
+    /**
+     * OK
+     */
+    200: Array<BatchSavedStampModel>;
+};
+
+export type BatchSavePermissionsResponse = BatchSavePermissionsResponses[keyof BatchSavePermissionsResponses];
 
 export type GetPermissionsByNodeData = {
     body?: never;

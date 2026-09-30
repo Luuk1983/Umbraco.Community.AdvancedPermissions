@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Obrazloženje',
     docTypePermissions_defaultAllow: 'Dozvoljeno prema zadanim postavkama',
     docTypePermissions_viaDefault: 'iz zadanog retka',
+
+    // ── Ažuriranja uživo i sukobi ────────────────────────────────────────
+    uap_liveUpdated: 'Ažurirano upravo sada',
+    uap_liveConflictTitle: 'Netko je promijenio ove dozvole dok ste ih uređivali',
+    uap_liveConflictBody: '%0% vaših nespremljenih promjena sukobljava se s onim što je trenutno spremljeno. Ništa od vaših promjena nije izmijenjeno.',
+    uap_liveConflictBodyOne: 'Jedna od vaših nespremljenih promjena sukobljava se s onim što je trenutno spremljeno. Ništa od vaših promjena nije izmijenjeno.',
+    uap_liveLoadStored: 'Učitaj spremljene vrijednosti',
+    uap_liveKeepMine: 'Zadrži moje promjene',
+    uap_liveFlagLegend: 'Promijenio je netko drugi otkako ste učitali',
+    uap_conflictDialogTitle: 'Prepisati spremljene promjene?',
+    uap_conflictDialogBody: 'Spremanje zamjenjuje ono što je trenutno spremljeno. %0% promjena koje je napravio netko drugi bit će izgubljeno, a to se ne može poništiti.',
+    uap_conflictDialogBodyOne: 'Spremanje zamjenjuje ono što je trenutno spremljeno. Jedna promjena koju je napravio netko drugi bit će izgubljena, a to se ne može poništiti.',
+    uap_conflictStoredLabel: 'spremljeno',
+    uap_conflictYoursLabel: 'vaše',
+    uap_conflictOverwrite: 'Prepiši ipak',
+    uap_conflictCancel: 'Odustani',
   },
 } satisfies UmbLocalizationDictionary;

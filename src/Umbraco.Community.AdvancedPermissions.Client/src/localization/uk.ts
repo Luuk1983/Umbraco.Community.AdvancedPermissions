@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Пояснення',
     docTypePermissions_defaultAllow: 'Дозволено за замовчуванням',
     docTypePermissions_viaDefault: 'із рядка за замовчуванням',
+
+    // ── Оновлення в реальному часі та конфлікти ────────────────────────────
+    uap_liveUpdated: 'Оновлено щойно',
+    uap_liveConflictTitle: 'Хтось змінив ці права доступу, поки ви їх редагували',
+    uap_liveConflictBody: '%0% ваших незбережених змін конфліктують із тим, що збережено зараз. Нічого з ваших змін не було змінено.',
+    uap_liveConflictBodyOne: 'Одна з ваших незбережених змін конфліктує з тим, що збережено зараз. Нічого з ваших змін не було змінено.',
+    uap_liveLoadStored: 'Завантажити збережені значення',
+    uap_liveKeepMine: 'Залишити мої зміни',
+    uap_liveFlagLegend: 'Змінено кимось іншим після завантаження',
+    uap_conflictDialogTitle: 'Перезаписати збережені зміни?',
+    uap_conflictDialogBody: 'Збереження замінить те, що збережено зараз. %0% змін, внесених кимось іншим, буде втрачено, і це неможливо скасувати.',
+    uap_conflictDialogBodyOne: 'Збереження замінить те, що збережено зараз. Одну зміну, внесену кимось іншим, буде втрачено, і це неможливо скасувати.',
+    uap_conflictStoredLabel: 'збережено',
+    uap_conflictYoursLabel: 'ваше',
+    uap_conflictOverwrite: 'Перезаписати попри це',
+    uap_conflictCancel: 'Відміна',
   },
 } satisfies UmbLocalizationDictionary;

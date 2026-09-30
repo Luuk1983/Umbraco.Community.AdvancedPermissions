@@ -89,6 +89,68 @@ public sealed class DocTypePermissionRepository(IDbContextFactory<AdvancedPermis
     }
 
     /// <inheritdoc />
+    public async Task SaveManyAsync(
+        IEnumerable<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)> batch,
+        CancellationToken cancellationToken = default)
+    {
+        var triples = batch.ToList();
+
+        // Guard against duplicate (NodeKey, RoleAlias, ContentTypeKey) triples before touching the
+        // database. Each triple's delete runs immediately (see below) while its inserts stay
+        // staged, so a second triple for the same node+role+content-type would not see the first
+        // triple's unflushed inserts — mirrors AdvancedPermissionRepository.SaveManyAsync's guard.
+        var seenTriples = new HashSet<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey)>();
+        foreach (var triple in triples)
+        {
+            if (!seenTriples.Add((triple.NodeKey, triple.RoleAlias, triple.ContentTypeKey)))
+            {
+                throw new ArgumentException(
+                    $"Batch contains more than one entry for node '{triple.NodeKey}', role '{triple.RoleAlias}' " +
+                    $"and content type '{triple.ContentTypeKey}'. Each triple must appear at most once in a " +
+                    "single SaveManyAsync call.",
+                    nameof(batch));
+            }
+        }
+
+        await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        foreach (var (nodeKey, roleAlias, contentTypeKey, entries) in triples)
+        {
+            // Remove all existing entries for this triple in a single DELETE statement, executed
+            // immediately — the same mechanism SaveAsync uses. This makes the delete provably
+            // precede the insert of the replacement rows below: without it, replacing an entry with
+            // the same verb+scope but a different state would depend on EF Core's internal
+            // command-batch ordering to avoid colliding with the unique index.
+            await db.DocTypePermissions
+                .Where(p => p.NodeKey == nodeKey && p.RoleAlias == roleAlias && p.ContentTypeKey == contentTypeKey)
+                .ExecuteDeleteAsync(cancellationToken);
+
+            foreach (var (verb, state, scope, isPriorityOverride) in entries)
+            {
+                db.DocTypePermissions.Add(new DocTypePermissionEntity
+                {
+                    Id = Guid.NewGuid(),
+                    NodeKey = nodeKey,
+                    ContentTypeKey = contentTypeKey,
+                    RoleAlias = roleAlias,
+                    Verb = verb,
+                    State = state,
+                    Scope = scope,
+                    IsPriorityOverride = isPriorityOverride,
+                });
+            }
+        }
+
+        // The deletes above already executed immediately against the database; the inserts are
+        // still staged on the change tracker. That split is exactly why the explicit transaction is
+        // load-bearing rather than belt-and-braces: it is the only thing making each triple's
+        // immediate delete and deferred insert — and every triple in the batch — atomic together.
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task DeleteAllForNodeAsync(
         Guid nodeKey,
         CancellationToken cancellationToken = default)

@@ -94,12 +94,14 @@ public sealed class AdvancedPermissionsTreeController(
         {
             var icon = node is IContentEntitySlim contentSlim ? contentSlim.ContentTypeIcon : null;
             entriesByNode.TryGetValue(node.Key, out var nodeEntries);
+            var entries = nodeEntries ?? [];
             result.Add(new TreeNodeResponseModel(
                 node.Key,
                 node.Name ?? string.Empty,
                 icon,
                 node.HasChildren,
-                nodeEntries ?? []));
+                entries,
+                entries.ComputeFromResponse()));
         }
 
         return result;

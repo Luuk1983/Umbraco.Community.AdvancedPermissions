@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Zdůvodnění',
     docTypePermissions_defaultAllow: 'Ve výchozím nastavení povoleno',
     docTypePermissions_viaDefault: 'z výchozího řádku',
+
+    // ── Živé aktualizace a konflikty ────────────────────────────────────
+    uap_liveUpdated: 'Právě aktualizováno',
+    uap_liveConflictTitle: 'Někdo změnil tato oprávnění, zatímco jste je upravovali',
+    uap_liveConflictBody: '%0% vašich neuložených změn je v konfliktu s tím, co je nyní uloženo. Nic z vašich změn nebylo změněno.',
+    uap_liveConflictBodyOne: 'Jedna z vašich neuložených změn je v konfliktu s tím, co je nyní uloženo. Nic z vašich změn nebylo změněno.',
+    uap_liveLoadStored: 'Načíst uložené hodnoty',
+    uap_liveKeepMine: 'Zachovat moje změny',
+    uap_liveFlagLegend: 'Změněno někým jiným od doby, kdy jste to načetli',
+    uap_conflictDialogTitle: 'Přepsat uložené změny?',
+    uap_conflictDialogBody: 'Uložení nahradí to, co je nyní uloženo. %0% změn provedených někým jiným bude ztraceno, a to nelze vrátit.',
+    uap_conflictDialogBodyOne: 'Uložení nahradí to, co je nyní uloženo. Jedna změna provedená někým jiným bude ztracena, a to nelze vrátit.',
+    uap_conflictStoredLabel: 'uloženo',
+    uap_conflictYoursLabel: 'vaše',
+    uap_conflictOverwrite: 'Přesto přepsat',
+    uap_conflictCancel: 'Zrušit',
   },
 } satisfies UmbLocalizationDictionary;

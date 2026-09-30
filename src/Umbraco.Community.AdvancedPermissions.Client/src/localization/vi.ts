@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Lý giải',
     docTypePermissions_defaultAllow: 'Được cho phép theo mặc định',
     docTypePermissions_viaDefault: 'từ hàng mặc định',
+
+    // ── Live updates & conflicts ────────────────────────────────────────
+    uap_liveUpdated: 'Vừa được cập nhật',
+    uap_liveConflictTitle: 'Ai đó đã thay đổi các quyền này trong khi bạn đang chỉnh sửa',
+    uap_liveConflictBody: '%0% thay đổi chưa lưu của bạn xung đột với dữ liệu đang được lưu hiện tại. Không có thay đổi nào của bạn bị thay đổi.',
+    uap_liveConflictBodyOne: 'Một trong các thay đổi chưa lưu của bạn xung đột với dữ liệu đang được lưu hiện tại. Không có thay đổi nào của bạn bị thay đổi.',
+    uap_liveLoadStored: 'Tải các giá trị đã lưu',
+    uap_liveKeepMine: 'Giữ thay đổi của tôi',
+    uap_liveFlagLegend: 'Đã bị người khác thay đổi từ khi bạn tải',
+    uap_conflictDialogTitle: 'Ghi đè các thay đổi đã lưu?',
+    uap_conflictDialogBody: 'Việc lưu sẽ thay thế dữ liệu đang được lưu hiện tại. %0% thay đổi do người khác thực hiện sẽ bị mất và không thể hoàn tác.',
+    uap_conflictDialogBodyOne: 'Việc lưu sẽ thay thế dữ liệu đang được lưu hiện tại. Một thay đổi do người khác thực hiện sẽ bị mất và không thể hoàn tác.',
+    uap_conflictStoredLabel: 'đã lưu',
+    uap_conflictYoursLabel: 'của bạn',
+    uap_conflictOverwrite: 'Vẫn ghi đè',
+    uap_conflictCancel: 'Hủy',
   },
 } satisfies UmbLocalizationDictionary;

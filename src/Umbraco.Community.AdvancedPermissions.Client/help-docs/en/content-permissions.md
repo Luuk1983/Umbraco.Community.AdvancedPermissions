@@ -21,3 +21,11 @@ See the **Concepts** tab for Allow/Deny, scope, the Default permissions row, the
 **Lock a node against deletion.** Add one entry: All Users Group, Deny, Delete, scope "This Node Only". The Deny wins for everyone, whatever groups they belong to.
 
 **Carve out an exception to a broad Allow.** Editors have Allow for Publish on Home with scope "This Node and Descendants". To stop publishing under the Press Releases branch while keeping every other permission, add a single Deny for Publish on Press Releases.
+
+## Real-time updates
+
+While you're editing, changes saved elsewhere are pushed to this screen live.
+
+- A cell gets an **outline** when it's been changed by someone else since you loaded it. A banner names how many cells collided.
+- **Load stored values** replaces only the outlined cells with what's stored now — everything else you've changed is left alone.
+- **Keep my changes** dismisses the banner and keeps your edits on screen, but it doesn't mean your changes have won: the stored values are unchanged, and saving will still ask you to confirm before overwriting them.

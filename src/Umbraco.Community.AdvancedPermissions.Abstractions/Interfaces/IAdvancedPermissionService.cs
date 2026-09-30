@@ -135,4 +135,14 @@ public interface IAdvancedPermissionService
         string roleAlias,
         string verb,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Replaces the entries for several node-and-user-group pairs in a single transaction,
+    /// invalidating caches and publishing one notification per pair afterwards.
+    /// </summary>
+    /// <param name="batch">The node key, user group alias and replacement entries for each pair.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    Task SaveManyAsync(
+        IReadOnlyList<(Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries)> batch,
+        CancellationToken cancellationToken = default);
 }

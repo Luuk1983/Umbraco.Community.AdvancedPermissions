@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: '根拠',
     docTypePermissions_defaultAllow: 'デフォルトで許可',
     docTypePermissions_viaDefault: 'デフォルト行から',
+
+    // ── Live updates & conflicts ────────────────────────────────────────
+    uap_liveUpdated: '今更新されました',
+    uap_liveConflictTitle: '編集中に他の人がこのアクセス権限を変更しました',
+    uap_liveConflictBody: '未保存の変更のうち%0%件が現在保存されている内容と競合しています。あなたの変更は何も変更されていません。',
+    uap_liveConflictBodyOne: '未保存の変更のうち1件が現在保存されている内容と競合しています。あなたの変更は何も変更されていません。',
+    uap_liveLoadStored: '保存された値を読み込む',
+    uap_liveKeepMine: '自分の変更を保持する',
+    uap_liveFlagLegend: '読み込み後に他の人によって変更されました',
+    uap_conflictDialogTitle: '保存されている変更を上書きしますか?',
+    uap_conflictDialogBody: '保存すると現在保存されている内容が置き換えられます。他の人による変更%0%件が失われ、元に戻すことはできません。',
+    uap_conflictDialogBodyOne: '保存すると現在保存されている内容が置き換えられます。他の人による変更1件が失われ、元に戻すことはできません。',
+    uap_conflictStoredLabel: '保存済み',
+    uap_conflictYoursLabel: '自分の変更',
+    uap_conflictOverwrite: 'このまま上書きする',
+    uap_conflictCancel: 'キャンセル',
   },
 } satisfies UmbLocalizationDictionary;

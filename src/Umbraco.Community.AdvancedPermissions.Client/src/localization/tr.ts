@@ -154,5 +154,21 @@ export default {
     docTypePermissions_reasoning: 'Gerekçe',
     docTypePermissions_defaultAllow: 'Varsayılan olarak izin verildi',
     docTypePermissions_viaDefault: 'varsayılan satırdan',
+
+    // ── Canlı güncellemeler ve çakışmalar ─────────────────────────────────
+    uap_liveUpdated: 'Az önce güncellendi',
+    uap_liveConflictTitle: 'Siz düzenlerken başka biri bu izinleri değiştirdi',
+    uap_liveConflictBody: 'Kaydedilmemiş değişikliklerinizden %0% tanesi şu anda kayıtlı olanla çakışıyor. Değişikliklerinizden hiçbiri değiştirilmedi.',
+    uap_liveConflictBodyOne: 'Kaydedilmemiş değişikliklerinizden biri şu anda kayıtlı olanla çakışıyor. Değişikliklerinizden hiçbiri değiştirilmedi.',
+    uap_liveLoadStored: 'Kayıtlı değerleri yükle',
+    uap_liveKeepMine: 'Değişikliklerimi koru',
+    uap_liveFlagLegend: 'Yüklemenizden sonra başka biri tarafından değiştirildi',
+    uap_conflictDialogTitle: 'Kayıtlı değişikliklerin üzerine yazılsın mı?',
+    uap_conflictDialogBody: 'Kaydetmek, şu anda kayıtlı olanın yerine geçer. Başka biri tarafından yapılan %0% değişiklik kaybolacak ve bu geri alınamaz.',
+    uap_conflictDialogBodyOne: 'Kaydetmek, şu anda kayıtlı olanın yerine geçer. Başka biri tarafından yapılan bir değişiklik kaybolacak ve bu geri alınamaz.',
+    uap_conflictStoredLabel: 'kayıtlı',
+    uap_conflictYoursLabel: 'sizinki',
+    uap_conflictOverwrite: 'Yine de üzerine yaz',
+    uap_conflictCancel: 'İptal',
   },
 } satisfies UmbLocalizationDictionary;

@@ -114,7 +114,7 @@ public sealed class AdvancedPermissionsPermissionController(
 
             if (!string.Equals(currentStamp, request.ExpectedStamp, StringComparison.Ordinal))
             {
-                return Conflict(new BatchSaveConflictResponseModel(
+                return Conflict(ConflictProblemDetails.Create<BatchSaveConflict>(
                 [
                     new BatchSaveConflict(
                         request.NodeKey,
@@ -217,7 +217,7 @@ public sealed class AdvancedPermissionsPermissionController(
 
             if (conflicts.Count > 0)
             {
-                return Conflict(new BatchSaveConflictResponseModel(conflicts));
+                return Conflict(ConflictProblemDetails.Create<BatchSaveConflict>(conflicts));
             }
         }
 

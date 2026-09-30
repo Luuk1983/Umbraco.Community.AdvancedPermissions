@@ -21,6 +21,8 @@ import { updateNode } from '../utils/tree-ops.js';
 import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
 import { clearEffectivePermissionCache } from '../conditions/document-user-permission.condition.js';
 import { UapSecurityEventsController } from '../live/security-events.controller.js';
+import type { UapRefreshPhase } from '../live/refresh-phase.js';
+import '../live/uap-live-refresh.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
 import '../help/uap-page-intro.element.js';
@@ -79,8 +81,8 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   /** Whether the dialog should show stars on deny entries (deny trumping allow). */
   @state() private _dialogShowStars = false;
 
-  /** Set after a live refresh, to show the "updated" pill. */
-  @state() private _liveRefreshedAt: number | null = null;
+  /** Where the refresh control is: idle, refreshing, or briefly confirming an update. */
+  @state() private _refreshPhase: UapRefreshPhase = 'idle';
 
   @query('uap-reasoning-dialog') private _reasoningDialog!: UapReasoningDialogElement;
 
@@ -88,8 +90,8 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #loadAbortController: AbortController | null = null;
 
-  /** Clears `_liveRefreshedAt` after the pill has had a moment to be seen. */
-  #liveRefreshedTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  /** Live-event subscription; also the entry point for the manual refresh control. */
+  #liveEvents: UapSecurityEventsController;
 
   constructor() {
     super();
@@ -103,28 +105,16 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     // A viewer holds nothing of the user's, so it never asks and never flags — it just becomes
     // correct again. The keys are ignored deliberately: a permission written on an ancestor moves
     // what every descendant on screen resolves to, so there is no subset worth refetching.
-    new UapSecurityEventsController(this, async () => {
-      if (!this._activeSubject) return;
-      clearEffectivePermissionCache();
-      await this.#reloadEffective();
-      this.#markLiveRefreshed();
-    });
-  }
-
-  /**
-   * Records a silent live refresh and shows the "updated" pill for a few seconds.
-   *
-   * Timed out rather than left standing: the pill says "Updated just now", and leaving that
-   * claim on screen indefinitely turns it into a lie the moment a few minutes pass with nothing
-   * happening. A fresh event before the timer fires restarts the clock instead of stacking a
-   * second one.
-   */
-  #markLiveRefreshed(): void {
-    this._liveRefreshedAt = Date.now();
-    clearTimeout(this.#liveRefreshedTimer);
-    this.#liveRefreshedTimer = setTimeout(() => {
-      this._liveRefreshedAt = null;
-    }, 5000);
+    this.#liveEvents = new UapSecurityEventsController(
+      this,
+      async () => {
+        if (!this._activeSubject) return;
+        clearEffectivePermissionCache();
+        // Background: the grid stays on screen and each row swaps in place as its answer arrives.
+        await this.#reloadEffective(true);
+      },
+      (phase) => { this._refreshPhase = phase; },
+    );
   }
 
   override connectedCallback(): void {
@@ -170,7 +160,6 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#loadAbortController?.abort();
-    clearTimeout(this.#liveRefreshedTimer);
   }
 
   // ── Data loading ─────────────────────────────────────────────────────────
@@ -237,8 +226,18 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   /**
    * Reloads effective permissions for all loaded nodes without rebuilding the tree.
    * Preserves expanded state and children.
+   *
+   * Two modes, because they answer different questions. A selection change (`background` false)
+   * blanks the grid and shows the loader: the rows on screen describe somebody else, so leaving
+   * them up would be wrong. A live or manual refresh (`background` true) is the same subject
+   * asked again, so the current values stay on screen, the loader stays away, and each row swaps
+   * in place only when its new answer has arrived. That keeps the reader's place on the page
+   * instead of flashing the whole grid for a refresh they never asked for.
+   * @param background True to refresh in place without any loading state.
+   * @returns A promise that resolves when done. In background mode it rejects if the refresh did
+   * not complete, so the refresh control does not claim the data was updated.
    */
-  async #reloadEffective(): Promise<void> {
+  async #reloadEffective(background = false): Promise<void> {
     if (!this.#subject || this._treeNodes.length === 0) return;
 
     // Cancel any in-flight load
@@ -246,25 +245,33 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     const controller = new AbortController();
     this.#loadAbortController = controller;
 
-    this._loading = true;
-    this._error = null;
+    let complete = true;
+    if (!background) {
+      this._loading = true;
+      this._error = null;
 
-    // Clear effective permissions on all loaded nodes
-    this.#clearEffectiveRecursive(this._treeNodes);
-    this._treeNodes = [...this._treeNodes]; // trigger re-render to show loading state
+      // Clear effective permissions on all loaded nodes
+      this.#clearEffectiveRecursive(this._treeNodes);
+      this._treeNodes = [...this._treeNodes]; // trigger re-render to show loading state
+    }
 
     try {
       // Reload effective permissions for root nodes
-      await this.#loadEffectiveBatch(this._treeNodes, controller.signal);
+      complete = (await this.#loadEffectiveBatch(this._treeNodes, controller.signal)) && complete;
       if (controller.signal.aborted) return;
 
       // Reload for any expanded children
-      await this.#reloadExpandedChildren(this._treeNodes, controller.signal);
+      complete = (await this.#reloadExpandedChildren(this._treeNodes, controller.signal)) && complete;
     } catch (err) {
       if (controller.signal.aborted) return;
       this._error = String(err);
+      if (background) throw err;
     } finally {
-      if (!controller.signal.aborted) this._loading = false;
+      if (!background && !controller.signal.aborted) this._loading = false;
+    }
+
+    if (background && !complete && !controller.signal.aborted) {
+      throw new Error('Refreshing effective permissions failed for one or more rows.');
     }
   }
 
@@ -275,39 +282,55 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     }
   }
 
-  async #reloadExpandedChildren(nodes: ViewerTreeNode[], signal: AbortSignal): Promise<void> {
+  /**
+   * Reloads the effective permissions of every expanded node's children, depth first.
+   * @param nodes The nodes to walk.
+   * @param signal Aborts the walk when the load it belongs to is superseded.
+   * @returns True if every row loaded.
+   */
+  async #reloadExpandedChildren(nodes: ViewerTreeNode[], signal: AbortSignal): Promise<boolean> {
+    let ok = true;
     for (const node of nodes) {
       if (node.children && node.expanded) {
-        await this.#loadEffectiveBatch(node.children, signal);
-        if (signal.aborted) return;
-        await this.#reloadExpandedChildren(node.children, signal);
-        if (signal.aborted) return;
+        ok = (await this.#loadEffectiveBatch(node.children, signal)) && ok;
+        if (signal.aborted) return ok;
+        ok = (await this.#reloadExpandedChildren(node.children, signal)) && ok;
+        if (signal.aborted) return ok;
       }
     }
+    return ok;
   }
 
   /**
    * Loads effective permissions for a batch of nodes, throttled to avoid
    * flooding the server with too many simultaneous requests.
+   * @returns True if every node loaded.
    */
-  async #loadEffectiveBatch(nodes: ViewerTreeNode[], signal: AbortSignal): Promise<void> {
+  async #loadEffectiveBatch(nodes: ViewerTreeNode[], signal: AbortSignal): Promise<boolean> {
     const batchSize = 8;
+    let ok = true;
     for (let i = 0; i < nodes.length; i += batchSize) {
-      if (signal.aborted) return;
+      if (signal.aborted) return ok;
       const batch = nodes.slice(i, i + batchSize);
-      await Promise.all(batch.map((n) => this.#loadEffective(n, signal)));
+      const results = await Promise.all(batch.map((n) => this.#loadEffective(n, signal)));
+      ok = results.every(Boolean) && ok;
     }
+    return ok;
   }
 
-  async #loadEffective(node: ViewerTreeNode, signal?: AbortSignal): Promise<void> {
-    if (!this.#subject) return;
+  /**
+   * Loads one node's effective permissions and swaps them in when they arrive.
+   * @returns False if the request failed; true otherwise (including when superseded).
+   */
+  async #loadEffective(node: ViewerTreeNode, signal?: AbortSignal): Promise<boolean> {
+    if (!this.#subject) return true;
     try {
       const result =
         this._activeSubject === 'role'
           ? await getEffectiveForRole(this._selectedRole!.alias, node.key, signal)
           : await getEffectiveForUser(this._selectedUser!.unique, node.key, signal);
 
-      if (signal?.aborted) return;
+      if (signal?.aborted) return true;
 
       const permsMap = new Map<string, EffectivePermission>();
       for (const p of result.permissions) {
@@ -315,8 +338,11 @@ export class UapAccessViewerRootElement extends UmbLitElement {
       }
       node.effectivePerms = permsMap;
       this._treeNodes = [...this._treeNodes]; // trigger re-render
+      return true;
     } catch {
-      // Non-fatal: leave effectivePerms null (shows loading indicator)
+      // Non-fatal: a first load leaves effectivePerms null (shows loading indicator); a
+      // background refresh leaves the previous values in place. Reported so a refresh can say so.
+      return false;
     }
   }
 
@@ -614,9 +640,11 @@ export class UapAccessViewerRootElement extends UmbLitElement {
           clearLabel=${this.#localize.term('uap_clearSelection')}
           @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
           @uap-selection-clear=${() => this.#onClearSelection()}>
-          ${this._liveRefreshedAt
-            ? html`<span slot="actions" class="live-pill"><uui-icon name="icon-sync"></uui-icon>${this.#localize.term('uap_liveUpdated')}</span>`
-            : nothing}
+          <uap-live-refresh
+            slot="actions"
+            .phase=${this._refreshPhase}
+            @uap-live-refresh=${() => void this.#liveEvents.refresh()}>
+          </uap-live-refresh>
           ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
           ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
           ${!this._loading && this._treeNodes.length > 0
@@ -692,17 +720,6 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     .error-msg {
       padding: 12px 18px;
       color: var(--uui-color-danger, #b91c1c);
-    }
-
-    .live-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 9px;
-      border-radius: 4px;
-      font-size: 12px;
-      background: var(--uui-color-surface-alt);
-      color: var(--uui-color-text-alt);
     }
 
     /* ── Table ────────────────────────────────────────────────── */

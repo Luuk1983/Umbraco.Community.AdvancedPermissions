@@ -38,6 +38,12 @@ public sealed record BatchSavePermissionsNode(
 /// <summary>
 /// The body of the <c>409 Conflict</c> a batch save is refused with.
 /// </summary>
+/// <remarks>
+/// Documents the shape for OpenAPI and client codegen only. At runtime the endpoints return a
+/// <see cref="Microsoft.AspNetCore.Mvc.ProblemDetails"/> built by <c>ConflictProblemDetails</c>
+/// that carries these conflicts as its <c>conflicts</c> extension, alongside <c>type</c>,
+/// <c>title</c> and <c>status</c>, so that Umbraco's backoffice interceptor keeps the body.
+/// </remarks>
 /// <param name="Conflicts">
 /// Only the pairs whose stored entries moved. Pairs that would have written cleanly are not
 /// listed, because nothing was written and there is nothing to say about them.

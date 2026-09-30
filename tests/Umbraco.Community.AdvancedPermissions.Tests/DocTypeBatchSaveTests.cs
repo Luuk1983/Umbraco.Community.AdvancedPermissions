@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Umbraco.Community.AdvancedPermissions.Controllers;
@@ -100,12 +101,12 @@ public sealed class DocTypeBatchSaveTests
         var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
 
         var conflict = Assert.IsType<ConflictObjectResult>(result);
-        var body = Assert.IsType<BatchSaveDocTypeConflictResponseModel>(conflict.Value);
-        Assert.Single(body.Conflicts);
-        Assert.Equal(NodeA, body.Conflicts[0].NodeKey);
-        Assert.Equal(ContentTypeA, body.Conflicts[0].ContentTypeKey);
-        Assert.Single(body.Conflicts[0].CurrentEntries);
-        Assert.Equal("Deny", body.Conflicts[0].CurrentEntries[0].State);
+        var conflicts = ConflictsOf(conflict);
+        Assert.Single(conflicts);
+        Assert.Equal(NodeA, conflicts[0].NodeKey);
+        Assert.Equal(ContentTypeA, conflicts[0].ContentTypeKey);
+        Assert.Single(conflicts[0].CurrentEntries);
+        Assert.Equal("Deny", conflicts[0].CurrentEntries[0].State);
 
         await service.DidNotReceive().SaveManyAsync(
             Arg.Any<IReadOnlyList<(Guid, string, Guid, IReadOnlyList<(string, PermissionState, PermissionScope, bool)>)>>(),
@@ -137,10 +138,10 @@ public sealed class DocTypeBatchSaveTests
         var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
 
         var conflict = Assert.IsType<ConflictObjectResult>(result);
-        var body = Assert.IsType<BatchSaveDocTypeConflictResponseModel>(conflict.Value);
-        Assert.Single(body.Conflicts);
-        Assert.Equal(NodeA, body.Conflicts[0].NodeKey);
-        Assert.Equal(ContentTypeB, body.Conflicts[0].ContentTypeKey);
+        var conflicts = ConflictsOf(conflict);
+        Assert.Single(conflicts);
+        Assert.Equal(NodeA, conflicts[0].NodeKey);
+        Assert.Equal(ContentTypeB, conflicts[0].ContentTypeKey);
 
         await service.DidNotReceive().SaveManyAsync(
             Arg.Any<IReadOnlyList<(Guid, string, Guid, IReadOnlyList<(string, PermissionState, PermissionScope, bool)>)>>(),
@@ -203,6 +204,48 @@ public sealed class DocTypeBatchSaveTests
         var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    /// <summary>
+    /// The 409 body must be a <see cref="ProblemDetails"/> with <c>Type</c>, <c>Title</c> and
+    /// <c>Status</c> all populated, carrying the conflicts as the <c>conflicts</c> extension.
+    /// Those three fields are exactly what Umbraco's backoffice response interceptor checks
+    /// (<c>isProblemDetailsLike</c>) before deciding whether to keep the body: without them it
+    /// replaces the body with a generic error, the conflicts are lost, and the conflict dialog
+    /// can never open.
+    /// </summary>
+    [Fact]
+    public async Task BatchSave_StaleStamp_409BodySurvivesUmbracoInterceptor()
+    {
+        var service = Substitute.For<IDocTypePermissionService>();
+        service.GetEditorEntriesAsync("editors", ContentTypeA, Arg.Any<CancellationToken>())
+            .Returns(new[] { Stored(NodeA, ContentTypeA, PermissionState.Deny) });
+
+        var controller = BuildController(service);
+        var request = new BatchSaveDocTypePermissionsRequestModel(
+        [
+            new BatchSaveDocTypePermissionsNode(NodeA, "editors", ContentTypeA, [], StampOf([])),
+        ]);
+
+        var result = await controller.BatchSaveDocTypePermissions(request, CancellationToken.None);
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        var problem = Assert.IsType<ProblemDetails>(conflict.Value);
+        Assert.False(string.IsNullOrWhiteSpace(problem.Type));
+        Assert.False(string.IsNullOrWhiteSpace(problem.Title));
+        Assert.Equal(StatusCodes.Status409Conflict, problem.Status);
+        Assert.Equal(StatusCodes.Status409Conflict, conflict.StatusCode);
+        Assert.True(problem.Extensions.ContainsKey("conflicts"));
+        Assert.Single(ConflictsOf(conflict));
+    }
+
+    /// <summary>Extracts the conflict list from the <c>conflicts</c> extension of a 409 ProblemDetails.</summary>
+    /// <param name="conflict">The 409 result.</param>
+    /// <returns>The conflicts.</returns>
+    private static IReadOnlyList<BatchSaveDocTypeConflict> ConflictsOf(ConflictObjectResult conflict)
+    {
+        var problem = Assert.IsType<ProblemDetails>(conflict.Value);
+        return Assert.IsAssignableFrom<IReadOnlyList<BatchSaveDocTypeConflict>>(problem.Extensions["conflicts"]);
     }
 
     /// <summary>

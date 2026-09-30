@@ -156,7 +156,15 @@ public sealed record BatchSaveDocTypePermissionsNode(
     IReadOnlyList<SavePermissionEntryItem> Entries,
     string? ExpectedStamp = null);
 
-/// <summary>The body of the <c>409 Conflict</c> a document-type batch save is refused with.</summary>
+/// <summary>
+/// The body of the <c>409 Conflict</c> a document-type batch save is refused with.
+/// </summary>
+/// <remarks>
+/// Documents the shape for OpenAPI and client codegen only. At runtime the endpoint returns a
+/// <see cref="Microsoft.AspNetCore.Mvc.ProblemDetails"/> built by <c>ConflictProblemDetails</c>
+/// that carries these conflicts as its <c>conflicts</c> extension, alongside <c>type</c>,
+/// <c>title</c> and <c>status</c>, so that Umbraco's backoffice interceptor keeps the body.
+/// </remarks>
 /// <param name="Conflicts">Only the triples whose stored entries moved.</param>
 public sealed record BatchSaveDocTypeConflictResponseModel(
     IReadOnlyList<BatchSaveDocTypeConflict> Conflicts);

@@ -184,8 +184,20 @@ export async function savePermissionsBatch(nodes: BatchSaveNode[], force = false
   });
 
   if (response.status === 409) {
-    const body = error as BatchSaveConflictResponseModel;
-    return { ok: false, conflicts: body.conflicts as BatchSaveConflict[] };
+    // The server sends a ProblemDetails with the conflicts as an extension member. It has to be
+    // one: Umbraco's client interceptor replaces any error body that does not satisfy
+    // `isProblemDetailsLike` (type, title and status) with a generic one, dropping `conflicts`.
+    // If that ever happens again, fail here with a message that says so, rather than returning an
+    // `ok: false` result with no conflicts and letting the caller die on a bare "not iterable".
+    const conflicts = (error as Partial<BatchSaveConflictResponseModel> | undefined)?.conflicts;
+    if (!Array.isArray(conflicts)) {
+      throw new Error(
+        'Permission save was refused with 409 but the response carried no "conflicts" array. ' +
+          'The response body was probably rewritten by the Umbraco interceptor because it no longer ' +
+          'looks like a ProblemDetails (type, title and status).',
+      );
+    }
+    return { ok: false, conflicts: conflicts as BatchSaveConflict[] };
   }
 
   if (error) throw error;

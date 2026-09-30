@@ -32,7 +32,10 @@ import { loadSelection, saveSelection, clearSelection } from '../utils/selection
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
 import { UMB_DOCUMENT_TYPE_PICKER_MODAL } from '@umbraco-cms/backoffice/document-type';
 import { UapSecurityEventsController } from '../live/security-events.controller.js';
+import { UapUnsavedChangesGuard, confirmDiscardUnsavedChanges } from '../live/unsaved-changes-guard.js';
 import type { CellEntry } from '../live/conflict.js';
+import type { UapRefreshPhase } from '../live/refresh-phase.js';
+import '../live/uap-live-refresh.element.js';
 import { reconcileNode } from '../live/reconcile.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-permission-scope-dialog.element.js';
@@ -96,8 +99,8 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
   /** Whether the banner has been dismissed for the current set of conflicts. */
   @state() private _bannerDismissed = false;
 
-  /** Set after a silent live refresh, to show the "updated" pill. */
-  @state() private _liveRefreshedAt: number | null = null;
+  /** Where the refresh control is: idle, refreshing, or briefly confirming an update. */
+  @state() private _refreshPhase: UapRefreshPhase = 'idle';
 
   // Scope-dialog state — mirrors the existing editor.
   @state() private _pickerNode: TreeNodeState | null = null;
@@ -115,21 +118,20 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #loadAbortController: AbortController | null = null;
 
-  /** Clears `_liveRefreshedAt` after the pill has had a moment to be seen. */
-  #liveRefreshedTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  /** Live-event subscription; also the entry point for the manual refresh control. */
+  #liveEvents: UapSecurityEventsController;
 
   /**
-   * Stamps withheld from a node while it has an unresolved conflict, keyed by node key: the stamp
-   * the server reported as current. A node with an outstanding conflict must not adopt that stamp
-   * onto itself — doing so would let the next save for that node sail through the concurrency
-   * check on a value nobody has agreed to overwrite. Applied once the conflict is resolved (see
-   * `#loadStoredForConflicts`), and dropped without being applied if the node classifies clean on
-   * a later pass (its live stamp is adopted normally at that point instead).
-   *
-   * Keyed by node alone, not the full triple: this editor holds exactly one role and one document
-   * type at a time, so the node key alone already disambiguates every withheld stamp it can hold.
+   * Vetoes a router navigation, browser close or reload while there are unsaved edits, and asks
+   * first. In-page changes (switching group or document type, clearing the selection) are guarded
+   * by their own handlers through the same `#confirmDiscard`, because they are not router
+   * navigations.
    */
-  #withheldStamps: Map<string, string> = new Map();
+  #unsavedGuard = new UapUnsavedChangesGuard({
+    hasChanges: () => this._pendingChanges.size > 0,
+    confirm: () => this.#confirmDiscard(),
+    onDiscard: () => this.#discardChanges(),
+  });
 
   constructor() {
     super();
@@ -143,36 +145,32 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
     // A clean editor takes the server's version in place; a dirty one is classified cell by cell
     // and nothing of the user's is touched. Mirrors the node Permissions Editor exactly — see its
     // constructor for the full reasoning.
-    new UapSecurityEventsController(this, async () => {
-      if (!this._selectedRole || !this._selectedDocType) return;
-      if (this._pendingChanges.size === 0) {
-        await this.#reloadEntries();
-        this.#markLiveRefreshed();
-        return;
-      }
-      await this.#reconcileWithServer();
-    });
+    this.#liveEvents = new UapSecurityEventsController(
+      this,
+      async () => {
+        if (!this._selectedRole || !this._selectedDocType) return;
+        // Nothing is reconciled while this editor's own save is in flight. The write raises an
+        // event of its own, and the event carries no identity, so it cannot be told from a
+        // colleague's; reconciling against it would flag the user's own save as a conflict. This
+        // replaces what comparing values used to do (see `CellVerdict`). It is safe to drop
+        // because a finished save reloads everything and clears the pending and conflict state,
+        // and a refused one hands back the server's current values itself.
+        if (this._saving) return;
+        // Both paths refresh in the background: nothing here is a selection change, so the grid
+        // stays on screen and only the values (and conflict flags) change underneath.
+        if (this._pendingChanges.size === 0) {
+          await this.#reloadEntries(true);
+          return;
+        }
+        await this.#reconcileWithServer();
+      },
+      (phase) => { this._refreshPhase = phase; },
+    );
   }
 
   /**
-   * Records a silent live refresh and shows the "updated" pill for a few seconds.
-   *
-   * Timed out rather than left standing: the pill says "Updated just now", and a claim like that
-   * left on screen indefinitely turns into a lie the moment a few minutes pass with nothing
-   * happening. A fresh event before the timer fires restarts the clock instead of stacking a
-   * second one.
-   */
-  #markLiveRefreshed(): void {
-    this._liveRefreshedAt = Date.now();
-    clearTimeout(this.#liveRefreshedTimer);
-    this.#liveRefreshedTimer = setTimeout(() => {
-      this._liveRefreshedAt = null;
-    }, 5000);
-  }
-
-  /**
-   * Clears every trace of an unresolved live conflict: the flagged cells, the dismissed-banner
-   * flag, and the stamps withheld while they were unresolved.
+   * Clears every trace of an unresolved live conflict: the flagged cells and the dismissed-banner
+   * flag.
    *
    * Called wherever the tree itself is being replaced or abandoned — switching user group or
    * document type, or clearing the selection — so a conflict against the previous pair's data
@@ -181,19 +179,54 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
   #resetLiveState(): void {
     this._conflicts = new Set();
     this._bannerDismissed = false;
-    this.#withheldStamps = new Map();
+  }
+
+  /**
+   * Throws away every pending change and returns the grid to whatever the server currently holds.
+   *
+   * Discarding resolves any outstanding conflict by definition: with nothing of the user's left,
+   * there is nothing left to contest, so the flags and the banner have to go with the edits. They
+   * used to survive, leaving a warning on screen about changes that no longer existed.
+   *
+   * The reload is not cosmetic. A conflicted node's entries are frozen at what they were before
+   * the other person's write and its stamp was never advanced, so leaving it alone would keep both
+   * out of date and the next save would be refused against a value nobody is editing any more — a
+   * conflict dialog with no conflict behind it. Re-reading adopts the server's current stamps along
+   * with its entries.
+   *
+   * Runs in the background so the grid stays on screen: the user asked to drop their edits, not
+   * to watch the page reload.
+   */
+  #discardChanges(): void {
+    this._pendingChanges = new Map();
+    this.#resetLiveState();
+    void this.#reloadEntries(true);
+  }
+
+  /**
+   * The one place the unsaved-changes question is asked, so every path (leaving the page,
+   * switching user group or document type, clearing the selection) words it identically.
+   * @returns `true` when it is fine to proceed: either nothing is pending, or the user chose to
+   * discard what is. `false` when they chose to keep editing.
+   */
+  async #confirmDiscard(): Promise<boolean> {
+    if (this._pendingChanges.size === 0) return true;
+    return confirmDiscardUnsavedChanges(this, this.#localize);
   }
 
   override connectedCallback(): void {
     super.connectedCallback();
+    // Attached here and detached in disconnectedCallback: this element mounts and unmounts
+    // repeatedly, so a listener left behind would guard navigation on behalf of a dead editor.
+    this.#unsavedGuard.attach();
     void this.#loadMeta();
     this.#restoreSelection();
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.#unsavedGuard.detach();
     this.#loadAbortController?.abort();
-    clearTimeout(this.#liveRefreshedTimer);
   }
 
   /** Restores the last-used user group and document type; loads the tree once both are present. */
@@ -213,8 +246,14 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
     }
   }
 
-  /** Clears the current selection, resets the view, and forgets the stored selection. */
-  #onClearSelection(): void {
+  /**
+   * Clears the current selection, resets the view, and forgets the stored selection.
+   *
+   * Asks first when there are unsaved edits, since clearing drops them along with the tree they
+   * belong to. Cancelling leaves the selection, the grid and the edits exactly as they were.
+   */
+  async #onClearSelection(): Promise<void> {
+    if (!(await this.#confirmDiscard())) return;
     this.#loadAbortController?.abort();
     this._selectedRole = null;
     this._selectedDocType = null;
@@ -244,6 +283,12 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
     });
     const result = await modal.onSubmit().catch(() => undefined);
     if (!result) return;
+
+    // Picking the group that is already selected changes nothing, so it must not cost the user
+    // their edits (it used to reset them silently).
+    if (this._pendingChanges.size > 0 && result.role.alias === this._selectedRole?.alias) return;
+    // Asked after the pick, not before opening the picker: cancelling the picker then costs nothing.
+    if (!(await this.#confirmDiscard())) return;
 
     const hadTree = this._treeNodes.length > 0 && this._selectedRole !== null && this._selectedDocType !== null;
     this._selectedRole = result.role;
@@ -278,6 +323,11 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
     const picked = key
       ? (this._docTypes.find((dt) => dt.key.toLowerCase() === key.toLowerCase()) ?? null)
       : null;
+
+    // Same document type again changes nothing, so it must not cost the user their edits.
+    if (this._pendingChanges.size > 0 && picked?.key === this._selectedDocType?.key) return;
+    // Asked after the pick, not before opening the picker: cancelling the picker then costs nothing.
+    if (!(await this.#confirmDiscard())) return;
 
     const hadTree = this._treeNodes.length > 0 && this._selectedRole !== null && this._selectedDocType !== null;
     this._selectedDocType = picked;
@@ -352,17 +402,26 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
 
   /**
    * Reloads only the entries (and stamps) for the current tree on (role, doc-type) change, or
-   * after a clean live refresh. Preserves expanded state and existing children.
+   * after a clean live or manual refresh. Preserves expanded state and existing children.
+   *
+   * A selection change (`background` false) shows the loader, because what is on screen belongs to
+   * the previous pair. A refresh (`background` true) is the same pair asked again: the current
+   * entries stay on screen and are replaced when the response arrives, so the grid does not flash.
+   * @param background True to refresh in place without any loading state.
+   * @returns A promise that resolves when done. In background mode it rejects on failure, so the
+   * refresh control does not claim the data was updated.
    */
-  async #reloadEntries(): Promise<void> {
+  async #reloadEntries(background = false): Promise<void> {
     if (!this._selectedRole || !this._selectedDocType || this._treeNodes.length === 0) return;
 
     this.#loadAbortController?.abort();
     const controller = new AbortController();
     this.#loadAbortController = controller;
 
-    this._loading = true;
-    this._error = null;
+    if (!background) {
+      this._loading = true;
+      this._error = null;
+    }
 
     try {
       const editorNodes = await getDocTypePermissionsForEditor(
@@ -378,8 +437,9 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
     } catch (err) {
       if (controller.signal.aborted) return;
       this._error = String(err);
+      if (background) throw err;
     } finally {
-      if (!controller.signal.aborted) this._loading = false;
+      if (!background && !controller.signal.aborted) this._loading = false;
     }
   }
 
@@ -536,16 +596,21 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
 
     try {
       const editorNodes = await getDocTypePermissionsForEditor(roleAlias, contentTypeKey, controller.signal);
+      // `_saving` too: a read that finished after the save began may predate its write, and would
+      // be reconciled against as if it were somebody else's change.
       if (
         controller.signal.aborted ||
         this._selectedRole?.alias !== roleAlias ||
-        this._selectedDocType?.key !== contentTypeKey
+        this._selectedDocType?.key !== contentTypeKey ||
+        this._saving
       ) {
         return;
       }
 
       const fresh = this.#groupByNode(editorNodes);
-      const conflicts = new Set<string>();
+      // Starts from what is already flagged and only ever grows: a flag is removed by the user
+      // acting on it, never by a later pass that happens to read the cell as unchanged.
+      const conflicts = new Set(this._conflicts);
 
       for (const node of this.#flattenNodes(this._treeNodes)) {
         const apiKey = node.key === VIRTUAL_ROOT_LOCAL_KEY ? VIRTUAL_ROOT_NODE_KEY : node.key;
@@ -563,7 +628,11 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
             ])
           : undefined;
 
-        const result = reconcileNode({ base, pending, theirs });
+        const alreadyFlagged = new Set<string>(
+          this._conflicts.has(`${node.key}|${contentTypeKey}|${VERB}`) ? [VERB] : [],
+        );
+
+        const result = reconcileNode({ base, pending, theirs, conflicted: alreadyFlagged });
         for (const verb of result.conflictedVerbs) {
           conflicts.add(`${node.key}|${contentTypeKey}|${verb}`);
         }
@@ -574,11 +643,13 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
         // that distinction is the entire point.
         const mergedEntries = this.#entriesFromCells(apiKey, roleAlias, result.nextBase.get(VERB) ?? []);
 
+        // A node with a flagged verb keeps the stamp it has. Adopting the server's would let the
+        // next save for that node sail through the concurrency check on a value nobody has agreed
+        // to overwrite. Nothing remembers the stamp that was skipped: resolving the conflict
+        // re-reads the server (see `#loadStoredForConflicts`), which supplies a current one.
         if (result.adoptStamp) {
-          this.#withheldStamps.delete(node.key);
           this.#updateNode(node.key, { entries: mergedEntries, stamp: theirsForNode.stamp });
         } else {
-          this.#withheldStamps.set(node.key, theirsForNode.stamp);
           this.#updateNode(node.key, { entries: mergedEntries });
         }
       }
@@ -586,19 +657,37 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
       if (
         controller.signal.aborted ||
         this._selectedRole?.alias !== roleAlias ||
-        this._selectedDocType?.key !== contentTypeKey
+        this._selectedDocType?.key !== contentTypeKey ||
+        this._saving
       ) {
         return;
       }
 
-      if (conflicts.size > 0) {
-        this._bannerDismissed = false;
-      }
-      this._conflicts = conflicts;
+      this.#adoptConflicts(conflicts);
     } catch (err) {
       if (controller.signal.aborted) return;
       this._error = String(err);
+      // Rethrown so the refresh control does not claim the data was updated.
+      throw err;
     }
+  }
+
+  /**
+   * Adopts the flagged-cell set a reconcile pass just computed, without disturbing
+   * what is already on screen.
+   *
+   * A pass that finds exactly the cells already flagged leaves the state alone: swapping in an
+   * equal set would re-render the grid and, worse, bring back a banner the person had dismissed
+   * for those very cells. The banner returns only when a pass flags a cell that was not flagged
+   * before, which is genuinely new news.
+   * @param next The previous flags plus any this pass found, keyed `nodeKey|contentTypeKey|verb`.
+   */
+  #adoptConflicts(next: Set<string>): void {
+    const previous = this._conflicts;
+    const unchanged = next.size === previous.size && [...next].every((c) => previous.has(c));
+    if (unchanged) return;
+    if ([...next].some((c) => !previous.has(c))) this._bannerDismissed = false;
+    this._conflicts = next;
   }
 
   /**
@@ -646,35 +735,49 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
 
   /**
    * Resolves every currently-flagged node to its stored value, keeping every other pending change
-   * untouched.
+   * untouched, then re-reads the server so the grid actually shows that stored value.
    *
    * Scoped to the flagged nodes on purpose — discarding everything would throw away edits
    * elsewhere in the tree that nobody is contesting. Because there is only one verb in this
    * editor, a flagged cell and its node coincide, so resolving the cell is exactly deleting that
-   * node's whole pending entry. Any node that was withholding its stamp can adopt it now: nothing
-   * at that node is still in dispute once this returns.
+   * node's whole pending entry.
+   *
+   * THE RE-READ IS NOT OPTIONAL — do not remove it as a redundant round trip. A conflicted node's
+   * baseline is deliberately frozen (see `reconcileNode`): `node.entries` still holds the value
+   * from *before* the other person's write, and the node's stamp was held back to match. Dropping
+   * the pending change only removes the user's edit; it does not make the entries current. Without
+   * the re-read the cell keeps showing the pre-conflict value, and — if anything were to advance
+   * the stamp without the entries (which is what this method used to do, by applying a stamp it
+   * had withheld) — the next save would send that stale value under a stamp the server accepts. The
+   * other person's change would be silently reverted: no 409, no dialog, nothing to notice.
+   *
+   * The re-read fetches entries and stamp in the same response, so they cannot disagree. It goes
+   * through the live-event controller, exactly as the manual refresh control does: that runs
+   * `#reloadEntries(true)` when nothing is pending any more, and `#reconcileWithServer` when other
+   * edits survive. The split matters. A plain reload replaces every node's baseline, and for a
+   * node the user is still editing that would quietly absorb somebody else's write that had landed
+   * but not yet been reconciled — the pending change would then overwrite it under a fresh stamp.
+   * Reconciling compares first and only adopts what is not in dispute. It also queues behind any
+   * run already in flight instead of aborting it.
+   *
+   * Until that read lands, the nodes still hold their old stamp, so a save made in the meantime is
+   * refused by the server rather than written stale. No withheld stamp is applied here: it is
+   * older than what the re-read fetches, and applying it early is exactly the drift described above.
+   *
+   * Used for both the banner's "Load stored values" and the save-time conflict dialog's, so the
+   * two cannot end in different states.
    */
   #loadStoredForConflicts(): void {
     const next = new Map(this._pendingChanges);
-    const affectedNodes = new Set<string>();
 
     for (const cell of this._conflicts) {
       const [nodeKey] = cell.split('|');
-      affectedNodes.add(nodeKey!);
       next.delete(nodeKey!);
     }
 
-    for (const nodeKey of affectedNodes) {
-      const stamp = this.#withheldStamps.get(nodeKey);
-      if (stamp !== undefined) {
-        this.#updateNode(nodeKey, { stamp });
-        this.#withheldStamps.delete(nodeKey);
-      }
-    }
-
     this._pendingChanges = next;
-    this._conflicts = new Set();
-    this._bannerDismissed = false;
+    this.#resetLiveState();
+    void this.#liveEvents.refresh();
   }
 
   // ── Save ─────────────────────────────────────────────────────────────────
@@ -732,7 +835,6 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
         if (savedRoleAlias !== roleAlias || savedContentTypeKey !== contentTypeKey) continue;
         const localKey = savedNodeKey === VIRTUAL_ROOT_NODE_KEY ? VIRTUAL_ROOT_LOCAL_KEY : savedNodeKey!;
         this.#updateNode(localKey, { stamp });
-        this.#withheldStamps.delete(localKey);
       }
 
       await this.#reloadEntries();
@@ -754,9 +856,9 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
    * Turns the server's triple-level conflict list into per-node lines for the confirmation
    * dialog, flags the same cells on the grid, and opens the dialog.
    *
-   * The affected nodes' entries are advanced to what the server just reported and their stamp is
-   * withheld, exactly as a live-detected conflict would be — `#loadStoredForConflicts` resolves
-   * both the same way.
+   * The affected nodes' entries are advanced to what the server just reported, but their stamp is
+   * left alone, exactly as for a live-detected conflict — `#loadStoredForConflicts` resolves both
+   * the same way, by re-reading the server rather than trusting either half of what is held here.
    */
   #openConflictDialog(conflicts: BatchSaveDocTypeConflict[]): void {
     const lines: UapConflictLine[] = [];
@@ -770,7 +872,6 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
         ? this.#localize.term('uap_contentRoot')
         : (this.#findNode(localKey)?.name ?? localKey);
 
-      this.#withheldStamps.set(localKey, conflict.currentStamp);
       this.#updateNode(localKey, { entries: conflict.currentEntries });
 
       const pending = this._pendingChanges.get(localKey);
@@ -952,7 +1053,7 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
         ?clearable=${true}
         clearLabel=${this.#localize.term('uap_clearSelection')}
         @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
-        @uap-selection-clear=${() => this.#onClearSelection()}>
+        @uap-selection-clear=${() => void this.#onClearSelection()}>
 
         ${hasPending
           ? html`
@@ -960,15 +1061,17 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
                 <uui-button label=${this.#localize.term('uap_saveChanges')} look="primary" color="positive" ?loading=${this._saving} @click=${() => void this.#saveChanges()}>
                   ${this.#localize.term('uap_saveChanges')}
                 </uui-button>
-                <uui-button label=${this.#localize.term('uap_discard')} look="outline" @click=${() => { this._pendingChanges = new Map(); }}>
+                <uui-button label=${this.#localize.term('uap_discard')} look="outline" @click=${() => this.#discardChanges()}>
                   ${this.#localize.term('uap_discard')}
                 </uui-button>
               </div>
             `
           : nothing}
-        ${this._liveRefreshedAt
-          ? html`<span slot="actions" class="live-pill"><uui-icon name="icon-sync"></uui-icon>${this.#localize.term('uap_liveUpdated')}</span>`
-          : nothing}
+        <uap-live-refresh
+          slot="actions"
+          .phase=${this._refreshPhase}
+          @uap-live-refresh=${() => void this.#liveEvents.refresh()}>
+        </uap-live-refresh>
 
         ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
         ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
@@ -1029,17 +1132,6 @@ export class UapDocTypePermissionsEditorRootElement extends UmbLitElement {
 
     .loading { display: flex; justify-content: center; padding: 32px; }
     .error-msg { padding: 12px 18px; color: var(--uui-color-danger, #b91c1c); }
-
-    .live-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 9px;
-      border-radius: 4px;
-      font-size: 12px;
-      background: var(--uui-color-surface-alt);
-      color: var(--uui-color-text-alt);
-    }
 
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }

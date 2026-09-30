@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Umbraco.Community.AdvancedPermissions.Controllers;
@@ -77,11 +79,11 @@ public sealed class BatchSavePermissionsTests
         var result = await controller.BatchSavePermissions(request, CancellationToken.None);
 
         var conflict = Assert.IsType<ConflictObjectResult>(result);
-        var body = Assert.IsType<BatchSaveConflictResponseModel>(conflict.Value);
-        Assert.Single(body.Conflicts);
-        Assert.Equal(NodeA, body.Conflicts[0].NodeKey);
-        Assert.Single(body.Conflicts[0].CurrentEntries);
-        Assert.Equal("Deny", body.Conflicts[0].CurrentEntries[0].State);
+        var conflicts = ConflictsOf(conflict);
+        Assert.Single(conflicts);
+        Assert.Equal(NodeA, conflicts[0].NodeKey);
+        Assert.Single(conflicts[0].CurrentEntries);
+        Assert.Equal("Deny", conflicts[0].CurrentEntries[0].State);
 
         await service.DidNotReceive().SaveManyAsync(
             Arg.Any<IReadOnlyList<(Guid, string, IReadOnlyList<(string, PermissionState, PermissionScope, bool)>)>>(),
@@ -109,9 +111,9 @@ public sealed class BatchSavePermissionsTests
         var result = await controller.BatchSavePermissions(request, CancellationToken.None);
 
         var conflict = Assert.IsType<ConflictObjectResult>(result);
-        var body = Assert.IsType<BatchSaveConflictResponseModel>(conflict.Value);
-        Assert.Single(body.Conflicts);
-        Assert.Equal(nodeB, body.Conflicts[0].NodeKey);
+        var conflicts = ConflictsOf(conflict);
+        Assert.Single(conflicts);
+        Assert.Equal(nodeB, conflicts[0].NodeKey);
 
         await service.DidNotReceive().SaveManyAsync(
             Arg.Any<IReadOnlyList<(Guid, string, IReadOnlyList<(string, PermissionState, PermissionScope, bool)>)>>(),
@@ -197,6 +199,106 @@ public sealed class BatchSavePermissionsTests
         await service.DidNotReceive().SaveManyAsync(
             Arg.Any<IReadOnlyList<(Guid, string, IReadOnlyList<(string, PermissionState, PermissionScope, bool)>)>>(),
             Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// The 409 body must be a <see cref="ProblemDetails"/> with <c>Type</c>, <c>Title</c> and
+    /// <c>Status</c> all populated, carrying the conflicts as the <c>conflicts</c> extension.
+    /// Those three fields are exactly what Umbraco's backoffice response interceptor checks
+    /// (<c>isProblemDetailsLike</c>) before deciding whether to keep the body: without them it
+    /// replaces the body with a generic error, the conflicts are lost, and the conflict dialog
+    /// can never open.
+    /// </summary>
+    [Fact]
+    public async Task BatchSave_StaleStamp_409BodySurvivesUmbracoInterceptor()
+    {
+        var service = Substitute.For<IAdvancedPermissionService>();
+        service.GetEntriesAsync(NodeA, "editors", Arg.Any<CancellationToken>())
+            .Returns(new[] { Stored("Umb.Document.Read", PermissionState.Deny) });
+
+        var controller = BuildController(service);
+        var request = new BatchSavePermissionsRequestModel(
+        [
+            new BatchSavePermissionsNode(NodeA, "editors", [], PermissionStamp.Compute([])),
+        ]);
+
+        var result = await controller.BatchSavePermissions(request, CancellationToken.None);
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        var problem = Assert.IsType<ProblemDetails>(conflict.Value);
+        Assert.False(string.IsNullOrWhiteSpace(problem.Type));
+        Assert.False(string.IsNullOrWhiteSpace(problem.Title));
+        Assert.Equal(StatusCodes.Status409Conflict, problem.Status);
+        Assert.Equal(StatusCodes.Status409Conflict, conflict.StatusCode);
+        Assert.True(problem.Extensions.ContainsKey("conflicts"));
+        Assert.Single(ConflictsOf(conflict));
+    }
+
+    /// <summary>
+    /// The single-pair save's stamp check returns the same interceptor-safe ProblemDetails shape
+    /// as the batch endpoint, with <c>Type</c>, <c>Title</c> and <c>Status</c> populated, because
+    /// otherwise Umbraco replaces the body and the conflict dialog can never open.
+    /// </summary>
+    [Fact]
+    public async Task SavePermissions_StaleStamp_409BodySurvivesUmbracoInterceptor()
+    {
+        var service = Substitute.For<IAdvancedPermissionService>();
+        service.GetEntriesAsync(NodeA, "editors", Arg.Any<CancellationToken>())
+            .Returns(new[] { Stored("Umb.Document.Read", PermissionState.Deny) });
+
+        var controller = BuildController(service);
+        var request = new SavePermissionsRequestModel(NodeA, "editors", [], PermissionStamp.Compute([]));
+
+        var result = await controller.SavePermissions(request, CancellationToken.None);
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        var problem = Assert.IsType<ProblemDetails>(conflict.Value);
+        Assert.False(string.IsNullOrWhiteSpace(problem.Type));
+        Assert.False(string.IsNullOrWhiteSpace(problem.Title));
+        Assert.Equal(StatusCodes.Status409Conflict, problem.Status);
+        var conflicts = ConflictsOf(conflict);
+        Assert.Single(conflicts);
+        Assert.Equal(NodeA, conflicts[0].NodeKey);
+    }
+
+    /// <summary>
+    /// Serialised the way the Management API writes it, the 409 body carries <c>type</c>,
+    /// <c>title</c> and <c>status</c> at the top level alongside <c>conflicts</c>. That flat shape
+    /// is what Umbraco's <c>isProblemDetailsLike</c> check inspects; if <c>conflicts</c> were
+    /// nested or the three fields went missing, the interceptor would replace the body and the
+    /// conflict dialog could never open.
+    /// </summary>
+    [Fact]
+    public async Task BatchSave_StaleStamp_409JsonIsFlatProblemDetailsWithConflicts()
+    {
+        var service = Substitute.For<IAdvancedPermissionService>();
+        service.GetEntriesAsync(NodeA, "editors", Arg.Any<CancellationToken>())
+            .Returns(new[] { Stored("Umb.Document.Read", PermissionState.Deny) });
+
+        var controller = BuildController(service);
+        var request = new BatchSavePermissionsRequestModel(
+            [new BatchSavePermissionsNode(NodeA, "editors", [], PermissionStamp.Compute([]))]);
+
+        var result = await controller.BatchSavePermissions(request, CancellationToken.None);
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        var json = JsonSerializer.SerializeToElement(conflict.Value, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.Equal(JsonValueKind.String, json.GetProperty("type").ValueKind);
+        Assert.Equal(JsonValueKind.String, json.GetProperty("title").ValueKind);
+        Assert.Equal(StatusCodes.Status409Conflict, json.GetProperty("status").GetInt32());
+        var conflicts = json.GetProperty("conflicts");
+        Assert.Equal(JsonValueKind.Array, conflicts.ValueKind);
+        Assert.Equal(NodeA, conflicts[0].GetProperty("nodeKey").GetGuid());
+    }
+
+    /// <summary>Extracts the conflict list from the <c>conflicts</c> extension of a 409 ProblemDetails.</summary>
+    /// <param name="conflict">The 409 result.</param>
+    /// <returns>The conflicts.</returns>
+    private static IReadOnlyList<BatchSaveConflict> ConflictsOf(ConflictObjectResult conflict)
+    {
+        var problem = Assert.IsType<ProblemDetails>(conflict.Value);
+        return Assert.IsAssignableFrom<IReadOnlyList<BatchSaveConflict>>(problem.Extensions["conflicts"]);
     }
 
     /// <summary>

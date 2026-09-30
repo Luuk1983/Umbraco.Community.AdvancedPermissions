@@ -222,7 +222,7 @@ public sealed class DocTypePermissionsController(
 
             if (conflicts.Count > 0)
             {
-                return Conflict(new BatchSaveDocTypeConflictResponseModel(conflicts));
+                return Conflict(ConflictProblemDetails.Create<BatchSaveDocTypeConflict>(conflicts));
             }
         }
 

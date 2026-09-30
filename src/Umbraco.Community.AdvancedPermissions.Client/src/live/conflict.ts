@@ -4,21 +4,25 @@ import type { PermissionScope, PermissionState } from '../models/permission.mode
  * The verdict for one cell — one node and one verb — when the server reports that something
  * changed.
  *
- * The decision is made from three snapshots rather than from anything the event says about
- * itself, because the event says almost nothing: `ServerEvent` carries a source, a type and one
- * key, with no user and no client identity, so this editor's own save is indistinguishable from a
- * colleague's by inspection. Asking the data instead answers for every write path there is —
- * including the same person saving from another browser tab — because it never tries to enumerate
- * them.
+ * There is deliberately no "own write" verdict. `ServerEvent` carries a source, a type and one
+ * key, with no user and no client identity, so this editor's own save cannot be told from a
+ * colleague's — or from the same person's other tab — by inspection. The tempting substitute is
+ * value equality ("the server holds what I hold, so I wrote it"), and it must not come back: a
+ * permission cell has only about seven possible values (inherit, allow or deny, by scope and
+ * priority), so somebody else landing on exactly the value this editor has pending is routine, not
+ * a coincidence, and treating it as authorship silently swallows a real conflict. That heuristic
+ * came from a sibling project comparing whole documents, where accidental equality is effectively
+ * impossible; it does not transfer to a cell.
+ *
+ * The echo of this editor's own save is handled by the callers instead, by not reconciling at all
+ * while a save is in flight.
  */
 export type CellVerdict =
-  /** The server already holds what the editor holds. This editor wrote it. Do nothing. */
-  | 'own-write'
-  /** Nothing moved relative to what was loaded. A duplicate or stale event. Do nothing. */
+  /** The server still holds what was loaded. A duplicate, stale or reverted event. Nothing to say. */
   | 'no-change'
-  /** The editor holds nothing of its own here, so take the server's value in place. */
+  /** The server moved and the editor holds nothing of its own here, so take the server's value in place. */
   | 'refresh'
-  /** Both sides moved, differently. A person has to decide. */
+  /** The server moved and so did the editor — even to the same value. A person has to know. */
   | 'conflict';
 
 /** One stored permission entry, reduced to the fields that decide whether two cells differ. */
@@ -59,10 +63,13 @@ function signature(entries: ReadonlyArray<CellEntry>): string {
 /**
  * Decides what a change on the server means for one cell of an editor holding unsaved work.
  *
- * The order of the checks is load-bearing. `own-write` is asked first because when a save is
- * landing all three comparisons are true at once, and only that answer is safe: the server matches
- * what the editor holds, and a moment later the loaded baseline will match it too. Asking
- * `refresh` first would reload over a save that is still settling.
+ * Three questions, in this order: did the stored value move away from what was loaded, and if so
+ * does the editor hold a change of its own here. Whether the *values* agree is never asked, for
+ * the reasons on {@link CellVerdict}.
+ *
+ * `no-change` is only about this one comparison. A cell that reads `no-change` may still have been
+ * flagged by an earlier pass and reverted since; keeping that flag is the caller's job (see
+ * `reconcileNode`), because this function sees a single snapshot and cannot know the history.
  * @param comparison The three versions; see {@link CellComparison}.
  * @returns The verdict.
  */
@@ -71,11 +78,9 @@ export function classifyCell({ base, mine, theirs }: CellComparison): CellVerdic
   // safe answer to a question that cannot be asked.
   if (base === undefined || mine === undefined || theirs === undefined) return 'no-change';
 
-  const theirSignature = signature(theirs);
-  const mySignature = signature(mine);
+  const baseSignature = signature(base);
 
-  if (theirSignature === mySignature) return 'own-write';
-  if (theirSignature === signature(base)) return 'no-change';
-  if (mySignature === signature(base)) return 'refresh';
+  if (signature(theirs) === baseSignature) return 'no-change';
+  if (signature(mine) === baseSignature) return 'refresh';
   return 'conflict';
 }

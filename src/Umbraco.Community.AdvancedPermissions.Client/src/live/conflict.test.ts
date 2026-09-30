@@ -12,11 +12,13 @@ function entry(state: 'Allow' | 'Deny', scope: 'ThisNodeOnly' | 'ThisNodeAndDesc
 }
 
 describe('classifyCell', () => {
-  it('reports own-write when the server already holds what the editor holds', () => {
-    // Asked first, and that order is load-bearing: while a save is landing all three comparisons
-    // are true at once, and only this answer avoids reloading over a save still settling.
+  it('reports conflict when the server holds the same value the editor holds, because both sides moved', () => {
+    // Value equality is not authorship. `ServerEvent` carries no identity, and a permission cell
+    // has only about seven possible values, so a colleague landing on exactly the value this
+    // editor has pending is routine, not a coincidence to be waved through. Somebody else wrote
+    // to a cell being edited here; that is worth saying whichever value they picked.
     expect(classifyCell({ base: [entry('Allow')], mine: [entry('Deny')], theirs: [entry('Deny')] }))
-      .toBe('own-write');
+      .toBe('conflict');
   });
 
   it('reports no-change when the server still holds what was loaded', () => {
@@ -37,11 +39,19 @@ describe('classifyCell', () => {
   it('ignores entry order', () => {
     const a = entry('Allow', 'ThisNodeOnly');
     const b = entry('Deny', 'ThisNodeAndDescendants');
-    expect(classifyCell({ base: [a, b], mine: [a, b], theirs: [b, a] })).toBe('own-write');
+    // Same cell in a different order: nothing moved.
+    expect(classifyCell({ base: [a, b], mine: [a, b], theirs: [b, a] })).toBe('no-change');
   });
 
   it('treats an empty cell and a populated one as different', () => {
     expect(classifyCell({ base: [], mine: [], theirs: [entry('Allow')] })).toBe('refresh');
+  });
+
+  it('reports no-change when the server was reverted to what was loaded, even with a pending change', () => {
+    // The stored value is what this editor loaded, so there is nothing new to say about the cell.
+    // Whether an earlier conflict on it survives is decided by the caller, not here.
+    expect(classifyCell({ base: [entry('Allow')], mine: [entry('Deny')], theirs: [entry('Allow')] }))
+      .toBe('no-change');
   });
 
   it('does nothing when a side has not loaded', () => {

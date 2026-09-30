@@ -16,20 +16,31 @@ export interface ReconcileNodeInput {
   pending: ReadonlyMap<string, ReadonlyArray<CellEntry>> | undefined;
   /** What is stored right now, freshly read. */
   theirs: ReadonlyMap<string, ReadonlyArray<CellEntry>>;
+  /**
+   * The verbs on this node that are already flagged from an earlier pass and not yet resolved by
+   * the user. Required rather than optional so a caller cannot forget it and quietly lose the
+   * stickiness this module exists to provide; pass an empty set when there are none.
+   */
+  conflicted: ReadonlySet<string>;
 }
 
 /** The verdict for one node, going out of {@link reconcileNode}. */
 export interface ReconcileNodeResult {
-  /** Verbs where the editor's pending change and the server's new value disagree. */
+  /**
+   * Every verb that is flagged after this pass: the ones passed in as already conflicted, plus any
+   * this pass found. Never smaller than the input — a flag leaves only by the user's own action.
+   */
   conflictedVerbs: string[];
   /**
    * The `base` to compare against on the next event: the freshly-read value for every verb that
-   * came through clean, the previous `base` — unchanged — for every verb that conflicted.
+   * came through clean, the previous `base` — unchanged — for every verb that is flagged, whether
+   * it was flagged by this pass or an earlier one.
    */
   nextBase: Map<string, ReadonlyArray<CellEntry>>;
   /**
    * Whether the node's concurrency stamp may adopt the freshly-read value. Only true when no
-   * verb on this node conflicted; see the module doc for why a conflicted verb holds it back.
+   * verb on this node is flagged, counting earlier passes' flags; see {@link reconcileNode} for
+   * why a flagged verb holds it back.
    */
   adoptStamp: boolean;
 }
@@ -48,29 +59,42 @@ export interface ReconcileNodeResult {
  * would pass its concurrency check — because the node's stamp would have been allowed to adopt
  * the same "clean" verdict — and overwrite someone else's work with no dialog. That is exactly
  * the failure this feature exists to prevent, so a conflicted verb's `base` (and, at the node
- * level, the withheld stamp) stays frozen for as long as the disagreement remains real.
+ * level, the withheld stamp) stays frozen until the user resolves it.
  *
- * A verb the editor has not touched has nothing to protect, so it always takes the fresh value —
- * leaving it stale would show two vintages of the same node in one grid.
- * @param input The node's base/pending/theirs state; see {@link ReconcileNodeInput}.
+ * Flags are sticky. A verb once flagged stays flagged whatever this pass finds, including when the
+ * server is reverted to what was loaded or lands on the editor's own pending value: somebody else
+ * wrote to a cell being edited, and that news must not go away by itself. Only the user acting on
+ * it (loading the stored value, saving, discarding) removes it, and those live with the caller.
+ * The baseline freeze and the withheld stamp follow the sticky set, not merely this pass's
+ * findings, otherwise a later `no-change` pass would advance the stamp underneath a flag nobody
+ * has resolved and the save that follows would pass its concurrency check with no dialog.
+ *
+ * A verb the editor has not touched and that was never flagged has nothing to protect, so it
+ * always takes the fresh value — leaving it stale would show two vintages of the same node in one
+ * grid.
+ * @param input The node's base/pending/theirs/conflicted state; see {@link ReconcileNodeInput}.
  * @returns The verdict; see {@link ReconcileNodeResult}.
  */
-export function reconcileNode({ base, pending, theirs }: ReconcileNodeInput): ReconcileNodeResult {
-  const conflictedVerbs: string[] = [];
+export function reconcileNode({ base, pending, theirs, conflicted }: ReconcileNodeInput): ReconcileNodeResult {
+  const flagged = new Set<string>();
   const nextBase = new Map<string, ReadonlyArray<CellEntry>>();
 
   for (const [verb, baseCell] of base) {
     const theirCell = theirs.get(verb) ?? [];
-    const pendingCell = pending?.get(verb);
-    const mine = pendingCell ?? baseCell;
+    const mine = pending?.get(verb) ?? baseCell;
 
-    if (classifyCell({ base: baseCell, mine, theirs: theirCell }) === 'conflict') {
-      conflictedVerbs.push(verb);
+    const isConflict = classifyCell({ base: baseCell, mine, theirs: theirCell }) === 'conflict';
+    if (isConflict || conflicted.has(verb)) {
+      flagged.add(verb);
       nextBase.set(verb, baseCell);
     } else {
       nextBase.set(verb, theirCell);
     }
   }
 
-  return { conflictedVerbs, nextBase, adoptStamp: conflictedVerbs.length === 0 };
+  // A flagged verb the caller no longer supplies a base for cannot be re-evaluated, but it must
+  // not vanish: only the user resolves a flag.
+  for (const verb of conflicted) flagged.add(verb);
+
+  return { conflictedVerbs: [...flagged], nextBase, adoptStamp: flagged.size === 0 };
 }

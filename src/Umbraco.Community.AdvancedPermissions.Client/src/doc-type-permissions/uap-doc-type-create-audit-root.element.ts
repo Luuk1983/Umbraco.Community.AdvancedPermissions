@@ -25,6 +25,8 @@ import { loadSelection, saveSelection, clearSelection } from '../utils/selection
 import type { CellInfo } from '../utils/cell-info.js';
 import { clearEffectivePermissionCache } from '../conditions/document-user-permission.condition.js';
 import { UapSecurityEventsController } from '../live/security-events.controller.js';
+import type { UapRefreshPhase } from '../live/refresh-phase.js';
+import '../live/uap-live-refresh.element.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
 import { UAP_USER_PICKER_MODAL } from '../access-viewer/user-picker-modal.token.js';
 import { UMB_DOCUMENT_TYPE_PICKER_MODAL } from '@umbraco-cms/backoffice/document-type';
@@ -105,8 +107,8 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   @state() private _dialogLoading = false;
   @state() private _dialogShowStars = false;
 
-  /** Set after a live refresh, to show the "updated" pill. */
-  @state() private _liveRefreshedAt: number | null = null;
+  /** Where the refresh control is: idle, refreshing, or briefly confirming an update. */
+  @state() private _refreshPhase: UapRefreshPhase = 'idle';
 
   @query('uap-reasoning-dialog') private _reasoningDialog!: UapReasoningDialogElement;
 
@@ -114,8 +116,8 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #loadAbortController: AbortController | null = null;
 
-  /** Clears `_liveRefreshedAt` after the pill has had a moment to be seen. */
-  #liveRefreshedTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  /** Live-event subscription; also the entry point for the manual refresh control. */
+  #liveEvents: UapSecurityEventsController;
 
   constructor() {
     super();
@@ -129,28 +131,16 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     // A viewer holds nothing of the user's, so it never asks and never flags — it just becomes
     // correct again. The keys are ignored deliberately: a permission written on an ancestor moves
     // what every descendant on screen resolves to, so there is no subset worth refetching.
-    new UapSecurityEventsController(this, async () => {
-      if (!this._activeSubject) return;
-      clearEffectivePermissionCache();
-      await this.#reloadAudit();
-      this.#markLiveRefreshed();
-    });
-  }
-
-  /**
-   * Records a silent live refresh and shows the "updated" pill for a few seconds.
-   *
-   * Timed out rather than left standing: the pill says "Updated just now", and leaving that
-   * claim on screen indefinitely turns it into a lie the moment a few minutes pass with nothing
-   * happening. A fresh event before the timer fires restarts the clock instead of stacking a
-   * second one.
-   */
-  #markLiveRefreshed(): void {
-    this._liveRefreshedAt = Date.now();
-    clearTimeout(this.#liveRefreshedTimer);
-    this.#liveRefreshedTimer = setTimeout(() => {
-      this._liveRefreshedAt = null;
-    }, 5000);
+    this.#liveEvents = new UapSecurityEventsController(
+      this,
+      async () => {
+        if (!this._activeSubject) return;
+        clearEffectivePermissionCache();
+        // Background: the grid stays on screen and each row swaps in place as its answer arrives.
+        await this.#reloadAudit(true);
+      },
+      (phase) => { this._refreshPhase = phase; },
+    );
   }
 
   override connectedCallback(): void {
@@ -162,7 +152,6 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#loadAbortController?.abort();
-    clearTimeout(this.#liveRefreshedTimer);
   }
 
   /** Restores the last-used subject and document type; loads the tree once a subject is present. */
@@ -263,28 +252,46 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     }
   }
 
-  /** Reloads audit results for all loaded nodes when the subject changes. */
-  async #reloadAudit(): Promise<void> {
+  /**
+   * Reloads audit results for all loaded nodes, keeping the tree and its expanded state.
+   *
+   * A subject change (`background` false) blanks the grid and shows the loader, because the rows
+   * on screen describe somebody else. A live or manual refresh (`background` true) is the same
+   * subject asked again: the current results stay on screen and each row swaps in place when its
+   * new answer arrives, so the grid does not flash and the reader keeps their place.
+   * @param background True to refresh in place without any loading state.
+   * @returns A promise that resolves when done. In background mode it rejects if the refresh did
+   * not complete, so the refresh control does not claim the data was updated.
+   */
+  async #reloadAudit(background = false): Promise<void> {
     if (!this.#subject || this._treeNodes.length === 0) return;
 
     this.#loadAbortController?.abort();
     const controller = new AbortController();
     this.#loadAbortController = controller;
 
-    this._loading = true;
-    this._error = null;
-    this.#clearAuditRecursive(this._treeNodes);
-    this._treeNodes = [...this._treeNodes];
+    let complete = true;
+    if (!background) {
+      this._loading = true;
+      this._error = null;
+      this.#clearAuditRecursive(this._treeNodes);
+      this._treeNodes = [...this._treeNodes];
+    }
 
     try {
-      await this.#loadAuditBatch(this._treeNodes, controller.signal);
+      complete = (await this.#loadAuditBatch(this._treeNodes, controller.signal)) && complete;
       if (controller.signal.aborted) return;
-      await this.#reloadExpandedChildren(this._treeNodes, controller.signal);
+      complete = (await this.#reloadExpandedChildren(this._treeNodes, controller.signal)) && complete;
     } catch (err) {
       if (controller.signal.aborted) return;
       this._error = String(err);
+      if (background) throw err;
     } finally {
-      if (!controller.signal.aborted) this._loading = false;
+      if (!background && !controller.signal.aborted) this._loading = false;
+    }
+
+    if (background && !complete && !controller.signal.aborted) {
+      throw new Error('Refreshing the audit failed for one or more rows.');
     }
   }
 
@@ -295,33 +302,51 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     }
   }
 
-  async #reloadExpandedChildren(nodes: AuditTreeNode[], signal: AbortSignal): Promise<void> {
+  /**
+   * Reloads the audit results of every expanded node's children, depth first.
+   * @param nodes The nodes to walk.
+   * @param signal Aborts the walk when the load it belongs to is superseded.
+   * @returns True if every row loaded.
+   */
+  async #reloadExpandedChildren(nodes: AuditTreeNode[], signal: AbortSignal): Promise<boolean> {
+    let ok = true;
     for (const node of nodes) {
       if (node.children && node.expanded) {
-        await this.#loadAuditBatch(node.children, signal);
-        if (signal.aborted) return;
-        await this.#reloadExpandedChildren(node.children, signal);
-        if (signal.aborted) return;
+        ok = (await this.#loadAuditBatch(node.children, signal)) && ok;
+        if (signal.aborted) return ok;
+        ok = (await this.#reloadExpandedChildren(node.children, signal)) && ok;
+        if (signal.aborted) return ok;
       }
     }
+    return ok;
   }
 
-  /** Batched audit loading — caps simultaneous in-flight requests to avoid overwhelming the server. */
-  async #loadAuditBatch(nodes: AuditTreeNode[], signal: AbortSignal): Promise<void> {
+  /**
+   * Batched audit loading — caps simultaneous in-flight requests to avoid overwhelming the server.
+   * @returns True if every node loaded.
+   */
+  async #loadAuditBatch(nodes: AuditTreeNode[], signal: AbortSignal): Promise<boolean> {
     const batchSize = 8;
+    let ok = true;
     for (let i = 0; i < nodes.length; i += batchSize) {
-      if (signal.aborted) return;
+      if (signal.aborted) return ok;
       const batch = nodes.slice(i, i + batchSize);
-      await Promise.all(batch.map((n) => this.#loadAuditForNode(n, signal)));
+      const results = await Promise.all(batch.map((n) => this.#loadAuditForNode(n, signal)));
+      ok = results.every(Boolean) && ok;
     }
+    return ok;
   }
 
-  async #loadAuditForNode(node: AuditTreeNode, signal?: AbortSignal): Promise<void> {
+  /**
+   * Loads one node's audit results and swaps them in when they arrive.
+   * @returns False if the request failed; true otherwise (including when superseded).
+   */
+  async #loadAuditForNode(node: AuditTreeNode, signal?: AbortSignal): Promise<boolean> {
     const subject = this.#subject;
-    if (!subject) return;
+    if (!subject) return true;
     try {
       const result = await getDocTypeAuditForNode(subject, node.key, signal);
-      if (signal?.aborted) return;
+      if (signal?.aborted) return true;
 
       const map = new Map<string, DocTypeAuditForNodeRow>();
       for (const row of result.results) {
@@ -329,8 +354,11 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
       }
       node.auditResults = map;
       this._treeNodes = [...this._treeNodes];
+      return true;
     } catch {
-      // Non-fatal: leave auditResults null (loading indicator stays)
+      // Non-fatal: a first load leaves auditResults null (loading indicator stays); a background
+      // refresh leaves the previous results in place. Reported so a refresh can say so.
+      return false;
     }
   }
 
@@ -688,9 +716,11 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
         @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
         @uap-selection-clear=${() => this.#onClearSelection()}>
 
-        ${this._liveRefreshedAt
-          ? html`<span slot="actions" class="live-pill"><uui-icon name="icon-sync"></uui-icon>${this.#localize.term('uap_liveUpdated')}</span>`
-          : nothing}
+        <uap-live-refresh
+          slot="actions"
+          .phase=${this._refreshPhase}
+          @uap-live-refresh=${() => void this.#liveEvents.refresh()}>
+        </uap-live-refresh>
         ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
         ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
 
@@ -738,17 +768,6 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
 
     .loading { display: flex; justify-content: center; padding: 32px; }
     .error-msg { padding: 12px 18px; color: var(--uui-color-danger, #b91c1c); }
-
-    .live-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 9px;
-      border-radius: 4px;
-      font-size: 12px;
-      background: var(--uui-color-surface-alt);
-      color: var(--uui-color-text-alt);
-    }
 
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }

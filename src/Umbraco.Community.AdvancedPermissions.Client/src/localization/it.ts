@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: 'Motivazione',
     docTypePermissions_defaultAllow: 'Consentito per impostazione predefinita',
     docTypePermissions_viaDefault: 'dalla riga predefinita',
+
+    // ── Aggiornamenti in tempo reale e conflitti ──────────────────────────
+    liveUpdated: 'Aggiornato proprio ora',
+    liveRefresh: 'Aggiorna',
+    liveRefreshing: 'Aggiornamento in corso…',
+    liveRefreshFailed: 'Aggiornamento non riuscito',
+    liveConflictTitle: 'Qualcuno ha modificato questi permessi mentre li stavi modificando',
+    liveConflictBody: 'Il %0% delle tue modifiche non salvate è in conflitto con quanto salvato ora. Nessuna delle tue modifiche è stata cambiata.',
+    liveConflictBodyOne: 'Una delle tue modifiche non salvate è in conflitto con quanto salvato ora. Nessuna delle tue modifiche è stata cambiata.',
+    liveLoadStored: 'Carica i valori salvati',
+    liveKeepMine: 'Mantieni le mie modifiche',
+    liveFlagLegend: 'Modificato da qualcun altro da quando hai caricato',
+    conflictDialogTitle: 'Sovrascrivere le modifiche salvate?',
+    conflictDialogBody: 'Il salvataggio sostituisce quanto salvato ora. %0% modifiche effettuate da qualcun altro andranno perse e non sarà possibile annullare l’operazione.',
+    conflictDialogBodyOne: 'Il salvataggio sostituisce quanto salvato ora. Una modifica effettuata da qualcun altro andrà persa e non sarà possibile annullare l’operazione.',
+    conflictStoredLabel: 'salvato',
+    conflictYoursLabel: 'tuo',
+    conflictOverwrite: 'Sovrascrivi comunque',
+    conflictCancel: 'Annulla',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Annullare le modifiche non salvate?',
+    discardPromptBody: 'Hai modifiche ai permessi non salvate. Se continui, verranno annullate e non potranno essere recuperate.',
+    discardPromptStay: 'Continua a modificare',
+    discardPromptConfirm: 'Annulla modifiche',
   },
 } satisfies UmbLocalizationDictionary;

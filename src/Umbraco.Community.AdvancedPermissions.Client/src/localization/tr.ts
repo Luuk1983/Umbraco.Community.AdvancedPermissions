@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: 'Gerekçe',
     docTypePermissions_defaultAllow: 'Varsayılan olarak izin verildi',
     docTypePermissions_viaDefault: 'varsayılan satırdan',
+
+    // ── Canlı güncellemeler ve çakışmalar ─────────────────────────────────
+    liveUpdated: 'Az önce güncellendi',
+    liveRefresh: 'Yenile',
+    liveRefreshing: 'Güncelleniyor…',
+    liveRefreshFailed: 'Güncelleme başarısız oldu',
+    liveConflictTitle: 'Siz düzenlerken başka biri bu izinleri değiştirdi',
+    liveConflictBody: 'Kaydedilmemiş değişikliklerinizden %0% tanesi şu anda kayıtlı olanla çakışıyor. Değişikliklerinizden hiçbiri değiştirilmedi.',
+    liveConflictBodyOne: 'Kaydedilmemiş değişikliklerinizden biri şu anda kayıtlı olanla çakışıyor. Değişikliklerinizden hiçbiri değiştirilmedi.',
+    liveLoadStored: 'Kayıtlı değerleri yükle',
+    liveKeepMine: 'Değişikliklerimi koru',
+    liveFlagLegend: 'Yüklemenizden sonra başka biri tarafından değiştirildi',
+    conflictDialogTitle: 'Kayıtlı değişikliklerin üzerine yazılsın mı?',
+    conflictDialogBody: 'Kaydetmek, şu anda kayıtlı olanın yerine geçer. Başka biri tarafından yapılan %0% değişiklik kaybolacak ve bu geri alınamaz.',
+    conflictDialogBodyOne: 'Kaydetmek, şu anda kayıtlı olanın yerine geçer. Başka biri tarafından yapılan bir değişiklik kaybolacak ve bu geri alınamaz.',
+    conflictStoredLabel: 'kayıtlı',
+    conflictYoursLabel: 'sizinki',
+    conflictOverwrite: 'Yine de üzerine yaz',
+    conflictCancel: 'İptal',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Kaydedilmemiş değişiklikler silinsin mi?',
+    discardPromptBody: 'Kaydedilmemiş izin değişiklikleriniz var. Devam ederseniz bunlar silinir ve geri alınamaz.',
+    discardPromptStay: 'Düzenlemeye devam et',
+    discardPromptConfirm: 'Değişiklikleri sil',
   },
 } satisfies UmbLocalizationDictionary;

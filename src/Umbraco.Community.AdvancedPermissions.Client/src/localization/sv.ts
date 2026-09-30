@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: 'Motivering',
     docTypePermissions_defaultAllow: 'Tillåts som standard',
     docTypePermissions_viaDefault: 'från standardrad',
+
+    // ── Direktuppdateringar och konflikter ────────────────────────────────
+    liveUpdated: 'Uppdaterad just nu',
+    liveRefresh: 'Uppdatera',
+    liveRefreshing: 'Uppdaterar…',
+    liveRefreshFailed: 'Uppdateringen misslyckades',
+    liveConflictTitle: 'Någon ändrade dessa behörigheter medan du redigerade dem',
+    liveConflictBody: '%0% av dina osparade ändringar krockar med det som är sparat nu. Inget av dina ändringar har ändrats.',
+    liveConflictBodyOne: 'En av dina osparade ändringar krockar med det som är sparat nu. Inget av dina ändringar har ändrats.',
+    liveLoadStored: 'Läs in sparade värden',
+    liveKeepMine: 'Behåll mina ändringar',
+    liveFlagLegend: 'Ändrat av någon annan sedan du läste in',
+    conflictDialogTitle: 'Skriva över de sparade ändringarna?',
+    conflictDialogBody: 'Att spara ersätter det som är sparat nu. %0% ändringar gjorda av någon annan går förlorade, och detta kan inte ångras.',
+    conflictDialogBodyOne: 'Att spara ersätter det som är sparat nu. En ändring gjord av någon annan går förlorad, och detta kan inte ångras.',
+    conflictStoredLabel: 'sparat',
+    conflictYoursLabel: 'ditt',
+    conflictOverwrite: 'Skriv över trots det',
+    conflictCancel: 'Avbryt',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Kassera osparade ändringar?',
+    discardPromptBody: 'Du har osparade ändringar av behörigheter. Om du fortsätter kasseras de och kan inte återställas.',
+    discardPromptStay: 'Fortsätt redigera',
+    discardPromptConfirm: 'Kassera ändringar',
   },
 } satisfies UmbLocalizationDictionary;

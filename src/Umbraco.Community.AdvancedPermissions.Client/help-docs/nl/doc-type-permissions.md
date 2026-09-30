@@ -22,3 +22,11 @@ Aanmaken is standaard toegestaan (overal waar Umbraco's eigen toegestane onderli
 - Omdat aanmaken standaard is toegestaan, voeg je meestal **Weigeren** toe om specifieke typen te vergrendelen, of **Toestaan** om een type weer in te schakelen dat een bredere Weigeren had verwijderd.
 
 Zie het tabblad **Concepten** voor Toestaan/Weigeren, bereik, de rij Standaardmachtigingen, de groep Alle gebruikers en Prioriteitsoverschrijving.
+
+## Realtime updates
+
+Terwijl je bewerkt, worden wijzigingen die elders zijn opgeslagen live naar dit scherm doorgevoerd.
+
+- Een cel krijgt een **omlijning** wanneer deze door iemand anders is gewijzigd sinds je hem laadde. Een banner vermeldt hoeveel cellen conflicteerden.
+- **Opgeslagen waarden laden** vervangt alleen de omlijnde cellen door wat nu is opgeslagen — alles wat je verder hebt gewijzigd blijft ongemoeid.
+- **Mijn wijzigingen behouden** sluit de banner en behoudt je bewerkingen op het scherm, maar dat betekent niet dat je wijzigingen gewonnen hebben: de opgeslagen waarden zijn ongewijzigd, en opslaan zal je nog steeds om bevestiging vragen voordat ze worden overschreven.

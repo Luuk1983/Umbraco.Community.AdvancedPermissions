@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "generate-client": "node scripts/generate-openapi.js http://localhost:5266/umbraco/swagger/management/swagger.json"
   },
   "dependencies": {
@@ -18,6 +20,7 @@
     "marked": "^18.0.5",
     "node-fetch": "^3.3.2",
     "typescript": "^5.7.3",
-    "vite": "^6.3.1"
+    "vite": "^6.3.1",
+    "vitest": "^3.2.7"
   }
 }

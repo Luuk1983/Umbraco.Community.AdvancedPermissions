@@ -23,6 +23,11 @@ import type {
 import { updateNode } from '../utils/tree-ops.js';
 import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
 import type { CellInfo } from '../utils/cell-info.js';
+import { clearEffectivePermissionCache } from '../conditions/document-user-permission.condition.js';
+import { UapSecurityEventsController } from '../live/security-events.controller.js';
+import { pruneCollapsedChildren } from '../live/tree-cache.js';
+import type { UapRefreshPhase } from '../live/refresh-phase.js';
+import '../live/uap-live-refresh.element.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
 import { UAP_USER_PICKER_MODAL } from '../access-viewer/user-picker-modal.token.js';
 import { UMB_DOCUMENT_TYPE_PICKER_MODAL } from '@umbraco-cms/backoffice/document-type';
@@ -103,11 +108,17 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   @state() private _dialogLoading = false;
   @state() private _dialogShowStars = false;
 
+  /** Where the refresh control is: idle, refreshing, or briefly confirming an update. */
+  @state() private _refreshPhase: UapRefreshPhase = 'idle';
+
   @query('uap-reasoning-dialog') private _reasoningDialog!: UapReasoningDialogElement;
 
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #loadAbortController: AbortController | null = null;
+
+  /** Live-event subscription; also the entry point for the manual refresh control. */
+  #liveEvents: UapSecurityEventsController;
 
   constructor() {
     super();
@@ -117,6 +128,20 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     this.consumeContext(UMB_MODAL_MANAGER_CONTEXT, (ctx) => {
       this.#modalManager = ctx ?? undefined;
     });
+
+    // A viewer holds nothing of the user's, so it never asks and never flags — it just becomes
+    // correct again. The keys are ignored deliberately: a permission written on an ancestor moves
+    // what every descendant on screen resolves to, so there is no subset worth refetching.
+    this.#liveEvents = new UapSecurityEventsController(
+      this,
+      async () => {
+        if (!this._activeSubject) return;
+        clearEffectivePermissionCache();
+        // Background: the grid stays on screen and each row swaps in place as its answer arrives.
+        await this.#reloadAudit(true);
+      },
+      (phase) => { this._refreshPhase = phase; },
+    );
   }
 
   override connectedCallback(): void {
@@ -159,6 +184,8 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   /** Clears the current selection, resets the view, and forgets the stored selection. */
   #onClearSelection(): void {
     this.#loadAbortController?.abort();
+    // The load just aborted would have cleared this itself, but an aborted load never does.
+    this._loading = false;
     this._selectedRole = null;
     this._selectedUser = null;
     this._activeSubject = null;
@@ -228,28 +255,56 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     }
   }
 
-  /** Reloads audit results for all loaded nodes when the subject changes. */
-  async #reloadAudit(): Promise<void> {
+  /**
+   * Reloads audit results for all loaded nodes, keeping the tree and its expanded state.
+   *
+   * A subject change (`background` false) blanks the grid and shows the loader, because the rows
+   * on screen describe somebody else. A live or manual refresh (`background` true) is the same
+   * subject asked again: the current results stay on screen and each row swaps in place when its
+   * new answer arrives, so the grid does not flash and the reader keeps their place.
+   * @param background True to refresh in place without any loading state.
+   * @returns A promise that resolves when done. In background mode it rejects if the refresh did
+   * not complete, so the refresh control does not claim the data was updated.
+   */
+  async #reloadAudit(background = false): Promise<void> {
     if (!this.#subject || this._treeNodes.length === 0) return;
 
     this.#loadAbortController?.abort();
     const controller = new AbortController();
     this.#loadAbortController = controller;
 
-    this._loading = true;
-    this._error = null;
-    this.#clearAuditRecursive(this._treeNodes);
-    this._treeNodes = [...this._treeNodes];
+    // Only expanded rows are refreshed below, but re-expanding a collapsed row reuses whatever
+    // children it cached, so anything left under one would show values from before this refresh
+    // with nothing to say so. Dropping the cache makes the next expand ask the server. A viewer
+    // holds no unsaved work, so nothing is exempt.
+    this._treeNodes = pruneCollapsedChildren(this._treeNodes, () => false);
+
+    let complete = true;
+    if (!background) {
+      this._loading = true;
+      this._error = null;
+      this.#clearAuditRecursive(this._treeNodes);
+      this._treeNodes = [...this._treeNodes];
+    }
 
     try {
-      await this.#loadAuditBatch(this._treeNodes, controller.signal);
+      complete = (await this.#loadAuditBatch(this._treeNodes, controller.signal)) && complete;
       if (controller.signal.aborted) return;
-      await this.#reloadExpandedChildren(this._treeNodes, controller.signal);
+      complete = (await this.#reloadExpandedChildren(this._treeNodes, controller.signal)) && complete;
     } catch (err) {
       if (controller.signal.aborted) return;
       this._error = String(err);
+      if (background) throw err;
     } finally {
+      // Cleared by whichever load finishes un-superseded, background included. A background
+      // refresh aborts a selection load that was still showing the loader, and that load's own
+      // `finally` then skips clearing it, so leaving this to foreground loads would strand the
+      // grid behind the loader for good.
       if (!controller.signal.aborted) this._loading = false;
+    }
+
+    if (background && !complete && !controller.signal.aborted) {
+      throw new Error('Refreshing the audit failed for one or more rows.');
     }
   }
 
@@ -260,33 +315,51 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     }
   }
 
-  async #reloadExpandedChildren(nodes: AuditTreeNode[], signal: AbortSignal): Promise<void> {
+  /**
+   * Reloads the audit results of every expanded node's children, depth first.
+   * @param nodes The nodes to walk.
+   * @param signal Aborts the walk when the load it belongs to is superseded.
+   * @returns True if every row loaded.
+   */
+  async #reloadExpandedChildren(nodes: AuditTreeNode[], signal: AbortSignal): Promise<boolean> {
+    let ok = true;
     for (const node of nodes) {
       if (node.children && node.expanded) {
-        await this.#loadAuditBatch(node.children, signal);
-        if (signal.aborted) return;
-        await this.#reloadExpandedChildren(node.children, signal);
-        if (signal.aborted) return;
+        ok = (await this.#loadAuditBatch(node.children, signal)) && ok;
+        if (signal.aborted) return ok;
+        ok = (await this.#reloadExpandedChildren(node.children, signal)) && ok;
+        if (signal.aborted) return ok;
       }
     }
+    return ok;
   }
 
-  /** Batched audit loading — caps simultaneous in-flight requests to avoid overwhelming the server. */
-  async #loadAuditBatch(nodes: AuditTreeNode[], signal: AbortSignal): Promise<void> {
+  /**
+   * Batched audit loading — caps simultaneous in-flight requests to avoid overwhelming the server.
+   * @returns True if every node loaded.
+   */
+  async #loadAuditBatch(nodes: AuditTreeNode[], signal: AbortSignal): Promise<boolean> {
     const batchSize = 8;
+    let ok = true;
     for (let i = 0; i < nodes.length; i += batchSize) {
-      if (signal.aborted) return;
+      if (signal.aborted) return ok;
       const batch = nodes.slice(i, i + batchSize);
-      await Promise.all(batch.map((n) => this.#loadAuditForNode(n, signal)));
+      const results = await Promise.all(batch.map((n) => this.#loadAuditForNode(n, signal)));
+      ok = results.every(Boolean) && ok;
     }
+    return ok;
   }
 
-  async #loadAuditForNode(node: AuditTreeNode, signal?: AbortSignal): Promise<void> {
+  /**
+   * Loads one node's audit results and swaps them in when they arrive.
+   * @returns False if the request failed; true otherwise (including when superseded).
+   */
+  async #loadAuditForNode(node: AuditTreeNode, signal?: AbortSignal): Promise<boolean> {
     const subject = this.#subject;
-    if (!subject) return;
+    if (!subject) return true;
     try {
       const result = await getDocTypeAuditForNode(subject, node.key, signal);
-      if (signal?.aborted) return;
+      if (signal?.aborted) return true;
 
       const map = new Map<string, DocTypeAuditForNodeRow>();
       for (const row of result.results) {
@@ -294,8 +367,11 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
       }
       node.auditResults = map;
       this._treeNodes = [...this._treeNodes];
+      return true;
     } catch {
-      // Non-fatal: leave auditResults null (loading indicator stays)
+      // Non-fatal: a first load leaves auditResults null (loading indicator stays); a background
+      // refresh leaves the previous results in place. Reported so a refresh can say so.
+      return false;
     }
   }
 
@@ -653,6 +729,11 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
         @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
         @uap-selection-clear=${() => this.#onClearSelection()}>
 
+        <uap-live-refresh
+          slot="actions"
+          .phase=${this._refreshPhase}
+          @uap-live-refresh=${() => void this.#liveEvents.refresh()}>
+        </uap-live-refresh>
         ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
         ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
 

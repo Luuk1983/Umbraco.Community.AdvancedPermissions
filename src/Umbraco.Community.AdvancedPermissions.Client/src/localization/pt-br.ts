@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: 'Motivo',
     docTypePermissions_defaultAllow: 'Permitido por padrão',
     docTypePermissions_viaDefault: 'da linha padrão',
+
+    // ── Atualizações em tempo real e conflitos ────────────────────────────
+    liveUpdated: 'Atualizado agora mesmo',
+    liveRefresh: 'Atualizar',
+    liveRefreshing: 'Atualizando…',
+    liveRefreshFailed: 'Falha ao atualizar',
+    liveConflictTitle: 'Alguém alterou essas permissões enquanto você estava editando',
+    liveConflictBody: '%0% das suas alterações não salvas conflitam com o que está salvo agora. Nada do que é seu foi alterado.',
+    liveConflictBodyOne: 'Uma das suas alterações não salvas conflita com o que está salvo agora. Nada do que é seu foi alterado.',
+    liveLoadStored: 'Carregar os valores salvos',
+    liveKeepMine: 'Manter minhas alterações',
+    liveFlagLegend: 'Alterado por outra pessoa desde que você carregou',
+    conflictDialogTitle: 'Substituir as alterações salvas?',
+    conflictDialogBody: 'Salvar substitui o que está salvo agora. %0% alterações feitas por outra pessoa serão perdidas, e essa ação não pode ser desfeita.',
+    conflictDialogBodyOne: 'Salvar substitui o que está salvo agora. Uma alteração feita por outra pessoa será perdida, e essa ação não pode ser desfeita.',
+    conflictStoredLabel: 'salvo',
+    conflictYoursLabel: 'seu',
+    conflictOverwrite: 'Substituir mesmo assim',
+    conflictCancel: 'Cancelar',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Descartar alterações não salvas?',
+    discardPromptBody: 'Você tem alterações de permissões não salvas. Se continuar, elas serão descartadas e não poderão ser recuperadas.',
+    discardPromptStay: 'Continuar editando',
+    discardPromptConfirm: 'Descartar alterações',
   },
 } satisfies UmbLocalizationDictionary;

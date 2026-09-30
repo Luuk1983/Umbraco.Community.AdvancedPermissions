@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: 'Uzasadnienie',
     docTypePermissions_defaultAllow: 'Domyślnie dozwolone',
     docTypePermissions_viaDefault: 'z wiersza domyślnego',
+
+    // ── Aktualizacje na żywo i konflikty ──────────────────────────────────
+    liveUpdated: 'Zaktualizowano przed chwilą',
+    liveRefresh: 'Odśwież',
+    liveRefreshing: 'Aktualizowanie…',
+    liveRefreshFailed: 'Aktualizacja nie powiodła się',
+    liveConflictTitle: 'Ktoś zmienił te uprawnienia w trakcie ich edytowania',
+    liveConflictBody: '%0% niezapisanych zmian jest w konflikcie z tym, co jest teraz zapisane. Żadna z Twoich zmian nie została zmieniona.',
+    liveConflictBodyOne: 'Jedna z niezapisanych zmian jest w konflikcie z tym, co jest teraz zapisane. Żadna z Twoich zmian nie została zmieniona.',
+    liveLoadStored: 'Wczytaj zapisane wartości',
+    liveKeepMine: 'Zachowaj moje zmiany',
+    liveFlagLegend: 'Zmienione przez kogoś innego od czasu wczytania',
+    conflictDialogTitle: 'Zastąpić zapisane zmiany?',
+    conflictDialogBody: 'Zapisanie zastąpi to, co jest teraz zapisane. %0% zmian wprowadzonych przez kogoś innego zostanie utraconych, a tej operacji nie można cofnąć.',
+    conflictDialogBodyOne: 'Zapisanie zastąpi to, co jest teraz zapisane. Jedna zmiana wprowadzona przez kogoś innego zostanie utracona, a tej operacji nie można cofnąć.',
+    conflictStoredLabel: 'zapisane',
+    conflictYoursLabel: 'Twoje',
+    conflictOverwrite: 'Zastąp mimo to',
+    conflictCancel: 'Anuluj',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Odrzucić niezapisane zmiany?',
+    discardPromptBody: 'Masz niezapisane zmiany uprawnień. Jeśli kontynuujesz, zostaną odrzucone i nie będzie można ich przywrócić.',
+    discardPromptStay: 'Kontynuuj edycję',
+    discardPromptConfirm: 'Odrzuć zmiany',
   },
 } satisfies UmbLocalizationDictionary;

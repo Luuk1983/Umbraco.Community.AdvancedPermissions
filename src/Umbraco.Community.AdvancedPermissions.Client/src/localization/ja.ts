@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: '根拠',
     docTypePermissions_defaultAllow: 'デフォルトで許可',
     docTypePermissions_viaDefault: 'デフォルト行から',
+
+    // ── Live updates & conflicts ────────────────────────────────────────
+    liveUpdated: '今更新されました',
+    liveRefresh: '更新',
+    liveRefreshing: '更新中…',
+    liveRefreshFailed: '更新に失敗しました',
+    liveConflictTitle: '編集中に他の人がこのアクセス権限を変更しました',
+    liveConflictBody: '未保存の変更のうち%0%件が現在保存されている内容と競合しています。あなたの変更は何も変更されていません。',
+    liveConflictBodyOne: '未保存の変更のうち1件が現在保存されている内容と競合しています。あなたの変更は何も変更されていません。',
+    liveLoadStored: '保存された値を読み込む',
+    liveKeepMine: '自分の変更を保持する',
+    liveFlagLegend: '読み込み後に他の人によって変更されました',
+    conflictDialogTitle: '保存されている変更を上書きしますか?',
+    conflictDialogBody: '保存すると現在保存されている内容が置き換えられます。他の人による変更%0%件が失われ、元に戻すことはできません。',
+    conflictDialogBodyOne: '保存すると現在保存されている内容が置き換えられます。他の人による変更1件が失われ、元に戻すことはできません。',
+    conflictStoredLabel: '保存済み',
+    conflictYoursLabel: '自分の変更',
+    conflictOverwrite: 'このまま上書きする',
+    conflictCancel: 'キャンセル',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: '未保存の変更を破棄しますか？',
+    discardPromptBody: '保存されていない権限の変更があります。続行すると変更は破棄され、元に戻すことはできません。',
+    discardPromptStay: '編集を続ける',
+    discardPromptConfirm: '変更を破棄',
   },
 } satisfies UmbLocalizationDictionary;

@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: 'Onderbouwing',
     docTypePermissions_defaultAllow: 'Standaard toegestaan',
     docTypePermissions_viaDefault: 'via standaardregel',
+
+    // ── Live updates en conflicten ───────────────────────────────────────
+    liveUpdated: 'Zojuist bijgewerkt',
+    liveRefresh: 'Vernieuwen',
+    liveRefreshing: 'Wordt bijgewerkt…',
+    liveRefreshFailed: 'Bijwerken mislukt',
+    liveConflictTitle: 'Iemand heeft deze machtigingen gewijzigd tijdens het bewerken',
+    liveConflictBody: '%0% van je niet-opgeslagen wijzigingen komt in conflict met wat er nu is opgeslagen. Er is niets van jouw wijzigingen aangepast.',
+    liveConflictBodyOne: 'Eén van je niet-opgeslagen wijzigingen komt in conflict met wat er nu is opgeslagen. Er is niets van jouw wijzigingen aangepast.',
+    liveLoadStored: 'Opgeslagen waarden laden',
+    liveKeepMine: 'Mijn wijzigingen behouden',
+    liveFlagLegend: 'Gewijzigd door iemand anders sinds je het laadde',
+    conflictDialogTitle: 'De opgeslagen wijzigingen overschrijven?',
+    conflictDialogBody: 'Opslaan vervangt wat er nu is opgeslagen. %0% wijzigingen van iemand anders gaan verloren, en dit kan niet ongedaan worden gemaakt.',
+    conflictDialogBodyOne: 'Opslaan vervangt wat er nu is opgeslagen. Eén wijziging van iemand anders gaat verloren, en dit kan niet ongedaan worden gemaakt.',
+    conflictStoredLabel: 'opgeslagen',
+    conflictYoursLabel: 'van jou',
+    conflictOverwrite: 'Toch overschrijven',
+    conflictCancel: 'Annuleren',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Niet-opgeslagen wijzigingen negeren?',
+    discardPromptBody: 'Je hebt niet-opgeslagen wijzigingen in machtigingen. Als je doorgaat, worden ze verwijderd en kunnen ze niet worden hersteld.',
+    discardPromptStay: 'Verder bewerken',
+    discardPromptConfirm: 'Wijzigingen negeren',
   },
 } satisfies UmbLocalizationDictionary;

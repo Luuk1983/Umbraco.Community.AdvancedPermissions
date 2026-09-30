@@ -7,7 +7,9 @@ using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
+using Umbraco.Community.AdvancedPermissions.Core.Concurrency;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
+using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 
@@ -60,16 +62,17 @@ public sealed class DocTypePermissionsController(
     }
 
     /// <summary>
-    /// Gets all stored entries for a selected (role, doc-type) combination. The editor uses these
-    /// to render the tree with the current state per node.
+    /// Gets all stored entries for a selected (role, doc-type) combination, grouped by node with
+    /// each node's own concurrency stamp. The editor uses these to render the tree with the
+    /// current state per node, and sends the stamp back when saving that node's triple.
     /// </summary>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <param name="roleAlias">The role alias selected in the editor.</param>
     /// <param name="contentTypeKey">The doc-type selected in the editor.</param>
-    /// <returns>All stored entries for the combination.</returns>
+    /// <returns>One entry per node that has stored entries for the combination.</returns>
     [HttpGet("doc-type-permissions")]
     [MapToApiVersion("1.0")]
-    [ProducesResponseType<IReadOnlyList<DocTypePermissionEntryResponseModel>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<IReadOnlyList<DocTypeEditorNodeResponseModel>>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets all doc-type permission entries for a (role, content-type) combination.")]
     public async Task<IActionResult> GetForEditor(
         CancellationToken cancellationToken,
@@ -77,7 +80,17 @@ public sealed class DocTypePermissionsController(
         Guid contentTypeKey)
     {
         var entries = await docTypeService.GetEditorEntriesAsync(roleAlias, contentTypeKey, cancellationToken);
-        return Ok(entries.Select(MapDocTypeEntry).ToList());
+
+        var byNode = entries
+            .GroupBy(e => e.NodeKey)
+            .Select(g =>
+            {
+                var mapped = g.Select(MapDocTypeEntry).ToList();
+                return new DocTypeEditorNodeResponseModel(g.Key, mapped, mapped.ComputeFromResponse());
+            })
+            .ToList();
+
+        return Ok(byNode);
     }
 
     /// <summary>
@@ -85,61 +98,216 @@ public sealed class DocTypePermissionsController(
     /// </summary>
     /// <param name="request">The entries to save.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
-    /// <returns><see cref="StatusCodes.Status200OK"/> on success.</returns>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> on success, or <see cref="StatusCodes.Status409Conflict"/>
+    /// when <see cref="SaveDocTypePermissionsRequestModel.ExpectedStamp"/> no longer matches what is stored.
+    /// </returns>
     [HttpPut("doc-type-permissions")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<BatchSaveDocTypeConflictResponseModel>(StatusCodes.Status409Conflict)]
     [EndpointSummary("Saves (replaces) doc-type permission entries for a node+role+content-type triple.")]
     public async Task<IActionResult> Save(
         [FromBody] SaveDocTypePermissionsRequestModel request,
         CancellationToken cancellationToken)
     {
-        var mapped = new List<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>();
+        if (!TryMapEntries(request.Entries, out var mapped, out var problem))
+        {
+            return BadRequest(problem);
+        }
 
-        foreach (var entry in request.Entries)
+        // The stamp is checked by the write itself, inside its transaction, not here. A check made
+        // here and a write made afterwards are two operations, and two saves carrying the same
+        // stamp could both pass the first and then both perform the second. Force withholds the
+        // stamp, which is what tells the write to skip the check.
+        try
+        {
+            await docTypeService.SaveEditorEntriesAsync(
+                request.NodeKey,
+                request.RoleAlias,
+                request.ContentTypeKey,
+                mapped,
+                request.Force ? null : request.ExpectedStamp,
+                cancellationToken);
+        }
+        catch (DocTypePermissionConcurrencyException ex)
+        {
+            return ConflictResult(ex);
+        }
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Replaces doc-type permission entries for several node, user group and document type triples
+    /// at once, refusing the whole batch if any triple has changed since the client read it.
+    /// </summary>
+    /// <remarks>
+    /// All or nothing, deliberately — same reasoning as
+    /// <see cref="AdvancedPermissionsPermissionController.BatchSavePermissions"/>. The one
+    /// structural difference is the extra <c>ContentTypeKey</c> dimension: every key this endpoint
+    /// compares, guards or reports on is the full (node, role, content-type) triple, never just
+    /// the node and role.
+    /// </remarks>
+    /// <param name="request">The triples to write, each with the stamp the client read.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> with the new stamp per triple, or
+    /// <see cref="StatusCodes.Status409Conflict"/> naming the triples that moved.
+    /// </returns>
+    [HttpPut("doc-type-permissions/batch")]
+    [MapToApiVersion("1.0")]
+    [ProducesResponseType<IReadOnlyList<BatchSavedDocTypeStamp>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<BatchSaveDocTypeConflictResponseModel>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [EndpointSummary("Saves doc-type permission entries for several node+role+content-type triples at once, all or nothing.")]
+    public async Task<IActionResult> BatchSaveDocTypePermissions(
+        [FromBody] BatchSaveDocTypePermissionsRequestModel request,
+        CancellationToken cancellationToken)
+    {
+        // Validate everything first. A batch that cannot be mapped is a client bug, not a
+        // conflict, and reporting it as one would send the user to a dialog about somebody else's
+        // changes when nobody else has changed anything.
+        var pending = new List<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)>();
+
+        foreach (var node in request.Nodes)
+        {
+            if (!TryMapEntries(node.Entries, out var mapped, out var problem))
+            {
+                return BadRequest(problem);
+            }
+
+            pending.Add((node.NodeKey, node.RoleAlias, node.ContentTypeKey, mapped, request.Force ? null : node.ExpectedStamp));
+        }
+
+        // A repeated (NodeKey, RoleAlias, ContentTypeKey) triple is a malformed request, the same
+        // class of problem as a bad verb, so it is checked here alongside the other request-shape
+        // validation. IDocTypePermissionService.SaveManyAsync (via the repository) also guards
+        // this, but that guard is a last-resort invariant check deep in the write path, not a
+        // request-validation mechanism — there is no global exception handler in this package, so
+        // letting its ArgumentException escape from here would turn a client mistake into an
+        // unhandled 500. The triple, not just the node and role, is what must be unique here: two
+        // entries for the same node and role but different content types are entirely legitimate.
+        var seenTriples = new HashSet<(Guid NodeKey, string RoleAlias, Guid ContentTypeKey)>();
+        foreach (var node in request.Nodes)
+        {
+            if (!seenTriples.Add((node.NodeKey, node.RoleAlias, node.ContentTypeKey)))
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Duplicate node, role and content-type triple",
+                    Detail = $"Node '{node.NodeKey}', role '{node.RoleAlias}' and content type '{node.ContentTypeKey}' appear more than once in this batch. Each triple must appear at most once.",
+                    Status = StatusCodes.Status400BadRequest,
+                });
+            }
+        }
+
+        // The stamps are checked by the write, inside its transaction — not by a pass over the
+        // stored entries here, which would be a separate operation two saves could both pass. The
+        // exception, when it comes, lists every conflicted triple and guarantees nothing was
+        // written for any of them. Force withholds the stamps, which tells the write to skip the check.
+        try
+        {
+            await docTypeService.SaveManyAsync(pending, cancellationToken);
+        }
+        catch (DocTypePermissionConcurrencyException ex)
+        {
+            return ConflictResult(ex);
+        }
+
+        // The new stamps, so the client can keep editing without a further read. Computed from
+        // what was written rather than re-read, because the write just made them equal and a
+        // further round trip per triple would buy nothing.
+        var saved = request.Nodes
+            .Select(n => new BatchSavedDocTypeStamp(
+                n.NodeKey,
+                n.RoleAlias,
+                n.ContentTypeKey,
+                PermissionStamp.ComputeFromNames(
+                    n.Entries.Select(e => (e.Verb, e.State, e.Scope, e.IsPriorityOverride)))))
+            .ToList();
+
+        return Ok(saved);
+    }
+
+    /// <summary>
+    /// Turns the exception a stale write raises into the <c>409 Conflict</c> the client is written
+    /// against: a <see cref="ProblemDetails"/> carrying the conflicts as its <c>conflicts</c>
+    /// extension. The single copy of this mapping, shared by <see cref="Save"/> and
+    /// <see cref="BatchSaveDocTypePermissions"/>, so the two endpoints cannot drift into different
+    /// bodies. The body's shape is a wire contract — see <see cref="ConflictProblemDetails"/>.
+    /// </summary>
+    /// <param name="exception">The exception listing every conflicted triple.</param>
+    /// <returns>The 409 result.</returns>
+    private ConflictObjectResult ConflictResult(DocTypePermissionConcurrencyException exception) =>
+        Conflict(ConflictProblemDetails.Create<BatchSaveDocTypeConflict>(
+            exception.Conflicts
+                .Select(c => new BatchSaveDocTypeConflict(
+                    c.NodeKey,
+                    c.RoleAlias,
+                    c.ContentTypeKey,
+                    c.CurrentEntries.Select(MapDocTypeEntry).ToList(),
+                    c.CurrentStamp))
+                .ToList()));
+
+    /// <summary>
+    /// Validates and maps the entries of one save, or produces the problem describing why it
+    /// cannot be mapped. The single copy of the verb/state/scope validation used by both
+    /// <see cref="Save"/> and <see cref="BatchSaveDocTypePermissions"/> — a second copy is exactly how two
+    /// endpoints on the same controller would drift into accepting different things.
+    /// </summary>
+    /// <param name="items">The raw entries from the request.</param>
+    /// <param name="mapped">The mapped entries, when validation succeeds.</param>
+    /// <param name="problem">The problem to return, when it does not.</param>
+    /// <returns><see langword="true"/> when every entry is valid.</returns>
+    private static bool TryMapEntries(
+        IReadOnlyList<SavePermissionEntryItem> items,
+        out List<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> mapped,
+        out ProblemDetails? problem)
+    {
+        mapped = [];
+        problem = null;
+
+        foreach (var entry in items)
         {
             if (!Enum.TryParse<PermissionState>(entry.State, ignoreCase: true, out var state))
             {
-                return BadRequest(new ProblemDetails
+                problem = new ProblemDetails
                 {
                     Title = "Invalid state",
                     Detail = $"'{entry.State}' is not a valid permission state. Use 'Allow' or 'Deny'.",
                     Status = StatusCodes.Status400BadRequest,
-                });
+                };
+                return false;
             }
 
             if (!Enum.TryParse<PermissionScope>(entry.Scope, ignoreCase: true, out var scope))
             {
-                return BadRequest(new ProblemDetails
+                problem = new ProblemDetails
                 {
                     Title = "Invalid scope",
                     Detail = $"'{entry.Scope}' is not a valid permission scope.",
                     Status = StatusCodes.Status400BadRequest,
-                });
+                };
+                return false;
             }
 
             if (!AdvancedPermissionsConstants.DocTypeVerbs.Contains(entry.Verb, StringComparer.Ordinal))
             {
-                return BadRequest(new ProblemDetails
+                problem = new ProblemDetails
                 {
                     Title = "Invalid verb",
                     Detail = $"'{entry.Verb}' is not a recognized doc-type permission verb.",
                     Status = StatusCodes.Status400BadRequest,
-                });
+                };
+                return false;
             }
 
             mapped.Add((entry.Verb, state, scope, entry.IsPriorityOverride));
         }
 
-        await docTypeService.SaveEditorEntriesAsync(
-            request.NodeKey,
-            request.RoleAlias,
-            request.ContentTypeKey,
-            mapped,
-            cancellationToken);
-
-        return Ok();
+        return true;
     }
 
     /// <summary>

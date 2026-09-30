@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: 'Rhesymu',
     docTypePermissions_defaultAllow: 'Caniateir yn ddiofyn',
     docTypePermissions_viaDefault: 'o’r rhes ddiofyn',
+
+    // ── Diweddariadau byw a gwrthdrawiadau ──────────────────────────────
+    liveUpdated: 'Wedi diweddaru dim ond nawr',
+    liveRefresh: 'Adnewyddu',
+    liveRefreshing: 'Yn diweddaru…',
+    liveRefreshFailed: 'Methwyd diweddaru',
+    liveConflictTitle: 'Newidiodd rhywun yr hawliau hyn tra roeddech chi’n golygu',
+    liveConflictBody: 'Mae %0% o’ch newidiadau heb eu hachub yn gwrthdaro â’r hyn sydd wedi’i achub nawr. Nid oes dim o’ch newidiadau chi wedi newid.',
+    liveConflictBodyOne: 'Mae un o’ch newidiadau heb eu hachub yn gwrthdaro â’r hyn sydd wedi’i achub nawr. Nid oes dim o’ch newidiadau chi wedi newid.',
+    liveLoadStored: 'Llwytho’r gwerthoedd wedi’u hachub',
+    liveKeepMine: 'Cadw fy newidiadau',
+    liveFlagLegend: 'Newidiwyd gan rywun arall ers i chi lwytho',
+    conflictDialogTitle: 'Trosysgrifo’r newidiadau wedi’u hachub?',
+    conflictDialogBody: 'Mae achub yn disodli’r hyn sydd wedi’i achub nawr. Bydd %0% o newidiadau a wnaed gan rywun arall yn cael eu colli, ac ni ellir dad-wneud hyn.',
+    conflictDialogBodyOne: 'Mae achub yn disodli’r hyn sydd wedi’i achub nawr. Bydd un newid a wnaed gan rywun arall yn cael ei golli, ac ni ellir dad-wneud hyn.',
+    conflictStoredLabel: 'wedi’i achub',
+    conflictYoursLabel: 'chi',
+    conflictOverwrite: 'Trosysgrifo eto',
+    conflictCancel: 'Canslo',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Dileu newidiadau heb eu cadw?',
+    discardPromptBody: 'Mae gennych newidiadau caniatâd heb eu cadw. Os byddwch yn parhau, byddant yn cael eu dileu ac ni ellir eu hadfer.',
+    discardPromptStay: 'Parhau i olygu',
+    discardPromptConfirm: 'Dileu newidiadau',
   },
 } satisfies UmbLocalizationDictionary;

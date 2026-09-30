@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: 'Justificare',
     docTypePermissions_defaultAllow: 'Permis în mod implicit',
     docTypePermissions_viaDefault: 'din rândul implicit',
+
+    // ── Actualizări live și conflicte ─────────────────────────────────────
+    liveUpdated: 'Actualizat chiar acum',
+    liveRefresh: 'Reîmprospătează',
+    liveRefreshing: 'Se actualizează…',
+    liveRefreshFailed: 'Actualizarea a eșuat',
+    liveConflictTitle: 'Altcineva a modificat aceste permisiuni în timp ce le editați',
+    liveConflictBody: '%0% din modificările dvs. nesalvate intră în conflict cu ceea ce este salvat acum. Nimic din modificările dvs. nu a fost schimbat.',
+    liveConflictBodyOne: 'Una dintre modificările dvs. nesalvate intră în conflict cu ceea ce este salvat acum. Nimic din modificările dvs. nu a fost schimbat.',
+    liveLoadStored: 'Încarcă valorile salvate',
+    liveKeepMine: 'Păstrează modificările mele',
+    liveFlagLegend: 'Modificat de altcineva de când ați încărcat',
+    conflictDialogTitle: 'Se suprascriu modificările salvate?',
+    conflictDialogBody: 'Salvarea înlocuiește ceea ce este salvat acum. %0% modificări făcute de altcineva se vor pierde, iar această acțiune nu poate fi anulată.',
+    conflictDialogBodyOne: 'Salvarea înlocuiește ceea ce este salvat acum. O modificare făcută de altcineva se va pierde, iar această acțiune nu poate fi anulată.',
+    conflictStoredLabel: 'salvat',
+    conflictYoursLabel: 'al dvs.',
+    conflictOverwrite: 'Suprascrie totuși',
+    conflictCancel: 'Anulează',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Renunți la modificările nesalvate?',
+    discardPromptBody: 'Ai modificări de permisiuni nesalvate. Dacă continui, acestea vor fi eliminate și nu vor putea fi recuperate.',
+    discardPromptStay: 'Continuă editarea',
+    discardPromptConfirm: 'Renunță la modificări',
   },
 } satisfies UmbLocalizationDictionary;

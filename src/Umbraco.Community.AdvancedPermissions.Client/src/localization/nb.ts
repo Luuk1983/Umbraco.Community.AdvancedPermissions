@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: 'Begrunnelse',
     docTypePermissions_defaultAllow: 'Tillatt som standard',
     docTypePermissions_viaDefault: 'fra standardrad',
+
+    // ── Sanntidsoppdateringer og konflikter ───────────────────────────────
+    liveUpdated: 'Oppdatert akkurat nå',
+    liveRefresh: 'Oppdater',
+    liveRefreshing: 'Oppdaterer…',
+    liveRefreshFailed: 'Oppdateringen mislyktes',
+    liveConflictTitle: 'Noen endret disse tillatelsene mens du redigerte',
+    liveConflictBody: '%0% av dine ulagrede endringer er i konflikt med det som er lagret nå. Ingenting av dine endringer er blitt endret.',
+    liveConflictBodyOne: 'En av dine ulagrede endringer er i konflikt med det som er lagret nå. Ingenting av dine endringer er blitt endret.',
+    liveLoadStored: 'Last inn lagrede verdier',
+    liveKeepMine: 'Behold mine endringer',
+    liveFlagLegend: 'Endret av noen andre siden du lastet inn',
+    conflictDialogTitle: 'Overskrive de lagrede endringene?',
+    conflictDialogBody: 'Lagring erstatter det som er lagret nå. %0% endringer gjort av noen andre vil gå tapt, og dette kan ikke angres.',
+    conflictDialogBodyOne: 'Lagring erstatter det som er lagret nå. En endring gjort av noen andre vil gå tapt, og dette kan ikke angres.',
+    conflictStoredLabel: 'lagret',
+    conflictYoursLabel: 'ditt',
+    conflictOverwrite: 'Overskriv likevel',
+    conflictCancel: 'Avbryt',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Forkaste ulagrede endringer?',
+    discardPromptBody: 'Du har ulagrede endringer i tillatelser. Hvis du fortsetter, forkastes de, og de kan ikke gjenopprettes.',
+    discardPromptStay: 'Fortsett redigeringen',
+    discardPromptConfirm: 'Forkast endringer',
   },
 } satisfies UmbLocalizationDictionary;

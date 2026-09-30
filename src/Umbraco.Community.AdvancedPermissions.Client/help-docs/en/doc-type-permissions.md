@@ -22,3 +22,11 @@ Creating is allowed by default (wherever Umbraco's own allowed-child-types permi
 - Because creating is allowed by default, you usually add **Deny** to lock specific types down, or **Allow** to re-enable a type that a broader Deny removed.
 
 See the **Concepts** tab for Allow/Deny, scope, the Default permissions row, the All Users Group, and Priority Override.
+
+## Real-time updates
+
+While you're editing, changes saved elsewhere are pushed to this screen live.
+
+- A cell gets an **outline** when it's been changed by someone else since you loaded it. A banner names how many cells collided.
+- **Load stored values** replaces only the outlined cells with what's stored now — everything else you've changed is left alone.
+- **Keep my changes** dismisses the banner and keeps your edits on screen, but it doesn't mean your changes have won: the stored values are unchanged, and saving will still ask you to confirm before overwriting them.

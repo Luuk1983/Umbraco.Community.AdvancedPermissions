@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: 'Justificação',
     docTypePermissions_defaultAllow: 'Permitido por predefinição',
     docTypePermissions_viaDefault: 'a partir da linha predefinida',
+
+    // ── Atualizações em tempo real e conflitos ────────────────────────────
+    liveUpdated: 'Atualizado agora mesmo',
+    liveRefresh: 'Atualizar',
+    liveRefreshing: 'A atualizar…',
+    liveRefreshFailed: 'Falha ao atualizar',
+    liveConflictTitle: 'Alguém alterou estas permissões enquanto as estava a editar',
+    liveConflictBody: '%0% das suas alterações não guardadas entram em conflito com o que está guardado agora. Nada do que é seu foi alterado.',
+    liveConflictBodyOne: 'Uma das suas alterações não guardadas entra em conflito com o que está guardado agora. Nada do que é seu foi alterado.',
+    liveLoadStored: 'Carregar os valores guardados',
+    liveKeepMine: 'Manter as minhas alterações',
+    liveFlagLegend: 'Alterado por outra pessoa desde que carregou',
+    conflictDialogTitle: 'Substituir as alterações guardadas?',
+    conflictDialogBody: 'Guardar substitui o que está guardado agora. %0% alterações feitas por outra pessoa serão perdidas, e esta ação não pode ser anulada.',
+    conflictDialogBodyOne: 'Guardar substitui o que está guardado agora. Uma alteração feita por outra pessoa será perdida, e esta ação não pode ser anulada.',
+    conflictStoredLabel: 'guardado',
+    conflictYoursLabel: 'seu',
+    conflictOverwrite: 'Substituir mesmo assim',
+    conflictCancel: 'Cancelar',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Descartar alterações não guardadas?',
+    discardPromptBody: 'Tem alterações de permissões não guardadas. Se continuar, serão descartadas e não poderão ser recuperadas.',
+    discardPromptStay: 'Continuar a editar',
+    discardPromptConfirm: 'Descartar alterações',
   },
 } satisfies UmbLocalizationDictionary;

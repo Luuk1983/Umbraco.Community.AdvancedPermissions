@@ -2,6 +2,9 @@ using Umbraco.Community.AdvancedPermissions.Caching;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Notifications;
+using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Services;
 
 namespace Umbraco.Community.AdvancedPermissions.Services;
@@ -21,11 +24,21 @@ namespace Umbraco.Community.AdvancedPermissions.Services;
 /// <param name="resolver">The pure resolver that applies inheritance and priority rules.</param>
 /// <param name="userService">The Umbraco user service used to look up user group memberships and defaults.</param>
 /// <param name="cache">The two-level permission cache.</param>
+/// <param name="eventAggregator">
+/// Used to publish permission-change notifications after a write has been persisted and the cache
+/// invalidated, so other packages can react without depending on how the write happened.
+/// </param>
+/// <param name="logger">
+/// Used to record a notification handler's failure without letting it propagate — see
+/// <see cref="PublishSafelyAsync"/>.
+/// </param>
 public sealed class AdvancedPermissionService(
     IAdvancedPermissionRepository repository,
     IPermissionResolver resolver,
     IUserService userService,
-    AdvancedPermissionCache cache)
+    AdvancedPermissionCache cache,
+    IEventAggregator eventAggregator,
+    ILogger<AdvancedPermissionService> logger)
     : IAdvancedPermissionService
 {
     /// <inheritdoc />
@@ -112,18 +125,68 @@ public sealed class AdvancedPermissionService(
         return resolver.ResolveAll(context, verbList);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Saves the entries for a node and user group without a concurrency check. Kept only because
+    /// <see cref="IAdvancedPermissionService"/> still declares it (obsolete) for the sake of
+    /// implementations written against earlier releases; it forwards to the stamped overload with a
+    /// <see langword="null"/> stamp, so it does exactly what it always did.
+    /// </summary>
+    /// <param name="nodeKey">The node key.</param>
+    /// <param name="roleAlias">The user group alias.</param>
+    /// <param name="entries">The replacement entries.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    // Not marked [Obsolete] here: this class is not part of the published contract, and the
+    // obsolete warning fires on the interface member, which is where every caller is steered away
+    // from it. Implementing an obsolete interface member does not itself raise a warning.
+    public Task SaveEntriesAsync(
+        Guid nodeKey,
+        string roleAlias,
+        IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
+        CancellationToken cancellationToken = default) =>
+        SaveEntriesAsync(nodeKey, roleAlias, entries, (string?)null, cancellationToken);
+
+    /// <summary>
+    /// Saves the entries for a node and user group, refusing the write if the stored entries no
+    /// longer match <paramref name="expectedStamp"/>, then invalidates caches and announces the
+    /// change. This is the real implementation of the interface's stamped overload - it overrides
+    /// the interface's default implementation, which would ignore the stamp.
+    /// </summary>
+    /// <param name="nodeKey">The node key.</param>
+    /// <param name="roleAlias">The user group alias.</param>
+    /// <param name="entries">The replacement entries.</param>
+    /// <param name="expectedStamp">The stamp the caller read, or <see langword="null"/> to skip the check.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
     public async Task SaveEntriesAsync(
         Guid nodeKey,
         string roleAlias,
         IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> entries,
+        string? expectedStamp,
         CancellationToken cancellationToken = default)
     {
-        await repository.SaveAsync(nodeKey, roleAlias, entries, cancellationToken);
+        // Materialised once: the sequence is enumerated by the repository and again for the
+        // notification's verb list, and a caller is entitled to hand us a lazy one.
+        var materialised = entries as IList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>
+            ?? entries.ToList();
+
+        // The stamp check happens inside the repository's write transaction. A
+        // PermissionConcurrencyException propagates from here untouched — deliberately before the
+        // invalidation and notification below, because nothing was written and announcing a change
+        // that did not happen would send every other editor to refetch for nothing.
+        await repository.SaveAsync(nodeKey, roleAlias, materialised, expectedStamp, cancellationToken);
 
         // Invalidate L1 for this role (entries changed), and ALL L2 (any user's resolution may be stale)
         cache.InvalidateRoleEntries(roleAlias);
         cache.InvalidateAllResolved();
+
+        // Strictly after invalidation. A handler that refetches on this notification while the
+        // cache still holds the old value would read the very snapshot this write replaced — and,
+        // having consumed its notification, would never ask again.
+        await PublishSafelyAsync(
+            new AdvancedPermissionsChangedNotification(
+                nodeKey,
+                roleAlias,
+                materialised.Select(e => e.Verb).Distinct(StringComparer.Ordinal).ToList()),
+            cancellationToken);
     }
 
     /// <inheritdoc />
@@ -138,6 +201,93 @@ public sealed class AdvancedPermissionService(
         // Invalidate L1 for this role (entries changed), and ALL L2 (any user's resolution may be stale)
         cache.InvalidateRoleEntries(roleAlias);
         cache.InvalidateAllResolved();
+
+        // Strictly after invalidation — see the note in SaveEntriesAsync above.
+        await PublishSafelyAsync(
+            new AdvancedPermissionsChangedNotification(nodeKey, roleAlias, [verb]),
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task SaveManyAsync(
+        IReadOnlyList<(Guid NodeKey, string RoleAlias, IReadOnlyList<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)> Entries, string? ExpectedStamp)> batch,
+        CancellationToken cancellationToken = default)
+    {
+        // Nothing was written, so nothing is stale — skip the transaction and the L2 flush.
+        if (batch.Count == 0)
+        {
+            return;
+        }
+
+        await repository.SaveManyAsync(
+            batch.Select(b => (b.NodeKey, b.RoleAlias,
+                (IEnumerable<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>)b.Entries,
+                b.ExpectedStamp)),
+            cancellationToken);
+
+        // Invalidated once for the whole batch rather than per pair: L2 is dropped wholesale
+        // anyway, and doing it per pair would drop it N times for no further effect.
+        foreach (var roleAlias in batch.Select(b => b.RoleAlias).Distinct(StringComparer.Ordinal))
+        {
+            cache.InvalidateRoleEntries(roleAlias);
+        }
+
+        cache.InvalidateAllResolved();
+
+        // Again strictly after invalidation, and one notification per pair so a handler sees the
+        // same granularity it would from a single save. Each publish is wrapped individually
+        // (inside the loop) so one bad pair's handler failure does not stop the remaining pairs
+        // from being announced.
+        foreach (var (nodeKey, roleAlias, entries, _) in batch)
+        {
+            await PublishSafelyAsync(
+                new AdvancedPermissionsChangedNotification(
+                    nodeKey,
+                    roleAlias,
+                    entries.Select(e => e.Verb).Distinct(StringComparer.Ordinal).ToList()),
+                cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Publishes a permission-change notification, swallowing any exception thrown by a handler
+    /// so it cannot mask a successful write.
+    /// </summary>
+    /// <remarks>
+    /// By the time this runs, the write has already committed and the cache has already been
+    /// invalidated — the change is real and already visible to every other reader. Letting a
+    /// handler's failure propagate from here would turn a successful save into a reported
+    /// failure: the caller (a controller) would return an error, and the editor would see "save
+    /// failed" for a save that in fact succeeded — then retry, or reload and lose work, over
+    /// nothing. A degraded live update (silently not going out) is the correct failure mode here;
+    /// a false negative on the save itself is not. <see cref="OperationCanceledException"/> is
+    /// deliberately not caught: a cancelled request is not a handler failure, and swallowing it
+    /// would hide a genuine cancellation.
+    /// </remarks>
+    /// <param name="notification">The notification to publish.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    private async Task PublishSafelyAsync(
+        AdvancedPermissionsChangedNotification notification,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await eventAggregator.PublishAsync(notification, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to publish {Notification} for node {NodeKey} and user group {RoleAlias}. " +
+                "The write already committed and the cache was already invalidated — only the live-update notification was lost.",
+                nameof(AdvancedPermissionsChangedNotification),
+                notification.NodeKey,
+                notification.RoleAlias);
+        }
     }
 
     /// <summary>

@@ -154,5 +154,30 @@ export default {
     docTypePermissions_reasoning: 'السبب',
     docTypePermissions_defaultAllow: 'مسموح به افتراضيًا',
     docTypePermissions_viaDefault: 'من الصف الافتراضي',
+
+    // ── التحديثات الفورية والتعارضات ──────────────────────────────────────
+    liveUpdated: 'تم التحديث الآن',
+    liveRefresh: 'تحديث',
+    liveRefreshing: 'جارٍ التحديث…',
+    liveRefreshFailed: 'تعذر التحديث',
+    liveConflictTitle: 'قام شخص آخر بتغيير هذه الأذونات أثناء تحريرك لها',
+    liveConflictBody: '%0% من تغييراتك غير المحفوظة تتعارض مع ما هو محفوظ الآن. لم يتم تغيير أي شيء من تغييراتك.',
+    liveConflictBodyOne: 'يتعارض أحد تغييراتك غير المحفوظة مع ما هو محفوظ الآن. لم يتم تغيير أي شيء من تغييراتك.',
+    liveLoadStored: 'تحميل القيم المحفوظة',
+    liveKeepMine: 'الاحتفاظ بتغييراتي',
+    liveFlagLegend: 'تم تغييره من قِبل شخص آخر منذ أن قمت بتحميله',
+    conflictDialogTitle: 'استبدال التغييرات المحفوظة؟',
+    conflictDialogBody: 'الحفظ يستبدل ما هو محفوظ الآن. سيتم فقدان %0% من التغييرات التي أجراها شخص آخر، ولا يمكن التراجع عن ذلك.',
+    conflictDialogBodyOne: 'الحفظ يستبدل ما هو محفوظ الآن. سيتم فقدان تغيير واحد أجراه شخص آخر، ولا يمكن التراجع عن ذلك.',
+    conflictStoredLabel: 'المحفوظ',
+    conflictYoursLabel: 'الخاص بك',
+    conflictOverwrite: 'الاستبدال مع ذلك',
+    conflictCancel: 'إلغاء',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'تجاهل التغييرات غير المحفوظة؟',
+    discardPromptBody: 'لديك تغييرات غير محفوظة في الأذونات. إذا تابعت، فسيتم تجاهلها ولا يمكن استرجاعها.',
+    discardPromptStay: 'متابعة التحرير',
+    discardPromptConfirm: 'تجاهل التغييرات',
   },
 } satisfies UmbLocalizationDictionary;

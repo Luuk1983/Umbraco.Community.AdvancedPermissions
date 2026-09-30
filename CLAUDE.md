@@ -135,6 +135,7 @@ dotnet run --urls http://localhost:5000
 
 ## Umbraco Reference Source
 
-- Umbraco v17 backoffice source: `C:\GitHub\UmbracoVersions\v17\src\Umbraco.Web.UI.Client`
-- Umbraco UI library source: `C:\GitHub\UmbracoVersions\UI-latest`
+- Umbraco v17 backoffice source: `D:\github\UmbracoVersions\v17\Umbraco-CMS\src\Umbraco.Web.UI.Client`
+- Umbraco v17 backend source: `D:\github\UmbracoVersions\v17\Umbraco-CMS\src\Umbraco.Core` (and its sibling `Umbraco.Cms.*` projects)
+- Umbraco UI library (UUI) source: `D:\github\UmbracoVersions\v17\Umbraco-CMS\src\Umbraco.Web.UI.Client\src\external\uui` — it is vendored inside the backoffice source, not a separate checkout.
 - Do not read `node_modules` — use the reference source instead.

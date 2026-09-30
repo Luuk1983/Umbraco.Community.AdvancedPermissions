@@ -195,5 +195,30 @@ export default {
     elementType_denyLabel: 'Refuser (masqué dans la Library)',
     elementType_previewInherit: 'Aucune règle explicite. Ce type d’élément est créable dans la Library par défaut.',
     elementType_previewSet: (action: string) => `${action} la création de ce type d’élément dans la Library.`,
+
+    // ── Mises à jour en direct et conflits ────────────────────────────────
+    liveUpdated: 'Mis à jour à l’instant',
+    liveRefresh: 'Actualiser',
+    liveRefreshing: 'Mise à jour…',
+    liveRefreshFailed: 'Échec de la mise à jour',
+    liveConflictTitle: 'Quelqu’un a modifié ces permissions pendant que vous les modifiiez',
+    liveConflictBody: '%0% de vos modifications non enregistrées entrent en conflit avec ce qui est enregistré actuellement. Aucune de vos modifications n’a été changée.',
+    liveConflictBodyOne: 'Une de vos modifications non enregistrées entre en conflit avec ce qui est enregistré actuellement. Aucune de vos modifications n’a été changée.',
+    liveLoadStored: 'Charger les valeurs enregistrées',
+    liveKeepMine: 'Conserver mes modifications',
+    liveFlagLegend: 'Modifié par quelqu’un d’autre depuis votre chargement',
+    conflictDialogTitle: 'Écraser les modifications enregistrées ?',
+    conflictDialogBody: 'L’enregistrement remplace ce qui est enregistré actuellement. %0% modifications effectuées par quelqu’un d’autre seront perdues, et cette action est irréversible.',
+    conflictDialogBodyOne: 'L’enregistrement remplace ce qui est enregistré actuellement. Une modification effectuée par quelqu’un d’autre sera perdue, et cette action est irréversible.',
+    conflictStoredLabel: 'enregistré',
+    conflictYoursLabel: 'le vôtre',
+    conflictOverwrite: 'Écraser quand même',
+    conflictCancel: 'Annuler',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Abandonner les modifications non enregistrées ?',
+    discardPromptBody: 'Vous avez des modifications de permissions non enregistrées. Si vous continuez, elles seront abandonnées et ne pourront pas être récupérées.',
+    discardPromptStay: 'Continuer la modification',
+    discardPromptConfirm: 'Abandonner les modifications',
   },
 } satisfies UmbLocalizationDictionary;

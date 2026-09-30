@@ -195,5 +195,30 @@ export default {
     elementType_denyLabel: 'Заборонити (приховано з Library)',
     elementType_previewInherit: 'Немає явного правила. Цей тип елемента можна створювати в Library за замовчуванням.',
     elementType_previewSet: (action: string) => `${action} створення цього типу елемента в Library.`,
+
+    // ── Оновлення в реальному часі та конфлікти ────────────────────────────
+    liveUpdated: 'Оновлено щойно',
+    liveRefresh: 'Оновити',
+    liveRefreshing: 'Оновлення…',
+    liveRefreshFailed: 'Не вдалося оновити',
+    liveConflictTitle: 'Хтось змінив ці права доступу, поки ви їх редагували',
+    liveConflictBody: '%0% ваших незбережених змін конфліктують із тим, що збережено зараз. Нічого з ваших змін не було змінено.',
+    liveConflictBodyOne: 'Одна з ваших незбережених змін конфліктує з тим, що збережено зараз. Нічого з ваших змін не було змінено.',
+    liveLoadStored: 'Завантажити збережені значення',
+    liveKeepMine: 'Залишити мої зміни',
+    liveFlagLegend: 'Змінено кимось іншим після завантаження',
+    conflictDialogTitle: 'Перезаписати збережені зміни?',
+    conflictDialogBody: 'Збереження замінить те, що збережено зараз. %0% змін, внесених кимось іншим, буде втрачено, і це неможливо скасувати.',
+    conflictDialogBodyOne: 'Збереження замінить те, що збережено зараз. Одну зміну, внесену кимось іншим, буде втрачено, і це неможливо скасувати.',
+    conflictStoredLabel: 'збережено',
+    conflictYoursLabel: 'ваше',
+    conflictOverwrite: 'Перезаписати попри це',
+    conflictCancel: 'Відміна',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Скасувати незбережені зміни?',
+    discardPromptBody: 'У вас є незбережені зміни прав доступу. Якщо продовжити, їх буде скасовано, і відновити їх буде неможливо.',
+    discardPromptStay: 'Продовжити редагування',
+    discardPromptConfirm: 'Скасувати зміни',
   },
 } satisfies UmbLocalizationDictionary;

@@ -195,5 +195,30 @@ export default {
     elementType_denyLabel: 'Denegar (oculto en la Library)',
     elementType_previewInherit: 'Ninguna regla explícita. Este tipo de elemento se puede crear en la Library de forma predeterminada.',
     elementType_previewSet: (action: string) => `${action} crear este tipo de elemento en la Library.`,
+
+    // ── Actualizaciones en vivo y conflictos ──────────────────────────────
+    liveUpdated: 'Actualizado justo ahora',
+    liveRefresh: 'Actualizar',
+    liveRefreshing: 'Actualizando…',
+    liveRefreshFailed: 'No se pudo actualizar',
+    liveConflictTitle: 'Alguien cambió estos permisos mientras los editabas',
+    liveConflictBody: '%0% de tus cambios sin guardar entran en conflicto con lo que está guardado ahora. No se ha cambiado nada de lo tuyo.',
+    liveConflictBodyOne: 'Uno de tus cambios sin guardar entra en conflicto con lo que está guardado ahora. No se ha cambiado nada de lo tuyo.',
+    liveLoadStored: 'Cargar los valores guardados',
+    liveKeepMine: 'Mantener mis cambios',
+    liveFlagLegend: 'Cambiado por otra persona desde que lo cargaste',
+    conflictDialogTitle: '¿Sobrescribir los cambios guardados?',
+    conflictDialogBody: 'Guardar reemplaza lo que está guardado ahora. Se perderán %0% cambios realizados por otra persona, y esto no se puede deshacer.',
+    conflictDialogBodyOne: 'Guardar reemplaza lo que está guardado ahora. Se perderá un cambio realizado por otra persona, y esto no se puede deshacer.',
+    conflictStoredLabel: 'guardado',
+    conflictYoursLabel: 'tuyo',
+    conflictOverwrite: 'Sobrescribir de todos modos',
+    conflictCancel: 'Cancelar',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: '¿Descartar los cambios sin guardar?',
+    discardPromptBody: 'Tienes cambios de permisos sin guardar. Si continúas, se descartarán y no se podrán recuperar.',
+    discardPromptStay: 'Seguir editando',
+    discardPromptConfirm: 'Descartar cambios',
   },
 } satisfies UmbLocalizationDictionary;

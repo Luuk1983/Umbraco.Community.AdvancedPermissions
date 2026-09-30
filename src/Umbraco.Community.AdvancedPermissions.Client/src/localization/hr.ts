@@ -195,5 +195,30 @@ export default {
     elementType_denyLabel: 'Zabrani (skriveno iz Library)',
     elementType_previewInherit: 'Nema izričitog pravila. Ova vrsta elementa može se stvarati u Library prema zadanim postavkama.',
     elementType_previewSet: (action: string) => `${action} stvaranje ove vrste elementa u Library.`,
+
+    // ── Ažuriranja uživo i sukobi ────────────────────────────────────────
+    liveUpdated: 'Ažurirano upravo sada',
+    liveRefresh: 'Osvježi',
+    liveRefreshing: 'Ažuriranje…',
+    liveRefreshFailed: 'Ažuriranje nije uspjelo',
+    liveConflictTitle: 'Netko je promijenio ove dozvole dok ste ih uređivali',
+    liveConflictBody: '%0% vaših nespremljenih promjena sukobljava se s onim što je trenutno spremljeno. Ništa od vaših promjena nije izmijenjeno.',
+    liveConflictBodyOne: 'Jedna od vaših nespremljenih promjena sukobljava se s onim što je trenutno spremljeno. Ništa od vaših promjena nije izmijenjeno.',
+    liveLoadStored: 'Učitaj spremljene vrijednosti',
+    liveKeepMine: 'Zadrži moje promjene',
+    liveFlagLegend: 'Promijenio je netko drugi otkako ste učitali',
+    conflictDialogTitle: 'Prepisati spremljene promjene?',
+    conflictDialogBody: 'Spremanje zamjenjuje ono što je trenutno spremljeno. %0% promjena koje je napravio netko drugi bit će izgubljeno, a to se ne može poništiti.',
+    conflictDialogBodyOne: 'Spremanje zamjenjuje ono što je trenutno spremljeno. Jedna promjena koju je napravio netko drugi bit će izgubljena, a to se ne može poništiti.',
+    conflictStoredLabel: 'spremljeno',
+    conflictYoursLabel: 'vaše',
+    conflictOverwrite: 'Prepiši ipak',
+    conflictCancel: 'Odustani',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Odbaciti nespremljene promjene?',
+    discardPromptBody: 'Imate nespremljene promjene dozvola. Ako nastavite, bit će odbačene i neće ih biti moguće vratiti.',
+    discardPromptStay: 'Nastavi uređivanje',
+    discardPromptConfirm: 'Odbaci promjene',
   },
 } satisfies UmbLocalizationDictionary;

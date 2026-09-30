@@ -8,6 +8,8 @@
     "watch": "tsc && vite build --watch",
     "build": "tsc && vite build",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "generate-client": "node scripts/generate-openapi.js http://localhost:5266/umbraco/openapi/management.json"
   },
   "devDependencies": {
@@ -17,6 +19,7 @@
     "marked": "^18.0.5",
     "node-fetch": "^3.3.2",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^3.2.7"
   }
 }

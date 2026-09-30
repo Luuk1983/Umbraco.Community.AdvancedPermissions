@@ -8,10 +8,17 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers.Models;
 /// </param>
 /// <param name="RoleAlias">The role alias (user group alias or <c>$everyone</c>).</param>
 /// <param name="Entries">The new entries. Pass an empty list to remove all entries (revert to inherit).</param>
+/// <param name="ExpectedStamp">
+/// The stamp this client was given when it read these entries. When null the concurrency check is
+/// skipped, which is how a client written before stamps existed keeps working.
+/// </param>
+/// <param name="Force">Whether to write through a stale stamp. Only sent after a user confirms.</param>
 public sealed record SavePermissionsRequestModel(
     Guid NodeKey,
     string RoleAlias,
-    IReadOnlyList<SavePermissionEntryItem> Entries);
+    IReadOnlyList<SavePermissionEntryItem> Entries,
+    string? ExpectedStamp = null,
+    bool Force = false);
 
 /// <summary>
 /// Represents a single permission entry within a save request.

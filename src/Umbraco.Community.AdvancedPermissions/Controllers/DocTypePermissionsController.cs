@@ -36,6 +36,17 @@ public sealed class DocTypePermissionsController(
     : AdvancedPermissionsControllerBase
 {
     /// <summary>
+    /// The verbs the save endpoints accept: the document-type verbs and the library element-type
+    /// verbs, because one table and one editor serve both and the save endpoints take either family
+    /// for any content type.
+    /// </summary>
+    private static readonly IReadOnlyList<string> AcceptedVerbs =
+        [.. AdvancedPermissionsConstants.DocTypeVerbs, .. AdvancedPermissionsConstants.ElementTypeVerbs];
+
+    /// <summary>What the accepted verb set is called in a validation error message.</summary>
+    private const string AcceptedVerbsDescription = "doc-type or element-type permission verb";
+
+    /// <summary>
     /// Lists every non-element document type. Used by the editor's doc-type picker.
     /// </summary>
     /// <returns>The list of non-element doc-types.</returns>
@@ -84,16 +95,17 @@ public sealed class DocTypePermissionsController(
     }
 
     /// <summary>
-    /// Gets all stored entries for a selected (role, doc-type) combination. The editor uses these
-    /// to render the tree with the current state per node.
+    /// Gets all stored entries for a selected (role, doc-type) combination, grouped by node with
+    /// each node's own concurrency stamp. The editor uses these to render the tree with the
+    /// current state per node, and sends the stamp back when saving that node's triple.
     /// </summary>
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <param name="roleAlias">The role alias selected in the editor.</param>
     /// <param name="contentTypeKey">The doc-type selected in the editor.</param>
-    /// <returns>All stored entries for the combination.</returns>
+    /// <returns>One entry per node that has stored entries for the combination.</returns>
     [HttpGet("doc-type-permissions", Name = "GetForEditor")]
     [MapToApiVersion("1.0")]
-    [ProducesResponseType<IReadOnlyList<DocTypePermissionEntryResponseModel>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<IReadOnlyList<DocTypeEditorNodeResponseModel>>(StatusCodes.Status200OK)]
     [EndpointSummary("Gets all doc-type permission entries for a (role, content-type) combination.")]
     public async Task<IActionResult> GetForEditor(
         CancellationToken cancellationToken,
@@ -101,7 +113,19 @@ public sealed class DocTypePermissionsController(
         Guid contentTypeKey)
     {
         var entries = await docTypeService.GetEditorEntriesAsync(roleAlias, contentTypeKey, cancellationToken);
-        return Ok(entries.Select(MapDocTypeEntry).ToList());
+
+        // Grouped by node because the stamp has to describe each node's own set of entries, not the
+        // whole result together, and is computed from the mapped models so it matches the body.
+        var byNode = entries
+            .GroupBy(e => e.NodeKey)
+            .Select(g =>
+            {
+                var mapped = g.Select(MapDocTypeEntry).ToList();
+                return new DocTypeEditorNodeResponseModel(g.Key, mapped, mapped.ComputeFromResponse());
+            })
+            .ToList();
+
+        return Ok(byNode);
     }
 
     /// <summary>
@@ -109,63 +133,61 @@ public sealed class DocTypePermissionsController(
     /// </summary>
     /// <param name="request">The entries to save.</param>
     /// <param name="cancellationToken">Token to support cancellation.</param>
-    /// <returns><see cref="StatusCodes.Status200OK"/> on success.</returns>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> on success, or <see cref="StatusCodes.Status409Conflict"/>
+    /// when <see cref="SaveDocTypePermissionsRequestModel.ExpectedStamp"/> no longer matches what is stored.
+    /// </returns>
     [HttpPut("doc-type-permissions", Name = "PutDocTypePermissions")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<BatchSaveDocTypeConflictResponseModel>(StatusCodes.Status409Conflict)]
     [EndpointSummary("Saves (replaces) doc-type permission entries for a node+role+content-type triple.")]
-    public async Task<IActionResult> Save(
+    public Task<IActionResult> Save(
         [FromBody] SaveDocTypePermissionsRequestModel request,
-        CancellationToken cancellationToken)
-    {
-        var mapped = new List<(string Verb, PermissionState State, PermissionScope Scope, bool IsPriorityOverride)>();
-
-        foreach (var entry in request.Entries)
-        {
-            if (!Enum.TryParse<PermissionState>(entry.State, ignoreCase: true, out var state))
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Title = "Invalid state",
-                    Detail = $"'{entry.State}' is not a valid permission state. Use 'Allow' or 'Deny'.",
-                    Status = StatusCodes.Status400BadRequest,
-                });
-            }
-
-            if (!Enum.TryParse<PermissionScope>(entry.Scope, ignoreCase: true, out var scope))
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Title = "Invalid scope",
-                    Detail = $"'{entry.Scope}' is not a valid permission scope.",
-                    Status = StatusCodes.Status400BadRequest,
-                });
-            }
-
-            if (!AdvancedPermissionsConstants.DocTypeVerbs.Contains(entry.Verb, StringComparer.Ordinal)
-                && !AdvancedPermissionsConstants.ElementTypeVerbs.Contains(entry.Verb, StringComparer.Ordinal))
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Title = "Invalid verb",
-                    Detail = $"'{entry.Verb}' is not a recognized doc-type or element-type permission verb.",
-                    Status = StatusCodes.Status400BadRequest,
-                });
-            }
-
-            mapped.Add((entry.Verb, state, scope, entry.IsPriorityOverride));
-        }
-
-        await docTypeService.SaveEditorEntriesAsync(
-            request.NodeKey,
-            request.RoleAlias,
-            request.ContentTypeKey,
-            mapped,
+        CancellationToken cancellationToken) =>
+        PermissionSaveRequests.SaveDocTypeAsync(
+            docTypeService,
+            request,
+            AcceptedVerbs,
+            AcceptedVerbsDescription,
+            MapDocTypeEntry,
             cancellationToken);
 
-        return Ok();
-    }
+    /// <summary>
+    /// Replaces doc-type permission entries for several node, user group and document type triples
+    /// at once, refusing the whole batch if any triple has changed since the client read it.
+    /// </summary>
+    /// <remarks>
+    /// All or nothing, deliberately - same reasoning as
+    /// <see cref="AdvancedPermissionsPermissionController.BatchSavePermissions"/>. The one
+    /// structural difference is the extra <c>ContentTypeKey</c> dimension: every key this endpoint
+    /// compares, guards or reports on is the full (node, role, content-type) triple, never just
+    /// the node and role. The stamp check is made by the write itself, inside its transaction,
+    /// never in this controller.
+    /// </remarks>
+    /// <param name="request">The triples to write, each with the stamp the client read.</param>
+    /// <param name="cancellationToken">Token to support cancellation.</param>
+    /// <returns>
+    /// <see cref="StatusCodes.Status200OK"/> with the new stamp per triple, or
+    /// <see cref="StatusCodes.Status409Conflict"/> naming the triples that moved.
+    /// </returns>
+    [HttpPut("doc-type-permissions/batch", Name = "PutDocTypePermissionsBatch")]
+    [MapToApiVersion("1.0")]
+    [ProducesResponseType<IReadOnlyList<BatchSavedDocTypeStamp>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<BatchSaveDocTypeConflictResponseModel>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [EndpointSummary("Saves doc-type permission entries for several node+role+content-type triples at once, all or nothing.")]
+    public Task<IActionResult> BatchSaveDocTypePermissions(
+        [FromBody] BatchSaveDocTypePermissionsRequestModel request,
+        CancellationToken cancellationToken) =>
+        PermissionSaveRequests.SaveDocTypeBatchAsync(
+            docTypeService,
+            request,
+            AcceptedVerbs,
+            AcceptedVerbsDescription,
+            MapDocTypeEntry,
+            cancellationToken);
 
     /// <summary>
     /// Tree-style audit endpoint: for one node, returns one row per non-element doc-type with

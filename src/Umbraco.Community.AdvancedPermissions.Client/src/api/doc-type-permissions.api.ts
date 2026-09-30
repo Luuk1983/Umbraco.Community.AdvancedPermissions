@@ -1,10 +1,15 @@
 import * as Sdk from './generated/sdk.gen.js';
+import type { BatchSavedDocTypeStamp } from './generated/types.gen.js';
+import { collectStamps, readConflicts } from './concurrency.js';
 import type {
   DocTypeListItem,
-  DocTypePermissionEntry,
   SaveDocTypePermissionItem,
   DocTypeAuditForNodeResponse,
   DocTypePathEntriesResponse,
+  DocTypeEditorNode,
+  BatchSaveDocTypeNode,
+  BatchSaveDocTypeConflict,
+  BatchSaveDocTypeResult,
 } from '../models/doc-type-permission.models.js';
 
 // Thin wrappers over the regenerated hey-api SDK. Auth + 401 retry are handled by the
@@ -28,21 +33,35 @@ export async function getElementTypes(signal?: AbortSignal): Promise<DocTypeList
   return data as DocTypeListItem[];
 }
 
-/** Gets the stored entries for the editor's selected (role, content-type). */
-export async function getDocTypePermissions(
+/**
+ * Gets the stored entries for the editor's selected (role, content-type), grouped by node with
+ * each node's own concurrency stamp.
+ *
+ * `GetForEditor` answers for the whole (role, content-type) combination in one call — unlike the
+ * node-permission tree, there is no per-level pagination to batch here, so this is the only fetch
+ * the editor, its reconciliation pass and its expand-on-demand loading all need. It replaces the
+ * earlier flat-list wrapper (`getDocTypePermissions`): the endpoint's response shape changed from
+ * entries to per-node buckets, so the old name would have lied about its result.
+ */
+export async function getDocTypePermissionsForEditor(
   roleAlias: string,
   contentTypeKey: string,
   signal?: AbortSignal,
-): Promise<DocTypePermissionEntry[]> {
+): Promise<DocTypeEditorNode[]> {
   const { data } = await Sdk.getForEditor({
     throwOnError: true,
     query: { roleAlias, contentTypeKey },
     ...(signal ? { signal } : {}),
   });
-  return data as DocTypePermissionEntry[];
+  return data as DocTypeEditorNode[];
 }
 
-/** Replaces all entries for a (node, role, content-type) triple. Empty list clears. */
+/**
+ * Replaces all entries for a (node, role, content-type) triple. Empty list clears.
+ *
+ * Always writes, because it sends no `expectedStamp` and so asks the server for no concurrency
+ * check. Surfaces that must detect a concurrent change use {@link saveDocTypePermissionsBatch}.
+ */
 export async function saveDocTypePermissions(
   nodeKey: string,
   roleAlias: string,
@@ -51,8 +70,50 @@ export async function saveDocTypePermissions(
 ): Promise<void> {
   await Sdk.putDocTypePermissions({
     throwOnError: true,
-    body: { nodeKey, roleAlias, contentTypeKey, entries },
+    // `force` is required by the generated request body; with no `expectedStamp` there is nothing
+    // to check, so this writes unconditionally.
+    body: { nodeKey, roleAlias, contentTypeKey, entries, force: false },
   });
+}
+
+/**
+ * Saves several node, user group and document type triples at once, all or nothing.
+ *
+ * Mirrors `savePermissionsBatch` in `advanced-permissions.api.ts`: resolves with `ok: false` and
+ * the conflicting triples when the server refuses, rather than throwing, because a conflict is an
+ * expected answer this feature exists to produce, not a failure. A `409` that arrives without a
+ * `conflicts` array does throw (see {@link readConflicts}).
+ * @param nodes The triples to write.
+ * @param force Whether to write through a stale stamp. Only true after the user has confirmed.
+ * @returns The new stamps, or the conflicts.
+ */
+export async function saveDocTypePermissionsBatch(
+  nodes: BatchSaveDocTypeNode[],
+  force = false,
+): Promise<BatchSaveDocTypeResult> {
+  const { data, error, response } = await Sdk.putDocTypePermissionsBatch({
+    body: {
+      nodes: nodes.map((n) => ({
+        nodeKey: n.nodeKey,
+        roleAlias: n.roleAlias,
+        contentTypeKey: n.contentTypeKey,
+        entries: n.entries,
+        ...(n.expectedStamp !== undefined ? { expectedStamp: n.expectedStamp } : {}),
+      })),
+      force,
+    },
+  });
+
+  if (response?.status === 409) {
+    return { ok: false, conflicts: readConflicts<BatchSaveDocTypeConflict>(error, 'Document type permission') };
+  }
+
+  if (error) throw error;
+
+  return {
+    ok: true,
+    stamps: collectStamps<BatchSavedDocTypeStamp>(data, (s) => `${s.nodeKey}|${s.roleAlias}|${s.contentTypeKey}`),
+  };
 }
 
 /**

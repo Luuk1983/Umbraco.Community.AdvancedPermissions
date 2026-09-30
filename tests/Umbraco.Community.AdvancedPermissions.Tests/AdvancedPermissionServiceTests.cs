@@ -3,8 +3,10 @@ using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Services;
 using Umbraco.Community.AdvancedPermissions.Services;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Services;
 using static Umbraco.Community.AdvancedPermissions.Core.Constants.AdvancedPermissionsConstants;
@@ -20,6 +22,8 @@ public sealed class AdvancedPermissionServiceTests
     private readonly IAdvancedPermissionRepository _repository = Substitute.For<IAdvancedPermissionRepository>();
     private readonly IPermissionResolver _resolver = Substitute.For<IPermissionResolver>();
     private readonly IUserService _userService = Substitute.For<IUserService>();
+    private readonly IEventAggregator _eventAggregator = Substitute.For<IEventAggregator>();
+    private readonly ILogger<AdvancedPermissionService> _logger = Substitute.For<ILogger<AdvancedPermissionService>>();
     private readonly AdvancedPermissionService _sut;
 
     /// <summary>Initialises the system under test with no-op caches and substituted dependencies.</summary>
@@ -31,7 +35,7 @@ public sealed class AdvancedPermissionServiceTests
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private AdvancedPermissionService BuildService(AppCaches appCaches) =>
-        new(_repository, _resolver, _userService, new AdvancedPermissionCache(appCaches));
+        new(_repository, _resolver, _userService, new AdvancedPermissionCache(appCaches), _eventAggregator, _logger);
 
     private static AppCaches RealAppCaches() => new(
         new ObjectCacheAppCache(),
@@ -396,7 +400,7 @@ public sealed class AdvancedPermissionServiceTests
 
         // Use the real resolver so reasoning is built from the actual resolution context
         var sut = new AdvancedPermissionService(
-            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache), _eventAggregator, _logger);
 
         var results = await sut.ResolveForRoleAsync(EveryoneRoleAlias, nodeKey, path);
 
@@ -438,7 +442,7 @@ public sealed class AdvancedPermissionServiceTests
 
         // Use the real resolver to exercise the actual scope + priority logic
         var sut = new AdvancedPermissionService(
-            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache), _eventAggregator, _logger);
 
         // Act: resolve for the descendant
         var results = await sut.ResolveForRoleAsync(role, descendantKey, path, verbs: [VerbDelete]);
@@ -468,7 +472,7 @@ public sealed class AdvancedPermissionServiceTests
             .Returns([denyAtNode, allowDescendants]);
 
         var sut = new AdvancedPermissionService(
-            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache), _eventAggregator, _logger);
 
         var results = await sut.ResolveForRoleAsync(role, nodeKey, path, verbs: [VerbDelete]);
 
@@ -555,7 +559,7 @@ public sealed class AdvancedPermissionServiceTests
         _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
 
         var sut = new AdvancedPermissionService(
-            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache), _eventAggregator, _logger);
 
         var results = await sut.ResolveAllAsync(userKey, nodeKey, path, verbs: [VerbDelete]);
 
@@ -586,7 +590,7 @@ public sealed class AdvancedPermissionServiceTests
         _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
 
         var sut = new AdvancedPermissionService(
-            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache), _eventAggregator, _logger);
 
         var results = await sut.ResolveAllAsync(userKey, nodeKey, path, verbs: [VerbUpdate]);
 
@@ -614,7 +618,7 @@ public sealed class AdvancedPermissionServiceTests
         _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([]);
 
         var sut = new AdvancedPermissionService(
-            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache), _eventAggregator, _logger);
 
         var results = await sut.ResolveAllAsync(userKey, nodeKey, path, verbs: [VerbDelete]);
 
@@ -650,7 +654,7 @@ public sealed class AdvancedPermissionServiceTests
         _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([everyoneDeny]);
 
         var sut = new AdvancedPermissionService(
-            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache), _eventAggregator, _logger);
 
         var results = await sut.ResolveAllAsync(userKey, childKey, path, verbs: [VerbDelete]);
         var result = results[VerbDelete];
@@ -684,7 +688,7 @@ public sealed class AdvancedPermissionServiceTests
         _repository.GetByRoleAsync(EveryoneRoleAlias, Arg.Any<CancellationToken>()).Returns([everyoneDefault]);
 
         var sut = new AdvancedPermissionService(
-            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache));
+            _repository, new PermissionResolver(), _userService, new AdvancedPermissionCache(AppCaches.NoCache), _eventAggregator, _logger);
 
         var results = await sut.ResolveAllAsync(userKey, nodeKey, path, verbs: [VerbRead]);
 
@@ -765,7 +769,7 @@ public sealed class AdvancedPermissionServiceTests
 
         await _sut.SaveEntriesAsync(nodeKey, role, entries);
 
-        await _repository.Received(1).SaveAsync(nodeKey, role, entries, Arg.Any<CancellationToken>());
+        await _repository.Received(1).SaveAsync(nodeKey, role, entries, null, Arg.Any<CancellationToken>());
     }
 
     // ─── DeleteEntryAsync ─────────────────────────────────────────────────────
@@ -805,7 +809,8 @@ public sealed class AdvancedPermissionServiceTests
                 new ObjectCacheAppCache(),
                 NoAppCache.Instance,
                 new IsolatedCaches(_ => NoAppCache.Instance)));
-            _sut = new AdvancedPermissionService(_repository, _resolver, _userService, cache);
+            _sut = new AdvancedPermissionService(
+                _repository, _resolver, _userService, cache, Substitute.For<IEventAggregator>(), Substitute.For<ILogger<AdvancedPermissionService>>());
         }
 
         private void SetupUserWithKey(Guid userKey)

@@ -87,6 +87,67 @@ export type BatchResponseModelMemberTypeResponseModel = {
     items: Array<MemberTypeResponseModel>;
 };
 
+export type BatchSaveConflict = {
+    nodeKey: string;
+    roleAlias: string;
+    currentEntries: Array<PermissionEntryResponseModel>;
+    currentStamp: string;
+};
+
+export type BatchSaveConflictResponseModel = {
+    conflicts: Array<BatchSaveConflict>;
+};
+
+export type BatchSavedDocTypeStamp = {
+    nodeKey: string;
+    roleAlias: string;
+    contentTypeKey: string;
+    stamp: string;
+};
+
+export type BatchSaveDocTypeConflict = {
+    nodeKey: string;
+    roleAlias: string;
+    contentTypeKey: string;
+    currentEntries: Array<DocTypePermissionEntryResponseModel>;
+    currentStamp: string;
+};
+
+export type BatchSaveDocTypeConflictResponseModel = {
+    conflicts: Array<BatchSaveDocTypeConflict>;
+};
+
+export type BatchSaveDocTypePermissionsNode = {
+    nodeKey: string;
+    roleAlias: string;
+    contentTypeKey: string;
+    entries: Array<SavePermissionEntryItem>;
+    expectedStamp?: null | string;
+};
+
+export type BatchSaveDocTypePermissionsRequestModel = {
+    nodes: Array<BatchSaveDocTypePermissionsNode>;
+    force: boolean;
+};
+
+export type BatchSavedStamp = {
+    nodeKey: string;
+    roleAlias: string;
+    stamp: string;
+};
+
+export type BatchSavePermissionsNode = {
+    nodeKey: string;
+    roleAlias: string;
+    entries: Array<SavePermissionEntryItem>;
+    expectedStamp?: null | string;
+};
+
+export type BatchSavePermissionsRequestModel = {
+    nodes: Array<BatchSavePermissionsNode>;
+    force: boolean;
+};
+
 export type CalculatedUserStartNodesResponseModel = {
     id: string;
     documentStartNodeIds: Array<ReferenceByIdModel>;
@@ -655,6 +716,12 @@ export type DocTypeAuditForNodeRowResponseModel = {
     suppressedReasoning?: null | Array<ReasoningItem>;
 };
 
+export type DocTypeEditorNodeResponseModel = {
+    nodeKey: string;
+    entries: Array<DocTypePermissionEntryResponseModel>;
+    stamp: string;
+};
+
 export type DocTypeListItemModel = {
     key: string;
     alias: string;
@@ -1097,6 +1164,7 @@ export type ElementTreeNodeResponseModel = {
     hasChildren: boolean;
     isFolder: boolean;
     entries: Array<PermissionEntryResponseModel>;
+    stamp: string;
 };
 
 export type ElementValueModel = {
@@ -2638,6 +2706,8 @@ export type SaveDocTypePermissionsRequestModel = {
     roleAlias: string;
     contentTypeKey: string;
     entries: Array<SavePermissionEntryItem>;
+    expectedStamp?: null | string;
+    force: boolean;
 };
 
 export type SavePermissionEntryItem = {
@@ -2651,6 +2721,8 @@ export type SavePermissionsRequestModel = {
     nodeKey: string;
     roleAlias: string;
     entries: Array<SavePermissionEntryItem>;
+    expectedStamp?: null | string;
+    force: boolean;
 };
 
 export type ScheduleRequestModel = {
@@ -2975,6 +3047,7 @@ export type TreeNodeResponseModel = {
     icon: null | string;
     hasChildren: boolean;
     entries: Array<PermissionEntryResponseModel>;
+    stamp: string;
 };
 
 export type UnlockUsersRequestModel = {
@@ -3532,7 +3605,7 @@ export type GetForEditorResponses = {
     /**
      * OK
      */
-    200: Array<DocTypePermissionEntryResponseModel>;
+    200: Array<DocTypeEditorNodeResponseModel>;
 };
 
 export type GetForEditorResponse = GetForEditorResponses[keyof GetForEditorResponses];
@@ -3557,6 +3630,10 @@ export type PutDocTypePermissionsErrors = {
      * The authenticated user does not have access to this resource
      */
     403: unknown;
+    /**
+     * Conflict
+     */
+    409: BatchSaveDocTypeConflictResponseModel;
 };
 
 export type PutDocTypePermissionsError = PutDocTypePermissionsErrors[keyof PutDocTypePermissionsErrors];
@@ -3608,6 +3685,43 @@ export type GetDocTypeAuditResponses = {
 };
 
 export type GetDocTypeAuditResponse = GetDocTypeAuditResponses[keyof GetDocTypeAuditResponses];
+
+export type PutDocTypePermissionsBatchData = {
+    body: BatchSaveDocTypePermissionsRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/management/api/v1/advanced-permissions/doc-type-permissions/batch';
+};
+
+export type PutDocTypePermissionsBatchErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Conflict
+     */
+    409: BatchSaveDocTypeConflictResponseModel;
+};
+
+export type PutDocTypePermissionsBatchError = PutDocTypePermissionsBatchErrors[keyof PutDocTypePermissionsBatchErrors];
+
+export type PutDocTypePermissionsBatchResponses = {
+    /**
+     * OK
+     */
+    200: Array<BatchSavedDocTypeStamp>;
+};
+
+export type PutDocTypePermissionsBatchResponse = PutDocTypePermissionsBatchResponses[keyof PutDocTypePermissionsBatchResponses];
 
 export type GetDocTypesData = {
     body?: never;
@@ -3867,10 +3981,6 @@ export type GetElementEffectiveForCurrentUserErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
-    /**
-     * The authenticated user does not have access to this resource
-     */
-    403: unknown;
 };
 
 export type GetElementEffectiveForCurrentUserResponses = {
@@ -3961,6 +4071,10 @@ export type PutElementPermissionsErrors = {
      * The authenticated user does not have access to this resource
      */
     403: unknown;
+    /**
+     * Conflict
+     */
+    409: BatchSaveConflictResponseModel;
 };
 
 export type PutElementPermissionsError = PutElementPermissionsErrors[keyof PutElementPermissionsErrors];
@@ -3971,6 +4085,43 @@ export type PutElementPermissionsResponses = {
      */
     200: unknown;
 };
+
+export type PutElementPermissionsBatchData = {
+    body: BatchSavePermissionsRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/management/api/v1/advanced-permissions/element/permissions/batch';
+};
+
+export type PutElementPermissionsBatchErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Conflict
+     */
+    409: BatchSaveConflictResponseModel;
+};
+
+export type PutElementPermissionsBatchError = PutElementPermissionsBatchErrors[keyof PutElementPermissionsBatchErrors];
+
+export type PutElementPermissionsBatchResponses = {
+    /**
+     * OK
+     */
+    200: Array<BatchSavedStamp>;
+};
+
+export type PutElementPermissionsBatchResponse = PutElementPermissionsBatchResponses[keyof PutElementPermissionsBatchResponses];
 
 export type GetElementPermissionsByNodeData = {
     body?: never;
@@ -4196,6 +4347,10 @@ export type PutPermissionsErrors = {
      * The authenticated user does not have access to this resource
      */
     403: unknown;
+    /**
+     * Conflict
+     */
+    409: BatchSaveConflictResponseModel;
 };
 
 export type PutPermissionsError = PutPermissionsErrors[keyof PutPermissionsErrors];
@@ -4206,6 +4361,43 @@ export type PutPermissionsResponses = {
      */
     200: unknown;
 };
+
+export type PutPermissionsBatchData = {
+    body: BatchSavePermissionsRequestModel;
+    path?: never;
+    query?: never;
+    url: '/umbraco/management/api/v1/advanced-permissions/permissions/batch';
+};
+
+export type PutPermissionsBatchErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Conflict
+     */
+    409: BatchSaveConflictResponseModel;
+};
+
+export type PutPermissionsBatchError = PutPermissionsBatchErrors[keyof PutPermissionsBatchErrors];
+
+export type PutPermissionsBatchResponses = {
+    /**
+     * OK
+     */
+    200: Array<BatchSavedStamp>;
+};
+
+export type PutPermissionsBatchResponse = PutPermissionsBatchResponses[keyof PutPermissionsBatchResponses];
 
 export type GetPermissionsByNodeData = {
     body?: never;

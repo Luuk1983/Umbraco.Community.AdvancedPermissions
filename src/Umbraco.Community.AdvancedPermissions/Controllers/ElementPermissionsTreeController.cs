@@ -133,14 +133,19 @@ public sealed class ElementPermissionsTreeController(
                 ? "icon-folder"
                 : node is IContentEntitySlim contentSlim ? contentSlim.ContentTypeIcon : null;
 
-            entriesByNode.TryGetValue(node.Key, out var entries);
+            entriesByNode.TryGetValue(node.Key, out var nodeEntries);
+            var entries = nodeEntries ?? [];
+
+            // The stamp is computed from exactly the entries being returned, so a client that saves
+            // back what it was given is never told it conflicts.
             result.Add(new ElementTreeNodeResponseModel(
                 node.Key,
                 node.Name ?? string.Empty,
                 icon,
                 node.HasChildren,
                 IsFolder: isFolder,
-                entries ?? []));
+                entries,
+                entries.ComputeFromResponse()));
         }
 
         return result;

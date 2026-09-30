@@ -20,12 +20,16 @@ import type {
   DocTypeListItem,
   DocTypeAuditForNodeRow,
 } from '../models/doc-type-permission.models.js';
-import { updateNode } from '../utils/tree-ops.js';
+import { updateNode, findNode } from '../utils/tree-ops.js';
 import { loadSelection, saveSelection, clearSelection } from '../utils/selection-store.js';
 import type { CellInfo } from '../utils/cell-info.js';
+import { clearEffectivePermissionCache } from '../conditions/document-user-permission.condition.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
 import { UAP_USER_PICKER_MODAL } from '../access-viewer/user-picker-modal.token.js';
 import { UMB_DOCUMENT_TYPE_PICKER_MODAL } from '@umbraco-cms/backoffice/document-type';
+import { UapSecurityEventsController, UAP_EVENT_SOURCES } from '../live/security-events.controller.js';
+import type { UapRefreshPhase } from '../live/refresh-phase.js';
+import '../live/uap-live-refresh.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
 import '../help/uap-page-intro.element.js';
@@ -52,14 +56,21 @@ const SURFACE_ID = 'doc-type-create-audit';
  * lazy-load flags. Mirrors the Access Viewer's `ViewerTreeNode`.
  */
 interface AuditTreeNode {
+  /** The content node's key. */
   key: string;
+  /** The content node's display name. */
   name: string;
+  /** The content node's icon, if it has one. */
   icon: string | null;
+  /** Whether the node has children to fetch when it is expanded. */
   hasChildren: boolean;
+  /** Whether the node's children are showing. */
   expanded: boolean;
+  /** Whether the node's children are being fetched. */
   loading: boolean;
   /** Map of contentTypeKey → audit row (null = not yet loaded). */
   auditResults: Map<string, DocTypeAuditForNodeRow> | null;
+  /** The loaded children, once the node has been expanded. */
   children?: AuditTreeNode[];
 }
 
@@ -70,16 +81,24 @@ interface AuditTreeNode {
  * reasoning dialog. The columns are non-element doc types (instead of verbs) and the cells
  * show `allow` / `deny` / `n/a` (when the doc type isn't in the parent's allowed-children list)
  * / `loading`.
+ *
+ * Like the Access Viewer it is a viewer: it holds nothing of the user's, so a live or manual
+ * refresh simply makes it correct again, in place, without a loader and without asking anything.
  */
 @customElement('uap-doc-type-create-audit-root')
 export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   #localize = new UmbLocalizationController(this);
 
+  // ── Metadata ────────────────────────────────────────────────────────────
+  /** Every non-element document type, used to map the picker's chosen key back to a name and icon. */
   @state() private _docTypes: DocTypeListItem[] = [];
   /** Maps role alias → display name (for the reasoning dialog). */
   #roleNames = new Map<string, string>();
 
+  // ── Subject selection ────────────────────────────────────────────────────
+  /** The user group being audited, when the subject is a group. */
   @state() private _selectedRole: RoleInfo | null = null;
+  /** The user being audited, when the subject is a user. */
   @state() private _selectedUser: UserItem | null = null;
   /** Whichever subject was picked last drives the tree. */
   @state() private _activeSubject: 'role' | 'user' | null = null;
@@ -91,23 +110,39 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
    */
   @state() private _selectedDocType: DocTypeListItem | null = null;
 
+  // ── Tree ─────────────────────────────────────────────────────────────────
+  /** The loaded tree, with each node's audit rows; rows swap their data in place on a refresh. */
   @state() private _treeNodes: AuditTreeNode[] = [];
+  /** True only for a first load or a subject change, which hides the grid behind the loader. A live refresh never sets it. */
   @state() private _loading = false;
+  /** The last load failure, shown above the grid. */
   @state() private _error: string | null = null;
 
-  // Reasoning dialog state
+  // ── Reasoning dialog ─────────────────────────────────────────────────────
+  /** The node whose cell opened the reasoning dialog. */
   @state() private _reasoningNode: AuditTreeNode | null = null;
+  /** The document type whose cell opened the reasoning dialog. */
   @state() private _reasoningContentTypeKey: string | null = null;
+  /** The ancestor chain, root first, that the dialog walks through. */
   @state() private _dialogPath: PathNode[] = [];
+  /** nodeKey → the user groups' entries at that node that contributed to the result. */
   @state() private _dialogEntriesByNode: Map<string, ReasoningRoleEntries[]> = new Map();
+  /** True while the dialog's inheritance path is being fetched. */
   @state() private _dialogLoading = false;
+  /** Whether the dialog should show stars on deny entries (deny trumping allow). */
   @state() private _dialogShowStars = false;
+
+  /** Where the refresh control is: idle, refreshing, or briefly confirming an update. */
+  @state() private _refreshPhase: UapRefreshPhase = 'idle';
 
   @query('uap-reasoning-dialog') private _reasoningDialog!: UapReasoningDialogElement;
 
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #loadAbortController: AbortController | null = null;
+
+  /** Live-event subscription; also the entry point for the manual refresh control. */
+  #liveEvents: UapSecurityEventsController;
 
   constructor() {
     super();
@@ -117,6 +152,31 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     this.consumeContext(UMB_MODAL_MANAGER_CONTEXT, (ctx) => {
       this.#modalManager = ctx ?? undefined;
     });
+
+    // A viewer holds nothing of the user's, so it never asks and never flags - it just becomes
+    // correct again. The keys are ignored deliberately: a permission written on an ancestor moves
+    // what every descendant on screen resolves to, so there is no subset worth refetching.
+    // Sources: Shows who may create which document type where, resolved from the document-type store along
+    // the content path, so it listens for `docTypePermissions` plus `access` (group membership, group
+    // deletion, and content moves or deletes all change the resolution). It must NOT listen to
+    // `elementTypePermissions`, which is the other editor's half of the same table. Content-node and
+    // library writes do not feed this resolution.
+    this.#liveEvents = new UapSecurityEventsController(
+      this,
+      async () => {
+        if (!this.#subject) return;
+        // Whatever the backoffice remembers about effective permissions may be what just changed;
+        // dropped first so nothing refetched here is answered from it.
+        clearEffectivePermissionCache();
+        // Background: the grid stays on screen and each row swaps in place as its answer arrives.
+        await this.#reloadAudit(true);
+      },
+      (phase) => { this._refreshPhase = phase; },
+      [
+        UAP_EVENT_SOURCES.docTypePermissions,
+        UAP_EVENT_SOURCES.access,
+      ],
+    );
   }
 
   override connectedCallback(): void {
@@ -170,6 +230,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
 
   // ── Data loading ────────────────────────────────────────────────────────
 
+  /** Loads the document-type list and the user-group display names used by the reasoning dialog. */
   async #loadMeta(): Promise<void> {
     try {
       const [docTypes, roles] = await Promise.all([getDocTypes(), getRoles()]);
@@ -192,6 +253,10 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   /** Returns the role display name (used by the reasoning dialog). */
   #roleName = (alias: string): string => this.#roleNames.get(alias) ?? alias;
 
+  /**
+   * Builds the tree from scratch for the current subject and loads the audit rows for the root
+   * level. Used for the first load and whenever there is no tree to reload into.
+   */
   async #loadTree(): Promise<void> {
     const subject = this.#subject;
     if (!subject) return;
@@ -228,31 +293,61 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     }
   }
 
-  /** Reloads audit results for all loaded nodes when the subject changes. */
-  async #reloadAudit(): Promise<void> {
+  /**
+   * Reloads audit results for all loaded nodes without rebuilding the tree. Preserves expanded
+   * state and children.
+   *
+   * Two modes, because they answer different questions. A subject change (`background` false)
+   * blanks the grid and shows the loader: the rows on screen describe somebody else, so leaving
+   * them up would be wrong. A live or manual refresh (`background` true) is the same subject asked
+   * again, so the current values stay on screen, the loader stays away, and each row swaps in place
+   * only when its new answer has arrived. That keeps the reader's place on the page instead of
+   * flashing the whole grid for a refresh they never asked for.
+   * @param background True to refresh in place without any loading state.
+   * @returns A promise that resolves when done. In background mode it rejects if the refresh did
+   * not complete, so the refresh control does not claim the data was updated.
+   */
+  async #reloadAudit(background = false): Promise<void> {
     if (!this.#subject || this._treeNodes.length === 0) return;
 
     this.#loadAbortController?.abort();
     const controller = new AbortController();
     this.#loadAbortController = controller;
 
-    this._loading = true;
-    this._error = null;
-    this.#clearAuditRecursive(this._treeNodes);
-    this._treeNodes = [...this._treeNodes];
+    let complete = true;
+    if (!background) {
+      this._loading = true;
+      this._error = null;
+      this.#clearAuditRecursive(this._treeNodes);
+      this._treeNodes = [...this._treeNodes];
+    }
 
     try {
-      await this.#loadAuditBatch(this._treeNodes, controller.signal);
+      complete = (await this.#loadAuditBatch(this._treeNodes, controller.signal)) && complete;
       if (controller.signal.aborted) return;
-      await this.#reloadExpandedChildren(this._treeNodes, controller.signal);
+      complete = (await this.#reloadExpandedChildren(this._treeNodes, controller.signal)) && complete;
     } catch (err) {
       if (controller.signal.aborted) return;
       this._error = String(err);
+      if (background) throw err;
     } finally {
+      // Cleared by whichever load finishes un-superseded, background included. A background
+      // refresh aborts a subject-change load that was still showing the loader, and that load's
+      // own `finally` then skips clearing it, so leaving this to foreground loads would strand the
+      // grid behind the loader for good.
       if (!controller.signal.aborted) this._loading = false;
+    }
+
+    if (background && !complete && !controller.signal.aborted) {
+      throw new Error('Refreshing the document type audit failed for one or more rows.');
     }
   }
 
+  /**
+   * Blanks the audit rows of every loaded node so a subject change never shows the previous
+   * subject's values while the new ones load.
+   * @param nodes The nodes to clear, recursing into their loaded children.
+   */
   #clearAuditRecursive(nodes: AuditTreeNode[]): void {
     for (const node of nodes) {
       node.auditResults = null;
@@ -260,45 +355,77 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     }
   }
 
-  async #reloadExpandedChildren(nodes: AuditTreeNode[], signal: AbortSignal): Promise<void> {
+  /**
+   * Reloads the audit rows of every expanded node's children, depth first.
+   * @param nodes The nodes to walk.
+   * @param signal Aborts the walk when the load it belongs to is superseded.
+   * @returns True if every row loaded.
+   */
+  async #reloadExpandedChildren(nodes: AuditTreeNode[], signal: AbortSignal): Promise<boolean> {
+    let ok = true;
     for (const node of nodes) {
       if (node.children && node.expanded) {
-        await this.#loadAuditBatch(node.children, signal);
-        if (signal.aborted) return;
-        await this.#reloadExpandedChildren(node.children, signal);
-        if (signal.aborted) return;
+        ok = (await this.#loadAuditBatch(node.children, signal)) && ok;
+        if (signal.aborted) return ok;
+        ok = (await this.#reloadExpandedChildren(node.children, signal)) && ok;
+        if (signal.aborted) return ok;
       }
     }
+    return ok;
   }
 
-  /** Batched audit loading — caps simultaneous in-flight requests to avoid overwhelming the server. */
-  async #loadAuditBatch(nodes: AuditTreeNode[], signal: AbortSignal): Promise<void> {
+  /**
+   * Batched audit loading — caps simultaneous in-flight requests to avoid overwhelming the server.
+   * @param nodes The nodes to load audit rows for.
+   * @param signal Aborts the loading when the load it belongs to is superseded.
+   * @returns True if every node loaded.
+   */
+  async #loadAuditBatch(nodes: AuditTreeNode[], signal: AbortSignal): Promise<boolean> {
     const batchSize = 8;
+    let ok = true;
     for (let i = 0; i < nodes.length; i += batchSize) {
-      if (signal.aborted) return;
+      if (signal.aborted) return ok;
       const batch = nodes.slice(i, i + batchSize);
-      await Promise.all(batch.map((n) => this.#loadAuditForNode(n, signal)));
+      const results = await Promise.all(batch.map((n) => this.#loadAuditForNode(n, signal)));
+      ok = results.every(Boolean) && ok;
     }
+    return ok;
   }
 
-  async #loadAuditForNode(node: AuditTreeNode, signal?: AbortSignal): Promise<void> {
+  /**
+   * Loads one node's audit rows and swaps them in when they arrive.
+   *
+   * Written through the key-based `#updateNode` rather than onto the node object it was handed:
+   * expanding or collapsing a node while a refresh is running replaces that node's object, and a
+   * result written onto the old one would be lost, leaving the row showing the previous answer.
+   * @param node The node to load for.
+   * @param signal Aborts the request when the load it belongs to is superseded.
+   * @returns False if the request failed; true otherwise (including when superseded).
+   */
+  async #loadAuditForNode(node: AuditTreeNode, signal?: AbortSignal): Promise<boolean> {
     const subject = this.#subject;
-    if (!subject) return;
+    if (!subject) return true;
     try {
       const result = await getDocTypeAuditForNode(subject, node.key, signal);
-      if (signal?.aborted) return;
+      if (signal?.aborted) return true;
 
       const map = new Map<string, DocTypeAuditForNodeRow>();
       for (const row of result.results) {
         map.set(row.contentTypeKey, row);
       }
-      node.auditResults = map;
-      this._treeNodes = [...this._treeNodes];
+      this.#updateNode(node.key, { auditResults: map });
+      return true;
     } catch {
-      // Non-fatal: leave auditResults null (loading indicator stays)
+      // Non-fatal: a first load leaves auditResults null (shows the loading indicator); a
+      // background refresh leaves the previous rows in place. Reported so a refresh can say so.
+      return false;
     }
   }
 
+  /**
+   * Expands or collapses a node, fetching its children and their audit rows the first time.
+   * @param node The node whose toggle was clicked.
+   */
   async #toggleExpand(node: AuditTreeNode): Promise<void> {
     if (node.expanded) {
       this.#updateNode(node.key, { expanded: false });
@@ -328,12 +455,19 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     }
   }
 
+  /**
+   * Immutably updates the node with the given key. Reassigns `_treeNodes` so Lit picks up the
+   * change. Delegates the recursive walk to the shared `updateNode` helper.
+   * @param key The key of the node to change.
+   * @param changes The fields to merge into it.
+   */
   #updateNode(key: string, changes: Partial<AuditTreeNode>): void {
     this._treeNodes = updateNode(this._treeNodes, key, changes);
   }
 
   // ── Subject pickers ──────────────────────────────────────────────────────
 
+  /** Lets the user pick a user group as the subject, then loads (or reloads) the grid for it. */
   async #openRolePicker(): Promise<void> {
     if (!this.#modalManager) return;
     const modal = this.#modalManager.open(this, UAP_ROLE_PICKER_MODAL, {
@@ -351,6 +485,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     else void this.#loadTree();
   }
 
+  /** Lets the user pick a user as the subject, then loads (or reloads) the grid for them. */
   async #openUserPicker(): Promise<void> {
     if (!this.#modalManager) return;
     const modal = this.#modalManager.open(this, UAP_USER_PICKER_MODAL, {
@@ -374,6 +509,8 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
    * Opens the reasoning dialog for a (node, content-type) pair. Fetches the inheritance path
    * + doc-type entries along it, filters to roles relevant for the current subject, and shapes
    * the result for `<uap-reasoning-dialog>`.
+   * @param node The node whose cell was clicked.
+   * @param contentTypeKey The document type whose cell was clicked.
    */
   async #openReasoning(node: AuditTreeNode, contentTypeKey: string): Promise<void> {
     this._reasoningNode = node;
@@ -466,6 +603,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     }
   }
 
+  /** Resets the reasoning dialog's state when it closes, so it never opens showing the previous cell's chain. */
   #onReasoningClose = (): void => {
     this._reasoningNode = null;
     this._reasoningContentTypeKey = null;
@@ -476,6 +614,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
 
   // ── Selection panel ──────────────────────────────────────────────────────
 
+  /** The selector options for the selection panel: user group or user (mutually exclusive), then the document type. */
   get #selectionGroups(): UapSelectorGroup[] {
     return [
       {
@@ -492,6 +631,10 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     ];
   }
 
+  /**
+   * Routes a click on one of the selection panel's controls to its picker.
+   * @param id The id of the selector option that was clicked.
+   */
   #onSelectorClick(id: string): void {
     if (id === 'group') void this.#openRolePicker();
     else if (id === 'user') void this.#openUserPicker();
@@ -500,6 +643,14 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
 
   // ── Rendering ────────────────────────────────────────────────────────────
 
+  /**
+   * Renders a level of the tree and, for expanded nodes, everything beneath it.
+   *
+   * Recursive and private, so the return type is annotated explicitly (CLAUDE.md #4).
+   * @param nodes The sibling nodes to render.
+   * @param depth The nesting depth, used for indentation.
+   * @returns One row per visible node, parents before children.
+   */
   #renderRows(nodes: AuditTreeNode[], depth: number): TemplateResult[] {
     return nodes.flatMap((node) => [
       this.#renderRow(node, depth),
@@ -507,6 +658,12 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     ]);
   }
 
+  /**
+   * Renders one node's row: its expander, icon and name, then one audit cell per verb.
+   * @param node The node to render.
+   * @param depth The nesting depth, used for indentation.
+   * @returns The table row.
+   */
   #renderRow(node: AuditTreeNode, depth: number): TemplateResult {
     return html`
       <tr>
@@ -532,6 +689,9 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
    * Renders one cell for the (node, verb) pair given the currently selected doc-type. v1 has
    * only one verb so `verb` is unused for the lookup but still flows through for future-proofing
    * when more of-type verbs land.
+   * @param node The node the cell belongs to.
+   * @param _verb The verb the cell is for; unused while there is only one.
+   * @returns The table cell.
    */
   #renderCell(node: AuditTreeNode, _verb: string): TemplateResult {
     const ctKey = this._selectedDocType?.key;
@@ -574,10 +734,24 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     `;
   }
 
-  /** The effective permission shown in the reasoning dialog banner. */
-  #currentEffective() {
+  /**
+   * The audit row behind the cell the reasoning dialog was opened from, read from the tree as it
+   * is now rather than from the node object captured when the dialog opened. A refresh replaces
+   * rows in place, so the captured node would go on showing the answer from before it.
+   * @returns The row, or `null` when no dialog is open or its node is no longer loaded.
+   */
+  #reasoningRow(): DocTypeAuditForNodeRow | null {
     if (!this._reasoningNode || !this._reasoningContentTypeKey) return null;
-    const row = this._reasoningNode.auditResults?.get(this._reasoningContentTypeKey);
+    const node = findNode(this._treeNodes, this._reasoningNode.key);
+    return node?.auditResults?.get(this._reasoningContentTypeKey) ?? null;
+  }
+
+  /**
+   * The effective permission shown in the reasoning dialog banner.
+   * @returns The banner's data, or `null` when no dialog is open or its row is not loaded.
+   */
+  #currentEffective() {
+    const row = this.#reasoningRow();
     if (!row) return null;
     return {
       verb: 'Umb.Document.CreateOfType',
@@ -591,11 +765,11 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
 
   /** True when the reasoning dialog's doc type isn't an insert option on the target node. */
   #currentOutsideAllowed(): boolean {
-    if (!this._reasoningNode || !this._reasoningContentTypeKey) return false;
-    const row = this._reasoningNode.auditResults?.get(this._reasoningContentTypeKey);
+    const row = this.#reasoningRow();
     return row ? !row.isInAllowedChildren : false;
   }
 
+  /** The audited subject's display name, shown in the reasoning dialog banner. */
   #currentSubjectName(): string {
     if (this._activeSubject === 'role') return this._selectedRole?.name ?? '';
     if (this._activeSubject === 'user') return this._selectedUser?.name ?? '';
@@ -652,6 +826,12 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
         clearLabel=${this.#localize.term('uap_clearSelection')}
         @uap-selector-click=${(e: CustomEvent<{ id: string }>) => this.#onSelectorClick(e.detail.id)}
         @uap-selection-clear=${() => this.#onClearSelection()}>
+
+        <uap-live-refresh
+          slot="actions"
+          .phase=${this._refreshPhase}
+          @uap-live-refresh=${() => void this.#liveEvents.refresh()}>
+        </uap-live-refresh>
 
         ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
         ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}

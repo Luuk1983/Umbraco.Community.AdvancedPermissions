@@ -195,5 +195,30 @@ export default {
     elementType_denyLabel: '拒绝（从 Library 中隐藏）',
     elementType_previewInherit: '没有显式规则。此元素类型默认可在 Library 中创建。',
     elementType_previewSet: (action: string) => `${action}在 Library 中创建此元素类型。`,
+
+    // ── Live updates & conflicts ────────────────────────────────────────
+    liveUpdated: '刚刚更新',
+    liveRefresh: '刷新',
+    liveRefreshing: '更新中…',
+    liveRefreshFailed: '更新失败',
+    liveConflictTitle: '在您编辑期间，其他人更改了这些权限',
+    liveConflictBody: '您有 %0% 项未保存的更改与当前保存的内容冲突。您的更改未被修改。',
+    liveConflictBodyOne: '您有一项未保存的更改与当前保存的内容冲突。您的更改未被修改。',
+    liveLoadStored: '加载已保存的值',
+    liveKeepMine: '保留我的更改',
+    liveFlagLegend: '自您加载后已被其他人更改',
+    conflictDialogTitle: '要覆盖已保存的更改吗？',
+    conflictDialogBody: '保存将替换当前保存的内容。其他人所做的 %0% 项更改将丢失，且无法撤销。',
+    conflictDialogBodyOne: '保存将替换当前保存的内容。其他人所做的一项更改将丢失，且无法撤销。',
+    conflictStoredLabel: '已保存',
+    conflictYoursLabel: '您的',
+    conflictOverwrite: '仍要覆盖',
+    conflictCancel: '取消',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: '要放弃未保存的更改吗？',
+    discardPromptBody: '您有未保存的权限更改。如果继续，这些更改将被放弃且无法恢复。',
+    discardPromptStay: '继续编辑',
+    discardPromptConfirm: '放弃更改',
   },
 } satisfies UmbLocalizationDictionary;

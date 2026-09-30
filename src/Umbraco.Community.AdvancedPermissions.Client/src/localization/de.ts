@@ -195,5 +195,30 @@ export default {
     elementType_denyLabel: 'Verweigern (in der Library ausgeblendet)',
     elementType_previewInherit: 'Keine explizite Regel. Dieser Elementtyp ist standardm\u00e4\u00dfig in der Library erstellbar.',
     elementType_previewSet: (action: string) => `${action} f\u00fcr das Erstellen dieses Elementtyps in der Library.`,
+
+    // ── Live-Aktualisierungen und Konflikte ───────────────────────────────
+    liveUpdated: 'Gerade aktualisiert',
+    liveRefresh: 'Aktualisieren',
+    liveRefreshing: 'Wird aktualisiert …',
+    liveRefreshFailed: 'Aktualisierung fehlgeschlagen',
+    liveConflictTitle: 'Jemand hat diese Berechtigungen geändert, während Sie sie bearbeitet haben',
+    liveConflictBody: '%0% Ihrer ungespeicherten Änderungen stehen im Konflikt mit dem, was jetzt gespeichert ist. An Ihren Änderungen wurde nichts geändert.',
+    liveConflictBodyOne: 'Eine Ihrer ungespeicherten Änderungen steht im Konflikt mit dem, was jetzt gespeichert ist. An Ihren Änderungen wurde nichts geändert.',
+    liveLoadStored: 'Gespeicherte Werte laden',
+    liveKeepMine: 'Meine Änderungen behalten',
+    liveFlagLegend: 'Von jemand anderem geändert, seit Sie geladen haben',
+    conflictDialogTitle: 'Die gespeicherten Änderungen überschreiben?',
+    conflictDialogBody: 'Beim Speichern wird ersetzt, was jetzt gespeichert ist. %0% von jemand anderem vorgenommene Änderungen gehen verloren, und dies kann nicht rückgängig gemacht werden.',
+    conflictDialogBodyOne: 'Beim Speichern wird ersetzt, was jetzt gespeichert ist. Eine von jemand anderem vorgenommene Änderung geht verloren, und dies kann nicht rückgängig gemacht werden.',
+    conflictStoredLabel: 'gespeichert',
+    conflictYoursLabel: 'Ihre',
+    conflictOverwrite: 'Trotzdem überschreiben',
+    conflictCancel: 'Abbrechen',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'Ungespeicherte Änderungen verwerfen?',
+    discardPromptBody: 'Sie haben nicht gespeicherte Berechtigungsänderungen. Wenn Sie fortfahren, werden diese verworfen und können nicht wiederhergestellt werden.',
+    discardPromptStay: 'Weiter bearbeiten',
+    discardPromptConfirm: 'Änderungen verwerfen',
   },
 } satisfies UmbLocalizationDictionary;

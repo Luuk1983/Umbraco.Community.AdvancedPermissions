@@ -94,12 +94,17 @@ public sealed class AdvancedPermissionsTreeController(
         {
             var icon = node is IContentEntitySlim contentSlim ? contentSlim.ContentTypeIcon : null;
             entriesByNode.TryGetValue(node.Key, out var nodeEntries);
+            var entries = nodeEntries ?? [];
+
+            // The stamp is computed from exactly the entries being returned, so a client that saves
+            // back what it was given is never told it conflicts.
             result.Add(new TreeNodeResponseModel(
                 node.Key,
                 node.Name ?? string.Empty,
                 icon,
                 node.HasChildren,
-                nodeEntries ?? []));
+                entries,
+                entries.ComputeFromResponse()));
         }
 
         return result;

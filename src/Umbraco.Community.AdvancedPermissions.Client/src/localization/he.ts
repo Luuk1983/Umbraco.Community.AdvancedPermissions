@@ -195,5 +195,30 @@ export default {
     elementType_denyLabel: 'מנע (מוסתר מהספרייה)',
     elementType_previewInherit: 'אין כלל מפורש. סוג רכיב זה ניתן ליצירה בספרייה כברירת מחדל.',
     elementType_previewSet: (action: string) => `${action} יצירת סוג רכיב זה בספרייה.`,
+
+    // ── עדכונים בזמן אמת והתנגשויות ─────────────────────────────────────
+    liveUpdated: 'עודכן לפני רגע',
+    liveRefresh: 'רענון',
+    liveRefreshing: 'מעדכן…',
+    liveRefreshFailed: 'העדכון נכשל',
+    liveConflictTitle: 'מישהו שינה הרשאות אלו בזמן שערכת אותן',
+    liveConflictBody: '%0% מהשינויים שלך שלא נשמרו מתנגשים עם מה שנשמר כעת. שום דבר משלך לא השתנה.',
+    liveConflictBodyOne: 'אחד מהשינויים שלך שלא נשמרו מתנגש עם מה שנשמר כעת. שום דבר משלך לא השתנה.',
+    liveLoadStored: 'טען את הערכים השמורים',
+    liveKeepMine: 'שמור על השינויים שלי',
+    liveFlagLegend: 'שונה על ידי מישהו אחר מאז שטענת',
+    conflictDialogTitle: 'להחליף את השינויים השמורים?',
+    conflictDialogBody: 'שמירה תחליף את מה שנשמר כעת. %0% שינויים שנעשו על ידי מישהו אחר יאבדו, ולא ניתן לבטל זאת.',
+    conflictDialogBodyOne: 'שמירה תחליף את מה שנשמר כעת. שינוי אחד שנעשה על ידי מישהו אחר יאבד, ולא ניתן לבטל זאת.',
+    conflictStoredLabel: 'שמור',
+    conflictYoursLabel: 'שלך',
+    conflictOverwrite: 'החלף בכל זאת',
+    conflictCancel: 'בטל',
+
+    // ── Unsaved-changes prompt ──────────────────────────────────────────
+    discardPromptTitle: 'לבטל שינויים שלא נשמרו?',
+    discardPromptBody: 'יש לך שינויי הרשאות שלא נשמרו. אם תמשיך, הם יבוטלו ולא ניתן יהיה לשחזר אותם.',
+    discardPromptStay: 'המשך עריכה',
+    discardPromptConfirm: 'בטל שינויים',
   },
 } satisfies UmbLocalizationDictionary;

@@ -84,3 +84,18 @@ export function classifyCell({ base, mine, theirs }: CellComparison): CellVerdic
   if (signature(mine) === baseSignature) return 'refresh';
   return 'conflict';
 }
+
+/**
+ * Whether two cells hold the same permission, whatever order their entries are listed in.
+ *
+ * Deliberately built on {@link classifyCell} rather than a second comparison of its own: it is the
+ * one definition of "the same cell" that reconciliation uses, so an edit judged a no-op here is
+ * judged unchanged there too.
+ * @param a One cell.
+ * @param b The other cell.
+ * @returns `true` if they mean the same thing.
+ */
+export function cellsEqual(a: ReadonlyArray<CellEntry>, b: ReadonlyArray<CellEntry>): boolean {
+  // With `mine` equal to `base`, the verdict is 'no-change' exactly when `theirs` equals `base`.
+  return classifyCell({ base: a, mine: a, theirs: b }) === 'no-change';
+}

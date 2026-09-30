@@ -25,6 +25,7 @@ import { loadSelection, saveSelection, clearSelection } from '../utils/selection
 import type { CellInfo } from '../utils/cell-info.js';
 import { clearEffectivePermissionCache } from '../conditions/document-user-permission.condition.js';
 import { UapSecurityEventsController } from '../live/security-events.controller.js';
+import { pruneCollapsedChildren } from '../live/tree-cache.js';
 import type { UapRefreshPhase } from '../live/refresh-phase.js';
 import '../live/uap-live-refresh.element.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
@@ -183,6 +184,8 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   /** Clears the current selection, resets the view, and forgets the stored selection. */
   #onClearSelection(): void {
     this.#loadAbortController?.abort();
+    // The load just aborted would have cleared this itself, but an aborted load never does.
+    this._loading = false;
     this._selectedRole = null;
     this._selectedUser = null;
     this._activeSubject = null;
@@ -270,6 +273,12 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     const controller = new AbortController();
     this.#loadAbortController = controller;
 
+    // Only expanded rows are refreshed below, but re-expanding a collapsed row reuses whatever
+    // children it cached, so anything left under one would show values from before this refresh
+    // with nothing to say so. Dropping the cache makes the next expand ask the server. A viewer
+    // holds no unsaved work, so nothing is exempt.
+    this._treeNodes = pruneCollapsedChildren(this._treeNodes, () => false);
+
     let complete = true;
     if (!background) {
       this._loading = true;
@@ -287,7 +296,11 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
       this._error = String(err);
       if (background) throw err;
     } finally {
-      if (!background && !controller.signal.aborted) this._loading = false;
+      // Cleared by whichever load finishes un-superseded, background included. A background
+      // refresh aborts a selection load that was still showing the loader, and that load's own
+      // `finally` then skips clearing it, so leaving this to foreground loads would strand the
+      // grid behind the loader for good.
+      if (!controller.signal.aborted) this._loading = false;
     }
 
     if (background && !complete && !controller.signal.aborted) {

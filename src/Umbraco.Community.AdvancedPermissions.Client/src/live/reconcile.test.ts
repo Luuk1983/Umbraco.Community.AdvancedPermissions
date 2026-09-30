@@ -188,4 +188,148 @@ describe('reconcileNode', () => {
     expect(result.conflictedVerbs).toEqual([]);
     expect(result.adoptStamp).toBe(true);
   });
+
+  describe('with nothing pending and nothing flagged', () => {
+    // The editors rely on this: a live event with no unsaved edits is answered by the same
+    // reconcile as one with edits, instead of by a separate "replace everything" reload. That is
+    // only safe because the result is exactly what such a reload would have produced — every
+    // verb takes the server's value and the stamp is adopted — while still comparing before
+    // adopting, so a change that lands mid-flight next to an edit begun in the meantime is
+    // flagged rather than absorbed as the new baseline.
+    const cases: Array<{ name: string; base: CellEntry[]; theirs: CellEntry[] }> = [
+      { name: 'the server moved', base: [entry('Allow')], theirs: [entry('Deny')] },
+      { name: 'the server cleared it', base: [entry('Allow')], theirs: [] },
+      { name: 'the server set it from nothing', base: [], theirs: [entry('Deny', 'ThisNodeAndDescendants')] },
+      { name: 'the server did not change it', base: [entry('Allow')], theirs: [entry('Allow')] },
+      { name: 'both are empty', base: [], theirs: [] },
+      {
+        name: 'the same two entries come back in another order',
+        base: [entry('Allow'), entry('Deny', 'ThisNodeAndDescendants')],
+        theirs: [entry('Deny', 'ThisNodeAndDescendants'), entry('Allow')],
+      },
+    ];
+
+    for (const { name, base, theirs } of cases) {
+      it(`adopts the server's value and the stamp when ${name}`, () => {
+        const result = reconcileNode({
+          base: new Map([['Read', base]]),
+          pending: undefined,
+          theirs: new Map([['Read', theirs]]),
+          conflicted: NONE,
+        });
+
+        expect(result.nextBase.get('Read')).toEqual(theirs);
+        expect(result.adoptStamp).toBe(true);
+        expect(result.conflictedVerbs).toEqual([]);
+      });
+
+      it(`gives the same answer for an empty pending map as for none when ${name}`, () => {
+        const inputs = { base: new Map([['Read', base]]), theirs: new Map([['Read', theirs]]), conflicted: NONE };
+
+        expect(reconcileNode({ ...inputs, pending: new Map() })).toEqual(reconcileNode({ ...inputs, pending: undefined }));
+      });
+    }
+
+    it('flags, rather than absorbs, a change to a cell whose edit began after the fetch was issued', () => {
+      // The race the always-reconcile path closes. The read was issued while the editor was clean;
+      // by the time it lands the user has an edit on the cell, and somebody else has also moved it.
+      // Adopting the server's value as the new baseline would make the edit look like the only
+      // change and let the next save overwrite the other person's under a fresh stamp.
+      const result = reconcileNode({
+        base: new Map([['Read', [entry('Allow')]]]),
+        pending: new Map([['Read', [entry('Deny')]]]),
+        theirs: new Map([['Read', []]]),
+        conflicted: NONE,
+      });
+
+      expect(result.conflictedVerbs).toEqual(['Read']);
+      expect(result.adoptStamp).toBe(false);
+      expect(result.nextBase.get('Read')).toEqual([entry('Allow')]);
+    });
+  });
+});
+
+describe('reconcileNode stale pending verbs', () => {
+  it('reports a verb whose pending entry equals the baseline while the server moved', () => {
+    // C2: the user applied the value the cell already had, so a pending entry equal to the baseline
+    // exists. A colleague then writes Deny. The verdict is `refresh`, the stored value and stamp are
+    // adopted, and the pending entry is now the only thing left that would put Allow back on save.
+    const result = reconcileNode({
+      base: new Map([['Read', [entry('Allow')]]]),
+      pending: new Map([['Read', [entry('Allow')]]]),
+      theirs: new Map([['Read', [entry('Deny')]]]),
+      conflicted: NONE,
+    });
+
+    expect(result.stalePendingVerbs).toEqual(['Read']);
+    expect(result.nextBase.get('Read')).toEqual([entry('Deny')]);
+    expect(result.adoptStamp).toBe(true);
+    expect(result.conflictedVerbs).toEqual([]);
+  });
+
+  it('does not report a verb whose pending entry differs from the baseline, because that is a real conflict', () => {
+    const result = reconcileNode({
+      base: new Map([['Read', [entry('Allow')]]]),
+      pending: new Map([['Read', [entry('Deny')]]]),
+      theirs: new Map([['Read', [entry('Deny', 'ThisNodeAndDescendants')]]]),
+      conflicted: NONE,
+    });
+
+    expect(result.stalePendingVerbs).toEqual([]);
+    expect(result.conflictedVerbs).toEqual(['Read']);
+  });
+
+  it('never reports a verb that is already flagged, even when its pending entry has come to equal the frozen baseline', () => {
+    // The user re-applied the old value on a cell that was flagged. The baseline is frozen, so the
+    // verdict this pass is `refresh`, but the flag is sticky and the pending entry is what the
+    // conflict dialog has to show. Dropping it would leave a flag with nothing behind it.
+    const result = reconcileNode({
+      base: new Map([['Read', [entry('Allow')]]]),
+      pending: new Map([['Read', [entry('Allow')]]]),
+      theirs: new Map([['Read', [entry('Deny')]]]),
+      conflicted: new Set(['Read']),
+    });
+
+    expect(result.stalePendingVerbs).toEqual([]);
+    expect(result.conflictedVerbs).toEqual(['Read']);
+    expect(result.adoptStamp).toBe(false);
+  });
+
+  it('does not report a verb the editor holds no pending entry for', () => {
+    const result = reconcileNode({
+      base: new Map([['Read', [entry('Allow')]]]),
+      pending: new Map(),
+      theirs: new Map([['Read', [entry('Deny')]]]),
+      conflicted: NONE,
+    });
+
+    expect(result.stalePendingVerbs).toEqual([]);
+  });
+
+  it('does not report a verb the server did not move', () => {
+    const result = reconcileNode({
+      base: new Map([['Read', [entry('Allow')]]]),
+      pending: new Map([['Read', [entry('Allow')]]]),
+      theirs: new Map([['Read', [entry('Allow')]]]),
+      conflicted: NONE,
+    });
+
+    expect(result.stalePendingVerbs).toEqual([]);
+  });
+
+  it('reports only the stale verb when another verb on the same node is a real conflict', () => {
+    const result = reconcileNode({
+      base: new Map([['Read', [entry('Allow')]], ['Write', [entry('Allow')]]]),
+      pending: new Map([['Read', [entry('Allow')]], ['Write', [entry('Deny')]]]),
+      theirs: new Map([['Read', [entry('Deny')]], ['Write', []]]),
+      conflicted: NONE,
+    });
+
+    expect(result.stalePendingVerbs).toEqual(['Read']);
+    expect(result.conflictedVerbs).toEqual(['Write']);
+    // The node still holds a flag, so the stamp stays put; the stale verb has already taken the
+    // server's value in `nextBase`, which is what keeps the two consistent.
+    expect(result.adoptStamp).toBe(false);
+    expect(result.nextBase.get('Read')).toEqual([entry('Deny')]);
+  });
 });

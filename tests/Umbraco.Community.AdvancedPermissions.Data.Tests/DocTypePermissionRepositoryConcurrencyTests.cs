@@ -1,8 +1,10 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Umbraco.Community.AdvancedPermissions.Core.Concurrency;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Data.Context;
 using Umbraco.Community.AdvancedPermissions.Data.Repositories;
 
 namespace Umbraco.Community.AdvancedPermissions.Data.Tests;
@@ -260,5 +262,99 @@ public sealed class DocTypePermissionRepositoryConcurrencyTests : IAsyncLifetime
             nodeKey, Role, typeKey, [Entry(PermissionState.Allow), Entry(PermissionState.Deny)]));
 
         Assert.Equal(PermissionState.Allow, Assert.Single(await _repository.GetByRoleAndContentTypeAsync(Role, typeKey)).State);
+    }
+
+    /// <summary>
+    /// The end-to-end race for a document-type triple, run for real: several writers, each on its own
+    /// connection to a file-backed database, each carrying the same expected stamp. Whatever the
+    /// interleaving, exactly one may win; the rest must be refused with the conflict exception.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the document-type counterpart of
+    /// <c>AdvancedPermissionRepositoryConcurrencyTests.SaveAsync_ConcurrentWritersSharingOneStamp_ExactlyOneWins</c>,
+    /// and it exists because this family had no such test at all. Every other test in this class
+    /// proves the <em>mechanism</em> - the repository compares the stored entries with the stamp and
+    /// refuses on a mismatch - but runs its writers one after another, so none of them can tell a
+    /// write transaction that holds the check and the write together from one that lets another
+    /// writer in between them. Weakening <c>DocTypePermissionRepository.SaveManyAsync</c>'s isolation
+    /// level from Serializable to ReadUncommitted left the whole suite green; this test is what
+    /// fails, with either a second winner or the database refusing a writer that had already read.
+    /// </para>
+    /// <para>
+    /// Each writer writes the same verb under a different scope, so the outcome is unambiguous:
+    /// after a round the single stored entry carries the winner's scope. Repeated over many rounds
+    /// because a race that is merely unlikely to be lost on any one attempt needs volume to show.
+    /// SQLite only - it proves what SQLite's writer serialisation guarantees, not SQL Server's locking.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task SaveManyAsync_ConcurrentWritersSharingOneStamp_ExactlyOneWins()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"advperm-doctype-race-{Guid.NewGuid():N}.db");
+        // The connection-string flavour Umbraco itself uses for SQLite (shared cache, pooled), so
+        // the test exercises the locking behaviour a real site has rather than a private-cache one.
+        var options = new DbContextOptionsBuilder<AdvancedPermissionsDbContext>()
+            .UseSqlite($"Data Source={path};Cache=Shared;Foreign Keys=True;Pooling=True")
+            .Options;
+
+        try
+        {
+            await using (var setup = new AdvancedPermissionsDbContext(options))
+            {
+                await setup.Database.EnsureCreatedAsync();
+            }
+
+            var repository = new DocTypePermissionRepository(new SingleConnectionDbContextFactory(options));
+            PermissionScope[] scopes =
+            [
+                PermissionScope.ThisNodeOnly,
+                PermissionScope.ThisNodeAndDescendants,
+                PermissionScope.DescendantsOnly,
+            ];
+
+            for (var round = 0; round < 10; round++)
+            {
+                var nodeKey = Guid.NewGuid();
+                var typeKey = Guid.NewGuid();
+                await repository.SaveAsync(nodeKey, Role, typeKey, [Entry(PermissionState.Allow)]);
+                var sharedStamp = PermissionStamp.ComputeForDocType(
+                    (await repository.GetByRoleAndContentTypeAsync(Role, typeKey)).Where(e => e.NodeKey == nodeKey));
+
+                // Released together, so the writers genuinely overlap rather than queueing up.
+                var start = new TaskCompletionSource();
+                var writers = scopes
+                    .Select(scope => Task.Run(async () =>
+                    {
+                        await start.Task;
+                        try
+                        {
+                            await repository.SaveManyAsync(
+                            [
+                                (nodeKey, Role, typeKey,
+                                    [(AdvancedPermissionsConstants.VerbCreateOfType, PermissionState.Deny, scope, false)],
+                                    sharedStamp),
+                            ]);
+                            return (Won: true, Scope: scope);
+                        }
+                        catch (DocTypePermissionConcurrencyException)
+                        {
+                            return (Won: false, Scope: scope);
+                        }
+                    }))
+                    .ToList();
+                start.SetResult();
+                var outcomes = await Task.WhenAll(writers);
+
+                var winner = Assert.Single(outcomes, o => o.Won);
+                var stored = (await repository.GetByRoleAndContentTypeAsync(Role, typeKey)).Where(e => e.NodeKey == nodeKey);
+                Assert.Equal(winner.Scope, Assert.Single(stored).Scope);
+            }
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            File.Delete(path);
+        }
     }
 }

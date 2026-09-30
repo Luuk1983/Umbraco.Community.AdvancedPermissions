@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyCell, type CellEntry } from './conflict.js';
+import { cellsEqual, classifyCell, type CellEntry } from './conflict.js';
 
 /**
  * Builds one cell entry.
@@ -64,5 +64,23 @@ describe('classifyCell', () => {
     const plain: CellEntry = { state: 'Allow', scope: 'ThisNodeOnly', isPriorityOverride: false };
     const override: CellEntry = { state: 'Allow', scope: 'ThisNodeOnly', isPriorityOverride: true };
     expect(classifyCell({ base: [plain], mine: [plain], theirs: [override] })).toBe('refresh');
+  });
+});
+
+describe('cellsEqual', () => {
+  it('treats the same entries in a different order as equal', () => {
+    const a = [entry('Allow', 'ThisNodeOnly'), entry('Deny', 'ThisNodeAndDescendants')];
+    const b = [entry('Deny', 'ThisNodeAndDescendants'), entry('Allow', 'ThisNodeOnly')];
+
+    expect(cellsEqual(a, b)).toBe(true);
+  });
+
+  it('treats a different state as different', () => {
+    expect(cellsEqual([entry('Allow')], [entry('Deny')])).toBe(false);
+  });
+
+  it('treats nothing stored and an entry as different, and two empty cells as equal', () => {
+    expect(cellsEqual([], [entry('Allow')])).toBe(false);
+    expect(cellsEqual([], [])).toBe(true);
   });
 });

@@ -101,6 +101,34 @@ public sealed class PermissionStampTests
     }
 
     /// <summary>
+    /// A golden vector for the empty set: its stamp is the SHA-256 of the empty string, spelled out
+    /// here as a literal rather than computed, so it is an independent statement of the value and not a
+    /// copy of the implementation.
+    /// </summary>
+    /// <remarks>
+    /// The client hard-codes this same value (<c>EMPTY_SET_STAMP</c> in <c>src/live/stamp.ts</c>) and
+    /// sends it as the expected stamp for a node with no stored entries. It has to, because the
+    /// client cannot call <c>PermissionStamp.Compute</c>, and it used to send no stamp at all for such
+    /// a node - which the server reads as "skip the concurrency check", so two editors saving to a
+    /// node that started empty silently overwrote each other. Those are two independent definitions of
+    /// one constant; nothing else pins either of them, and if the server's empty-set hash ever moved
+    /// (a version prefix, a different canonical form) the client would still send the old value and
+    /// every first save to an empty node would be refused as a conflict nobody caused. The populated
+    /// golden vector above cannot see this: it never exercises the empty case, so a change that only
+    /// touched the empty set - for instance a special case returning a different constant - would
+    /// leave it green.
+    /// </remarks>
+    [Fact]
+    public void Compute_EmptySet_MatchesGoldenVector_TheSha256OfTheEmptyString()
+    {
+        const string sha256OfEmptyString = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+
+        Assert.Equal(sha256OfEmptyString, PermissionStamp.Compute([]));
+        Assert.Equal(sha256OfEmptyString, PermissionStamp.ComputeForDocType([]));
+        Assert.Equal(sha256OfEmptyString, PermissionStamp.ComputeFromNames([]));
+    }
+
+    /// <summary>
     /// Reproduces the field-injection collision the stamp must not have: a single entry whose
     /// verb happens to contain the raw separator characters must not canonicalize to the same
     /// string as an unrelated two-entry set that "looks like" the same bytes once joined without

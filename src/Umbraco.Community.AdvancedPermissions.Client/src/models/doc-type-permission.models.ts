@@ -76,8 +76,8 @@ export interface DocTypePathEntriesResponse {
  *
  * `GetForEditor` returns one of these per node that has any stored entries for the combination —
  * a node with nothing stored has no bucket at all, which the editor treats the same as an empty
- * `entries` list with no stamp available (mirroring `PermissionEntriesWithStamp`'s empty-string
- * convention on the node-permission side).
+ * `entries` list with the real empty-set stamp (`EMPTY_SET_STAMP` in `live/stamp.ts`), never as
+ * "no stamp available": a save that omits its stamp is not concurrency-checked.
  */
 export interface DocTypeEditorNode {
   /** The content node the entries are scoped to, or VIRTUAL_ROOT_NODE_KEY for the virtual root. */

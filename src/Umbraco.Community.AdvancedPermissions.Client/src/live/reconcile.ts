@@ -43,6 +43,19 @@ export interface ReconcileNodeResult {
    * why a flagged verb holds it back.
    */
   adoptStamp: boolean;
+  /**
+   * The verbs whose pending entry is stale bookkeeping and must be dropped by the caller: the
+   * verdict was `refresh` (the server moved, the editor's value is the one that was loaded) for a
+   * verb the editor holds a pending entry for, and that verb is not flagged.
+   *
+   * Such an entry equals the old baseline, so the user holds nothing of their own there. Left in
+   * place after the server's value is adopted, it would still be what the grid renders and what a
+   * save sends, under a stamp that by then matches: the colleague's change deleted with no flag and
+   * no dialog. Reported here, in the one pure module every editor shares, rather than rediscovered
+   * per editor. A flagged verb never appears: its pending entry is what the conflict is about, and
+   * only the user resolves it.
+   */
+  stalePendingVerbs: string[];
 }
 
 /**
@@ -69,6 +82,10 @@ export interface ReconcileNodeResult {
  * findings, otherwise a later `no-change` pass would advance the stamp underneath a flag nobody
  * has resolved and the save that follows would pass its concurrency check with no dialog.
  *
+ * A verb whose pending entry equals what was loaded, while the server moved, is a `refresh` and not
+ * a conflict — but the entry it leaves behind is stale. It is reported in `stalePendingVerbs` for the
+ * caller to drop, never for this module to hide: the module is pure and does not own the pending map.
+ *
  * A verb the editor has not touched and that was never flagged has nothing to protect, so it
  * always takes the fresh value â€” leaving it stale would show two vintages of the same node in one
  * grid.
@@ -77,18 +94,21 @@ export interface ReconcileNodeResult {
  */
 export function reconcileNode({ base, pending, theirs, conflicted }: ReconcileNodeInput): ReconcileNodeResult {
   const flagged = new Set<string>();
+  const stale: string[] = [];
   const nextBase = new Map<string, ReadonlyArray<CellEntry>>();
 
   for (const [verb, baseCell] of base) {
     const theirCell = theirs.get(verb) ?? [];
     const mine = pending?.get(verb) ?? baseCell;
 
-    const isConflict = classifyCell({ base: baseCell, mine, theirs: theirCell }) === 'conflict';
-    if (isConflict || conflicted.has(verb)) {
+    const verdict = classifyCell({ base: baseCell, mine, theirs: theirCell });
+    if (verdict === 'conflict' || conflicted.has(verb)) {
       flagged.add(verb);
       nextBase.set(verb, baseCell);
     } else {
       nextBase.set(verb, theirCell);
+      // Only when there is an entry to drop, and never for a flagged verb (handled above).
+      if (verdict === 'refresh' && pending?.has(verb)) stale.push(verb);
     }
   }
 
@@ -96,5 +116,5 @@ export function reconcileNode({ base, pending, theirs, conflicted }: ReconcileNo
   // not vanish: only the user resolves a flag.
   for (const verb of conflicted) flagged.add(verb);
 
-  return { conflictedVerbs: [...flagged], nextBase, adoptStamp: flagged.size === 0 };
+  return { conflictedVerbs: [...flagged], nextBase, adoptStamp: flagged.size === 0, stalePendingVerbs: stale };
 }

@@ -7,6 +7,9 @@ import { UMB_DOCUMENT_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/document
 import { observeMultiple } from '@umbraco-cms/backoffice/observable-api';
 import type { EffectivePermissions } from '../models/permission.models.js';
 import { getEffectiveForUser } from '../api/advanced-permissions.api.js';
+import { createPermissionCache } from './permission-cache.js';
+import { createLatestRequest } from './latest-request.js';
+import { isWorkspaceCheckOutOfPhase } from './workspace-permission-phase.js';
 
 // ── Config type ─────────────────────────────────────────────────────────────
 // Must match the shape used by all existing action manifests that reference
@@ -19,34 +22,28 @@ type UapDocumentPermissionConditionConfig =
   };
 
 // ── Module-level cache ──────────────────────────────────────────────────────
-// Shared across all condition instances. Stores the Promise to deduplicate
-// concurrent requests (e.g. 10 action conditions for the same document = 1 API call).
+// Shared across all condition instances, keyed by `userKey|nodeKey`. Concurrent
+// requests are deduplicated (e.g. 10 action conditions for the same document = 1 API call).
+// The server answers with every verb for a node it knows and with an empty list for one it
+// does not (such as a new document's draft key), so empty answers are never kept: the draft
+// keeps its key once saved, and a remembered empty answer would make it read-only (#58).
 
-interface CacheEntry {
-  promise: Promise<EffectivePermissions>;
-  timestamp: number;
-}
+const _cache = createPermissionCache<EffectivePermissions>(
+  (key) => {
+    const [userKey = '', nodeKey = ''] = key.split('|');
+    return getEffectiveForUser(userKey, nodeKey);
+  },
+  { ttlMs: 30_000, isCacheable: (result) => result.permissions.length > 0 },
+);
 
-const _cache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 30_000;
-
+/**
+ * Returns the effective permissions of a user at a node, cached per user and node.
+ * @param userKey The user key.
+ * @param nodeKey The content node key.
+ * @returns The user's effective permissions at that node.
+ */
 function getCachedEffective(userKey: string, nodeKey: string): Promise<EffectivePermissions> {
-  const key = `${userKey}|${nodeKey}`;
-  const entry = _cache.get(key);
-  if (entry && Date.now() - entry.timestamp < CACHE_TTL_MS) {
-    return entry.promise;
-  }
-
-  const promise = getEffectiveForUser(userKey, nodeKey).catch((err: unknown) => {
-    // Remove failed entry so the next evaluation retries
-    if (_cache.get(key)?.promise === promise) {
-      _cache.delete(key);
-    }
-    throw err;
-  });
-
-  _cache.set(key, { promise, timestamp: Date.now() });
-  return promise;
+  return _cache.get(`${userKey}|${nodeKey}`);
 }
 
 /** Clear all cached effective permission results. Call after saving permissions. */
@@ -85,6 +82,13 @@ export class UapDocumentUserPermissionCondition
   // permissions from the intended parent instead of the draft's own key.
   #isNew: boolean | undefined;
   #parentUnique: string | null | undefined;
+  /**
+   * True when this instance is one of the document workspace's own read-only checks: the
+   * workspace creates those with itself as the host, which no other caller does.
+   */
+  #isWorkspaceCheck = false;
+  /** Tracks the newest evaluation, so a slower, older answer never overwrites a newer one. */
+  #latest = createLatestRequest();
 
   // Note on the context-resolution race
   // ─────────────────────────────────────
@@ -96,8 +100,10 @@ export class UapDocumentUserPermissionCondition
   //
   // We don't gate this — the server returns 200 with an empty permissions list
   // for unknown node keys, so the brief pre-workspace-context call produces a
-  // valid cacheable response rather than a 404 storm. The second fire with the
-  // parent key then replaces the cached entry with real permissions.
+  // valid response rather than a 404 storm. Two things keep it harmless (#58):
+  // the cache never keeps that empty answer, and an answer that arrives after a
+  // newer evaluation has started is discarded, so the draft's late "no
+  // permissions" cannot overwrite the parent's answer.
 
   constructor(
     host: UmbControllerHost,
@@ -136,6 +142,7 @@ export class UapDocumentUserPermissionCondition
     // Outside a workspace (tree actions, collections, etc.) this callback never
     // fires, and #isNew remains undefined (treated as "existing node" below).
     this.consumeContext(UMB_DOCUMENT_WORKSPACE_CONTEXT, (context) => {
+      this.#isWorkspaceCheck = context !== undefined && (context as unknown) === host;
       this.observe(
         context?.isNew,
         (isNew) => {
@@ -161,6 +168,9 @@ export class UapDocumentUserPermissionCondition
   }
 
   async #checkPermissions(): Promise<void> {
+    // Every evaluation supersedes the ones still waiting for an answer.
+    const isCurrent = this.#latest.begin();
+
     // Wait for all contexts to be available
     if (this.#entityType === undefined) return;
     if (this.#documentUnique === undefined) return;
@@ -168,6 +178,14 @@ export class UapDocumentUserPermissionCondition
 
     // Non-document entities: pass through (this condition is only meaningful for documents)
     if (this.#entityType !== 'document') {
+      this.permitted = true;
+      return;
+    }
+
+    // The workspace never stops its Create check after the first save, nor the previous
+    // document's Update check when it moves on to creating the next one (#58). Out of
+    // their phase they answer the wrong question, so they stop restricting the workspace.
+    if (this.#isWorkspaceCheck && isWorkspaceCheckOutOfPhase(this.config, this.#isNew)) {
       this.permitted = true;
       return;
     }
@@ -197,11 +215,13 @@ export class UapDocumentUserPermissionCondition
 
     try {
       const result = await getCachedEffective(this.#userKey, targetKey);
+      if (!isCurrent()) return;
       const allowedVerbs = new Set(
         result.permissions.filter((p) => p.isAllowed).map((p) => p.verb),
       );
       this.#check(allowedVerbs);
     } catch {
+      if (!isCurrent()) return;
       // Deny by default if the API call fails
       this.permitted = false;
     }

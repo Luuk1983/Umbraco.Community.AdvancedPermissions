@@ -1,10 +1,12 @@
-import type { UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
+import type { ManifestBase, UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
 import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
 import { UMB_CURRENT_USER_CONTEXT } from '@umbraco-cms/backoffice/current-user';
 import { client } from './api/generated/client.gen.js';
 import { setCurrentUserKey } from './utils/selection-store.js';
+import { replaceExtensionApi } from './workspace-actions/replace-extension-api.js';
 
 const DOCUMENT_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.Document';
+const SAVE_AND_PUBLISH_WORKSPACE_ACTION_ALIAS = 'Umb.WorkspaceAction.Document.SaveAndPublish';
 
 // Native Document entityUserPermission manifests drive the "Default permissions" checkboxes
 // in the user group editor. We remove them so the section disappears entirely — document
@@ -61,6 +63,16 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
     alias: DOCUMENT_PERMISSION_CONDITION_ALIAS,
     api: () => import('./conditions/document-user-permission.condition.js'),
   } as UmbExtensionManifest);
+
+  // Umbraco's "Save and publish" action constructs the native document permission condition
+  // directly instead of resolving it by alias, so the replacement above never decides it and the
+  // button follows the user group's native default permissions (hidden from the user group editor)
+  // instead of the per-node Advanced Permissions verdict. Swap in a copy of the action that
+  // resolves the condition by alias, keeping the native alias, placement and conditions.
+  replaceExtensionApi<ManifestBase>(_extensionRegistry, SAVE_AND_PUBLISH_WORKSPACE_ACTION_ALIAS, {
+    name: 'Advanced Permissions Save And Publish Document Workspace Action',
+    api: () => import('./workspace-actions/save-and-publish.action.js'),
+  });
 
   // Exclude native Document entityUserPermission manifests.
   // The user group editor's "Default permissions" section reads forEntityTypes metadata

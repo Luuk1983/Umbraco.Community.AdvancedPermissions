@@ -1,12 +1,14 @@
-import type { UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
+import type { ManifestBase, UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
 import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
 import { UMB_CURRENT_USER_CONTEXT } from '@umbraco-cms/backoffice/current-user';
 import { client } from './api/generated/client.gen.js';
 import { setCurrentUserKey } from './utils/selection-store.js';
+import { replaceExtensionApi } from './workspace-actions/replace-extension-api.js';
 
 const DOCUMENT_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.Document';
 const ELEMENT_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.Element';
 const ELEMENT_FOLDER_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.ElementFolder';
+const SAVE_AND_PUBLISH_WORKSPACE_ACTION_ALIAS = 'Umb.WorkspaceAction.Document.SaveAndPublish';
 
 // Native Document entityUserPermission manifests drive the "Default permissions" checkboxes
 // in the user group editor. We remove them so the section disappears entirely — document
@@ -79,6 +81,20 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
     alias: DOCUMENT_PERMISSION_CONDITION_ALIAS,
     api: () => import('./conditions/document-user-permission.condition.js'),
   } as UmbExtensionManifest);
+
+  // Umbraco's "Save and publish" action constructs the native document permission condition
+  // directly instead of resolving it by alias, so the replacement above never decides it and the
+  // button stays disabled (the native check reads fallback permissions, from which this package
+  // strips its managed verbs). Swap in a copy of the action that resolves the condition by alias,
+  // keeping the native alias, placement and conditions.
+  replaceExtensionApi<ManifestBase>(
+    _extensionRegistry,
+    SAVE_AND_PUBLISH_WORKSPACE_ACTION_ALIAS,
+    {
+      name: 'Advanced Permissions Save And Publish Document Workspace Action',
+      api: () => import('./workspace-actions/save-and-publish.action.js'),
+    },
+  );
 
   // Replace the native element + element-folder permission conditions. Unlike documents, Umbraco 18 does
   // not route the element current-user permission path through IElementPermissionService, so these

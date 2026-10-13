@@ -13,11 +13,14 @@ namespace Umbraco.Community.AdvancedPermissions.Tests;
 /// (PUT/DELETE /permissions) are privilege-escalation primitives. Those must stay gated on
 /// <see cref="AuthorizationPolicies.SectionAccessUsers"/>.
 ///
-/// The one exception is <see cref="AdvancedPermissionsEffectiveController.GetEffectiveForUser"/>
-/// (<c>GET /effective</c>): it is the endpoint the replacement document permission condition calls
-/// to decide whether the current user may act on a content node. Gating it on Users-section access
-/// meant any content editor without that section got a 403, the condition denied every action, and
-/// all content became read-only. It must remain backoffice-authenticated but NOT Users-section-gated.
+/// That includes <see cref="AdvancedPermissionsEffectiveController"/> (<c>GET /effective</c> and
+/// <c>GET /effective/by-role</c>), which is consumed only by the Access Viewer. It used to be the data
+/// source of the replacement document permission condition, which forced <c>GET /effective</c> to stay
+/// ungated so content editors without Users-section access could still edit (issue #41). Since the
+/// Umbraco floor is 17.4.0, the condition uses Umbraco's native per-document current-user endpoint
+/// (<c>GET /user/current/permissions/document</c>) instead. That endpoint is routed through
+/// <c>IContentPermissionService</c> and is not Users-section-gated, so the package's own endpoint no
+/// longer needs the exception.
 ///
 /// The gate was previously an <see cref="AuthorizeAttribute"/> on
 /// <see cref="AdvancedPermissionsControllerBase"/>, which inherits to every endpoint and cannot be
@@ -29,8 +32,8 @@ public sealed class AdvancedPermissionsControllerBaseAuthorizationTests
     /// <summary>
     /// The base controller must NOT carry the <see cref="AuthorizationPolicies.SectionAccessUsers"/>
     /// policy: a base-class <see cref="AuthorizeAttribute"/> inherits to every endpoint and cannot be
-    /// removed downstream, which is exactly what forced the backoffice-scoped effective endpoint to be
-    /// Users-section-gated. The gate now lives on the individual management controllers/actions.
+    /// removed downstream, so any future endpoint content editors need could never be opened up. The gate
+    /// lives on the individual management controllers/actions instead.
     /// </summary>
     [Fact]
     public void ControllerBase_DoesNotApplySectionAccessUsersPolicy() =>
@@ -64,12 +67,25 @@ public sealed class AdvancedPermissionsControllerBaseAuthorizationTests
     [Theory]
     [InlineData(typeof(AdvancedPermissionsMetaController))]
     [InlineData(typeof(AdvancedPermissionsPermissionController))]
+    [InlineData(typeof(AdvancedPermissionsEffectiveController))]
     [InlineData(typeof(AdvancedPermissionsTreeController))]
     [InlineData(typeof(DocTypePermissionsController))]
     public void ManagementControllers_AreSectionGated(Type controllerType) =>
         Assert.True(
             TypeIsSectionGated(controllerType),
             $"{controllerType.Name} must apply the SectionAccessUsers policy so its management/mutating endpoints stay behind the Users section.");
+
+    /// <summary>
+    /// <c>GET /effective</c> resolves the permissions of an arbitrary user, so it is a management (Access
+    /// Viewer) endpoint and must be Users-section-gated. It no longer backs the document permission
+    /// condition (that uses Umbraco's native per-document current-user endpoint), so content editors
+    /// without Users-section access do not need it.
+    /// </summary>
+    [Fact]
+    public void EffectiveForUser_IsSectionGated() =>
+        Assert.True(
+            MethodIsSectionGated(typeof(AdvancedPermissionsEffectiveController), nameof(AdvancedPermissionsEffectiveController.GetEffectiveForUser)),
+            "GET /effective resolves any user's permissions and must be Users-section-gated.");
 
     /// <summary>
     /// The by-role effective endpoint is consumed only by the Access Viewer (a management UI), so it
@@ -80,18 +96,6 @@ public sealed class AdvancedPermissionsControllerBaseAuthorizationTests
         Assert.True(
             MethodIsSectionGated(typeof(AdvancedPermissionsEffectiveController), nameof(AdvancedPermissionsEffectiveController.GetEffectiveForRole)),
             "GET /effective/by-role is a management (Access Viewer) endpoint and must stay Users-section-gated.");
-
-    /// <summary>
-    /// The core fix: <c>GET /effective</c> (the current user's effective permissions at a node) must be
-    /// reachable by any authenticated backoffice user, because the document permission condition calls it
-    /// to gate content-editing actions. It must NOT be Users-section-gated at either the method or the
-    /// controller level.
-    /// </summary>
-    [Fact]
-    public void EffectiveForUser_IsNotSectionGated() =>
-        Assert.False(
-            MethodIsSectionGated(typeof(AdvancedPermissionsEffectiveController), nameof(AdvancedPermissionsEffectiveController.GetEffectiveForUser)),
-            "GET /effective must be backoffice-scoped (not Users-section-gated) so content editors without Users-section access can still edit content.");
 
     /// <summary>
     /// The concrete controllers all derive from the base, so the shared routing/feature attributes

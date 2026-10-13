@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <!-- The manual-testing site pins Umbraco to a specific patch (VersionOverride wins over
-         the central [17.3.0,18.0.0-0) range in Directory.Packages.props). This keeps local
+         the central [17.4.0,18.0.0) range in Directory.Packages.props). This keeps local
          testing on a known-good build; bump it deliberately when validating a newer CMS. -->
     <PackageReference Include="Umbraco.Cms" VersionOverride="17.5.3" />
     <PackageReference Include="uSync" />

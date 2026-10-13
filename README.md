@@ -32,7 +32,7 @@ Umbraco's built-in permissions cover the everyday cases well: you grant a user g
 
 ## Prerequisites
 
-- Umbraco v17.3.0 or later
+- Umbraco v17.4.0 or later
 - .NET 10
 
 ## Installation

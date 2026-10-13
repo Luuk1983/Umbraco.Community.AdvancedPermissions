@@ -1,12 +1,10 @@
 import type { UmbConditionConfigBase, UmbConditionControllerArguments, UmbExtensionCondition } from '@umbraco-cms/backoffice/extension-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbConditionBase } from '@umbraco-cms/backoffice/extension-registry';
-import { UMB_CURRENT_USER_CONTEXT } from '@umbraco-cms/backoffice/current-user';
 import { UMB_ENTITY_CONTEXT, UMB_PARENT_ENTITY_CONTEXT } from '@umbraco-cms/backoffice/entity';
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/document';
 import { observeMultiple } from '@umbraco-cms/backoffice/observable-api';
-import type { EffectivePermissions } from '../models/permission.models.js';
-import { getEffectiveForUser } from '../api/advanced-permissions.api.js';
+import { UserService } from '@umbraco-cms/backoffice/external/backend-api';
 import { createPermissionCache } from './permission-cache.js';
 import { createLatestRequest } from './latest-request.js';
 import { isWorkspaceCheckOutOfPhase } from './workspace-permission-phase.js';
@@ -22,31 +20,44 @@ type UapDocumentPermissionConditionConfig =
   };
 
 // ── Module-level cache ──────────────────────────────────────────────────────
-// Shared across all condition instances, keyed by `userKey|nodeKey`. Concurrent
-// requests are deduplicated (e.g. 10 action conditions for the same document = 1 API call).
-// The server answers with every verb for a node it knows and with an empty list for one it
-// does not (such as a new document's draft key), so empty answers are never kept: the draft
-// keeps its key once saved, and a remembered empty answer would make it read-only (#58).
-
-const _cache = createPermissionCache<EffectivePermissions>(
-  (key) => {
-    const [userKey = '', nodeKey = ''] = key.split('|');
-    return getEffectiveForUser(userKey, nodeKey);
-  },
-  { ttlMs: 30_000, isCacheable: (result) => result.permissions.length > 0 },
-);
+// Shared across all condition instances and keyed by node key (the endpoint is always
+// scoped to the current backoffice user). Concurrent requests are deduplicated (e.g. 10
+// action conditions for the same document = 1 API call). Empty answers are never kept:
+// the endpoint answers with no verbs for a node it does not know yet, such as a new
+// document's draft key, and the draft keeps that key once saved, so a remembered empty
+// answer would make it read-only (#58). A node where every verb is denied also answers
+// empty; not caching it only costs a repeat request for a node the user cannot use.
 
 /**
- * Returns the effective permissions of a user at a node, cached per user and node.
- * @param userKey The user key.
- * @param nodeKey The content node key.
- * @returns The user's effective permissions at that node.
+ * Fetches the current user's effective (allowed) permission verbs for a single node from
+ * Umbraco's standard per-document current-user endpoint. Since Umbraco 17.4 this endpoint is routed
+ * through IContentPermissionService (PR #22400) — i.e. our AdvancedContentPermissionService —
+ * so the returned verbs already reflect Advanced Permissions' scope, inheritance and priority.
  */
-function getCachedEffective(userKey: string, nodeKey: string): Promise<EffectivePermissions> {
-  return _cache.get(`${userKey}|${nodeKey}`);
+async function fetchAllowedVerbs(nodeKey: string): Promise<Set<string>> {
+  const { data } = await UserService.getUserCurrentPermissionsDocument({
+    query: { id: [nodeKey] },
+    throwOnError: true,
+  });
+  const entry = data?.permissions?.find((p) => p.nodeKey === nodeKey) ?? data?.permissions?.[0];
+  return new Set(entry?.permissions ?? []);
 }
 
-/** Clear all cached effective permission results. Call after saving permissions. */
+const _cache = createPermissionCache(fetchAllowedVerbs, {
+  ttlMs: 30_000,
+  isCacheable: (verbs) => verbs.size > 0,
+});
+
+/**
+ * Returns the current user's allowed verbs at a node, cached per node.
+ * @param nodeKey The content node key.
+ * @returns The allowed verbs at that node.
+ */
+function getCachedVerbs(nodeKey: string): Promise<Set<string>> {
+  return _cache.get(nodeKey);
+}
+
+/** Clear all cached permission results. Call after saving permissions. */
 export function clearEffectivePermissionCache(): void {
   _cache.clear();
 }
@@ -55,24 +66,20 @@ export function clearEffectivePermissionCache(): void {
 
 /**
  * Replacement for Umbraco's built-in UmbDocumentUserPermissionCondition.
- * Instead of reading from cached native group permissions, this condition calls
- * the Advanced Permissions /effective API to resolve permissions with full scope
- * and inheritance support.
  *
- * NOTE (min-version swap): this deliberately does NOT use Umbraco's native
- * `GET /user/current/permissions/document` endpoint, because that endpoint only routes through
- * `IContentPermissionService` (our `AdvancedContentPermissionService`) from Umbraco 17.4.0 onward
- * (PR #22400 / issue #22351). On 17.3.x — the package's current minimum (`Umbraco.Cms [17.3.0, ...)`)
- * — the native endpoint bypasses our service and would return native permissions only. If the minimum
- * supported version is ever raised to 17.4.0+, switch this condition to the native endpoint (see the v18
- * package's document condition for the exact pattern) and retire the dependency on the custom
- * `getEffectiveForUser` call below; the `/effective` endpoint then reverts to Access-Viewer-only use.
+ * The native condition resolves action visibility with a client-side ancestor-walk over the bulk
+ * `/user/current` permission set. That set only contains documents that exist in Umbraco's native
+ * granular permission storage — Advanced Permissions keeps its entries in its own tables, so the
+ * native walk can never see them. This condition instead asks the server for the current user's
+ * effective permissions at the specific node via the standard per-document current-user endpoint
+ * (`GET /user/current/permissions/document`), which Umbraco 17.4+ routes through
+ * <c>IContentPermissionService</c> — i.e. <c>AdvancedContentPermissionService.GetPermissionsAsync</c>
+ * — so full per-node scope and inheritance are honoured.
  */
 export class UapDocumentUserPermissionCondition
   extends UmbConditionBase<UapDocumentPermissionConditionConfig>
   implements UmbExtensionCondition
 {
-  #userKey: string | undefined;
   #entityType: string | undefined;
   #documentUnique: string | null | undefined;
   // Workspace context: only set when the condition runs inside a document workspace.
@@ -98,29 +105,17 @@ export class UapDocumentUserPermissionCondition
   // pre-assigned Guid) and then fires again once isNew resolves to true
   // (switching to the parent's key, which yields the correct inherited perms).
   //
-  // We don't gate this — the server returns 200 with an empty permissions list
-  // for unknown node keys, so the brief pre-workspace-context call produces a
-  // valid response rather than a 404 storm. Two things keep it harmless (#58):
-  // the cache never keeps that empty answer, and an answer that arrives after a
-  // newer evaluation has started is discarded, so the draft's late "no
-  // permissions" cannot overwrite the parent's answer.
+  // We don't gate this — our backend returns one entry per requested key (empty when the
+  // node is unknown), so the brief pre-workspace-context call produces a valid "deny"
+  // rather than a 404 storm. Two things keep it harmless (#58): the cache never keeps
+  // that empty answer, and an answer that arrives after a newer evaluation has started
+  // is discarded, so the draft's late "no permissions" cannot overwrite the parent's answer.
 
   constructor(
     host: UmbControllerHost,
     args: UmbConditionControllerArguments<UapDocumentPermissionConditionConfig>,
   ) {
     super(host, args);
-
-    this.consumeContext(UMB_CURRENT_USER_CONTEXT, (context) => {
-      this.observe(
-        context?.unique,
-        (unique) => {
-          this.#userKey = unique ?? undefined;
-          void this.#checkPermissions();
-        },
-        'observeUserKey',
-      );
-    });
 
     this.consumeContext(UMB_ENTITY_CONTEXT, (context) => {
       if (!context) {
@@ -171,10 +166,9 @@ export class UapDocumentUserPermissionCondition
     // Every evaluation supersedes the ones still waiting for an answer.
     const isCurrent = this.#latest.begin();
 
-    // Wait for all contexts to be available
+    // Wait for the entity context to be available.
     if (this.#entityType === undefined) return;
     if (this.#documentUnique === undefined) return;
-    if (!this.#userKey) return;
 
     // Non-document entities: pass through (this condition is only meaningful for documents)
     if (this.#entityType !== 'document') {
@@ -214,11 +208,8 @@ export class UapDocumentUserPermissionCondition
     }
 
     try {
-      const result = await getCachedEffective(this.#userKey, targetKey);
+      const allowedVerbs = await getCachedVerbs(targetKey);
       if (!isCurrent()) return;
-      const allowedVerbs = new Set(
-        result.permissions.filter((p) => p.isAllowed).map((p) => p.verb),
-      );
       this.#check(allowedVerbs);
     } catch {
       if (!isCurrent()) return;

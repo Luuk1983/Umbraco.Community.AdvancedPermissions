@@ -7,6 +7,7 @@ using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.AuthorizationStatus;
 using Umbraco.Extensions;
+using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 
 namespace Umbraco.Community.AdvancedPermissions.Services;
@@ -242,6 +243,104 @@ public sealed class AdvancedContentPermissionService(
 
         return authorizedKeys;
     }
+
+    /// <summary>
+    /// Gets the effective permissions for a user on the specified content items.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the Umbraco 17.4 extension point (introduced by
+    /// <see href="https://github.com/umbraco/Umbraco-CMS/pull/22400">PR #22400</see>) that routes the
+    /// server-side document tree filter and the backoffice UI's permission resolution — the current-user
+    /// permission endpoints and <c>DocumentPermissionMapper</c> — through <see cref="IContentPermissionService"/>.
+    /// Without this override the interface's default implementation reads Umbraco's native group permissions,
+    /// so the tree hides every node a user group was granted Read on only through Advanced Permissions
+    /// (issue #64). Implementing it makes the Advanced Security model the authority for those callers too.
+    /// </para>
+    /// <para>
+    /// Each verb is resolved per-node via <see cref="IAdvancedPermissionService.ResolveAllAsync"/> so the
+    /// returned set already reflects inheritance, scope, and priority overrides. Exactly one
+    /// <see cref="NodePermissions"/> is returned per requested key — including keys that do not resolve to
+    /// an existing node (e.g. an unsaved draft's pre-assigned Guid), which return an empty verb set. This
+    /// keeps parity with the package's "200 with empty list" contract and avoids the spurious 404 the
+    /// per-document current-user endpoint returns when fewer entries come back than ids requested.
+    /// </para>
+    /// </remarks>
+    /// <param name="user">The user to resolve permissions for.</param>
+    /// <param name="contentKeys">The identifiers of the content items to resolve permissions for.</param>
+    /// <returns>The effective (allowed) permission verbs for each requested content item.</returns>
+    public async Task<IEnumerable<NodePermissions>> GetPermissionsAsync(IUser user, IEnumerable<Guid> contentKeys)
+    {
+        Guid[] keysArray = contentKeys.ToArray();
+        var result = new List<NodePermissions>(keysArray.Length);
+
+        if (keysArray.Length == 0)
+        {
+            return result;
+        }
+
+        // Map each existing node key to its materialised path; keys that don't resolve are simply absent.
+        var pathsByKey = entityService
+            .GetAllPaths(UmbracoObjectTypes.Document, keysArray)
+            .ToDictionary(p => p.Key, p => p.Path);
+
+        // Share a single ID-to-Key cache across all path lookups to avoid redundant DB calls.
+        var idToKeyCache = new Dictionary<int, Guid>();
+
+        foreach (Guid key in keysArray)
+        {
+            var allowedVerbs = new HashSet<string>();
+
+            if (pathsByKey.TryGetValue(key, out var path))
+            {
+                IReadOnlyList<Guid> pathFromRoot = BuildPathFromRoot(path, idToKeyCache);
+                if (pathFromRoot.Count > 0)
+                {
+                    var resolved = await advancedPermissionService.ResolveAllAsync(user.Key, key, pathFromRoot);
+                    foreach (var permission in resolved.Values)
+                    {
+                        if (permission.IsAllowed)
+                        {
+                            allowedVerbs.Add(permission.Verb);
+                        }
+                    }
+                }
+            }
+
+            result.Add(new NodePermissions { NodeKey = key, Permissions = allowedVerbs });
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Filters the user-group default ("fallback") permissions surfaced to the backoffice UI, removing only
+    /// the document node verbs this package manages and passing every other verb through unchanged.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The Advanced Security model has no independent fallback layer for the document <em>node</em> verbs it
+    /// owns (<see cref="AdvancedPermissionsConstants.AllVerbs"/>): group defaults are represented as virtual-root
+    /// entries and are already resolved per-node by <see cref="GetPermissionsAsync"/>. Those verbs are therefore
+    /// stripped here so the native UI never grants a document action purely on an un-scoped group default —
+    /// per-node resolution stays the sole authority for content action visibility.
+    /// </para>
+    /// <para>
+    /// Verbs the package does <em>not</em> manage are passed through untouched — notably the property-value
+    /// permissions (<c>Umb.Document.PropertyValue.Read/Write</c>), whose enforcement is driven client-side from
+    /// these fallback permissions. Returning an empty set would silently disable that native gating and hide
+    /// document property fields. Passing non-managed verbs through keeps all such native behaviour working,
+    /// now and for any future verb Umbraco introduces.
+    /// </para>
+    /// </remarks>
+    /// <param name="user">The user whose fallback permissions are being filtered.</param>
+    /// <param name="fallbackPermissions">The fallback permissions aggregated from the user's groups.</param>
+    /// <returns>The fallback permissions with this package's managed document node verbs removed.</returns>
+    public Task<ISet<string>> FilterFallbackPermissionsAsync(IUser user, ISet<string> fallbackPermissions)
+        => Task.FromResult<ISet<string>>(
+            fallbackPermissions
+                .Where(verb => !AdvancedPermissionsConstants.AllVerbs.Contains(verb, StringComparer.Ordinal))
+                .ToHashSet(StringComparer.Ordinal));
 
     /// <summary>
     /// Parses an Umbraco content path string (e.g. <c>"-1,1001,1002,1003"</c>) and returns the ordered

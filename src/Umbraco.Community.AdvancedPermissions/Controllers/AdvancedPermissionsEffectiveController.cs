@@ -13,23 +13,17 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// Provides endpoints for resolving effective (inherited + explicit) permissions for users and roles.
 /// </summary>
 /// <remarks>
-/// Authorization differs per endpoint:
-/// <list type="bullet">
-///   <item>
-///     <c>GET /effective</c> (<see cref="GetEffectiveForUser"/>) is backoffice-scoped only — it backs the
-///     replacement document permission condition that gates content-editing actions for the current user,
-///     so it must be reachable by content editors who do not have Users-section access. It carries no
-///     Users-section gate.
-///   </item>
-///   <item>
-///     <c>GET /effective/by-role</c> (<see cref="GetEffectiveForRole"/>) backs the Access Viewer (a
-///     management UI) and is gated on Users-section access.
-///   </item>
-/// </list>
+/// A management surface for the Access Viewer, so the whole controller is gated on Users-section access.
+/// Content-editing action visibility for documents is decided by the replacement document permission
+/// condition through Umbraco's native per-document current-user endpoint
+/// (<c>GET /user/current/permissions/document</c>). Since Umbraco 17.4.0 that endpoint is routed through
+/// <c>IContentPermissionService</c> — i.e. <c>AdvancedContentPermissionService.GetPermissionsAsync</c> — and
+/// it is not Users-section-gated, so content editors without Users-section access do not need these endpoints.
 /// </remarks>
 /// <param name="permissionService">The advanced permission service.</param>
 /// <param name="entityService">The Umbraco entity service (for path resolution).</param>
 [ApiVersion("1.0")]
+[Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public sealed class AdvancedPermissionsEffectiveController(
     IAdvancedPermissionService permissionService,
     IEntityService entityService)
@@ -52,21 +46,6 @@ public sealed class AdvancedPermissionsEffectiveController(
     /// <param name="userKey">The key of the user to resolve for.</param>
     /// <param name="nodeKey">The key of the content node to resolve at.</param>
     /// <returns>The effective permissions for all standard verbs, with full reasoning.</returns>
-    /// <remarks>
-    /// Intentionally NOT gated on <see cref="AuthorizationPolicies.SectionAccessUsers"/>: the document
-    /// permission condition calls this to gate content-editing actions for the current user, so a content
-    /// editor without Users-section access must still be able to reach it. Adding a section gate here
-    /// re-introduces the read-only-content regression. It remains backoffice-authenticated via
-    /// <c>ManagementApiControllerBase</c>.
-    ///
-    /// Min-version swap: this endpoint doubles as the document condition's data source only because the
-    /// native <c>GET /user/current/permissions/document</c> endpoint does not route through
-    /// <c>IContentPermissionService</c> until Umbraco 17.4.0 (PR #22400 / issue #22351), and the package
-    /// supports down to 17.3.0. If the minimum supported version is ever raised to 17.4.0+, switch the
-    /// document condition to the native endpoint (as the v18 package does); this endpoint then reverts to
-    /// Access-Viewer-only use and should be moved back behind the Users-section gate (controller-level),
-    /// matching <see cref="GetEffectiveForRole"/>.
-    /// </remarks>
     [HttpGet("effective")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<EffectivePermissionsResponseModel>(StatusCodes.Status200OK)]
@@ -101,7 +80,6 @@ public sealed class AdvancedPermissionsEffectiveController(
     /// <param name="nodeKey">The key of the content node to resolve at.</param>
     /// <returns>The effective permissions for all standard verbs, with full reasoning.</returns>
     [HttpGet("effective/by-role")]
-    [Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<EffectivePermissionsResponseModel>(StatusCodes.Status200OK)]
     [EndpointSummary("Resolves effective permissions for a role at a content node.")]

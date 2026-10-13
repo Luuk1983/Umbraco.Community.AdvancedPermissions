@@ -45,3 +45,9 @@ The client-side condition (`document-user-permission.condition.ts`) still detect
   - `GetEffectiveForUser_KnownNodeKey_Returns200OkWithResolvedPermissions`
   - `GetEffectiveForRole_UnknownNodeKey_Returns200OkWithEmptyPermissions`
   - `GetEffectiveForRole_UnknownNodeKey_DoesNotCallPermissionService`
+
+## Update (17.4.1, issue #64)
+
+The document condition no longer calls `/effective`. With the Umbraco floor raised to 17.4.0 it uses Umbraco's native `GET /user/current/permissions/document`, which routes through `AdvancedContentPermissionService.GetPermissionsAsync`. The same contract carries over there: `GetPermissionsAsync` returns exactly one entry per requested key, empty for an unknown key. That matters because the native endpoint answers 404 when fewer entries come back than ids requested. This is covered by `AdvancedContentPermissionServiceTests.GetPermissionsAsync_ReturnsOneEntryPerRequestedKey_IncludingUnknownNodes`. The client also no longer caches empty answers (#58), which replaces the caching note under Consequences.
+
+`/effective` now serves only the Access Viewer and is gated on Users-section access at controller level. Its 200-empty behaviour is unchanged.

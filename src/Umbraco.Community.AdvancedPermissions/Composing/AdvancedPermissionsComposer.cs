@@ -76,7 +76,8 @@ public sealed class AdvancedPermissionsComposer : IComposer
         if (providerName.Contains("SqlClient", StringComparison.OrdinalIgnoreCase))
         {
             builder.Services.AddUmbracoDbContext<AdvancedPermissionsDbContextSqlServer>(
-                (sp, optionsBuilder, _, _) => optionsBuilder.UseUmbracoDatabaseProvider(sp));
+                (sp, optionsBuilder, _, _) => optionsBuilder.UseUmbracoDatabaseProvider(sp),
+                shareUmbracoConnection: true);
 
             builder.Services.AddScoped<AdvancedPermissionsDbContext>(sp =>
                 sp.GetRequiredService<AdvancedPermissionsDbContextSqlServer>());
@@ -88,7 +89,8 @@ public sealed class AdvancedPermissionsComposer : IComposer
         else
         {
             builder.Services.AddUmbracoDbContext<AdvancedPermissionsDbContextSqlite>(
-                (sp, optionsBuilder, _, _) => optionsBuilder.UseUmbracoDatabaseProvider(sp));
+                (sp, optionsBuilder, _, _) => optionsBuilder.UseUmbracoDatabaseProvider(sp),
+                shareUmbracoConnection: true);
 
             builder.Services.AddScoped<AdvancedPermissionsDbContext>(sp =>
                 sp.GetRequiredService<AdvancedPermissionsDbContextSqlite>());

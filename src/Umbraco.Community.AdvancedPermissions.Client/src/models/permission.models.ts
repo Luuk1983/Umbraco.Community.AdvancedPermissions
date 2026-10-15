@@ -77,10 +77,56 @@ export interface EffectivePermission {
   suppressedReasoning?: ReasoningStep[];
 }
 
-/** Collection of effective permissions for all verbs at a specific node. */
+/** The effective permissions of a subject at a node, plus whether start nodes let it reach the node. */
 export interface EffectivePermissions {
   nodeKey: string;
   permissions: EffectivePermission[];
+  /** Whether the subject can reach the node through its start nodes. */
+  startNodeAccess: StartNodeAccess;
+}
+
+/** Whether a subject can reach a node through its start nodes. */
+export type StartNodeAccess = 'Accessible' | 'PathOnly' | 'NotVisible';
+
+/** The overall start-node situation of a subject. */
+export type StartNodeSubjectState = 'NotApplicable' | 'RootAccess' | 'Restricted' | 'NoAccess';
+
+/** What became of one configured start node after Umbraco combined them. */
+export type StartNodeSourceStatus =
+  | 'InUse'
+  | 'NoStartNode'
+  | 'NotSet'
+  | 'CoveredBy'
+  | 'ReplacedByUserStartNode'
+  | 'NarrowedBy'
+  | 'Ignored'
+  | 'NotApplied';
+
+/** One effective start node. */
+export interface StartNodeItem {
+  key: string;
+  name: string;
+}
+
+/** One configured start node and what became of it. */
+export interface StartNodeSourceItem {
+  kind: 'UserGroup' | 'User';
+  userGroupAlias: string | null;
+  userGroupName: string | null;
+  startNodeKey: string | null;
+  startNodeName: string | null;
+  isRoot: boolean;
+  status: StartNodeSourceStatus;
+  relatedNodeKey: string | null;
+  relatedNodeName: string | null;
+  relatedIsRoot: boolean;
+}
+
+/** The start nodes of a user or user group, for the start-node strip. */
+export interface StartNodesResponse {
+  state: StartNodeSubjectState;
+  startNodes: StartNodeItem[];
+  sources: StartNodeSourceItem[];
 }
 
 /** A permission verb with its display name. */

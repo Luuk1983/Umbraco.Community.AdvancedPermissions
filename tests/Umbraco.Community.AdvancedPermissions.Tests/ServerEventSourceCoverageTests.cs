@@ -56,6 +56,7 @@ public sealed class ServerEventSourceCoverageTests
         await own.HandleAsync(new DocTypePermissionsChangedNotification(key, "editors", [key]), ct);
 
         await access.HandleAsync(new UserGroupSavedNotification(WithKey<IUserGroup>(key), messages), ct);
+        await access.HandleAsync(new UserGroupWithUsersSavedNotification(new UserGroupWithUsers(WithKey<IUserGroup>(key), [], []), messages), ct);
         await access.HandleAsync(new UserGroupDeletedNotification(WithKey<IUserGroup>(key), messages), ct);
         await access.HandleAsync(new UserSavedNotification(WithKey<IUser>(key), messages), ct);
         await access.HandleAsync(new ContentMovedNotification(new MoveEventInfo<IContent>(WithKey<IContent>(key), "-1,-20", -20), messages), ct);
@@ -73,13 +74,13 @@ public sealed class ServerEventSourceCoverageTests
     [Fact]
     public void EveryNotificationTheHandlersImplement_IsDrivenByTheCoverageTest()
     {
-        // The drive covers 8 notification types: 2 on the own-notification handler and 6 on the
+        // The drive covers 9 notification types: 2 on the own-notification handler and 7 on the
         // access handler.
         var implemented = new[] { typeof(AdvancedPermissionsServerEventHandler), typeof(AccessServerEventHandler) }
             .SelectMany(t => t.GetInterfaces())
             .Count(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(INotificationAsyncHandler<>));
 
-        Assert.Equal(2 + 6, implemented);
+        Assert.Equal(2 + 7, implemented);
     }
 
     /// <summary>

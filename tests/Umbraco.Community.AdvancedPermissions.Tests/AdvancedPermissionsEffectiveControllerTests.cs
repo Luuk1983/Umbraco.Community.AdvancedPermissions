@@ -8,6 +8,7 @@ using Umbraco.Community.AdvancedPermissions.Controllers;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Tests;
 
@@ -23,6 +24,7 @@ public sealed class AdvancedPermissionsEffectiveControllerTests
 {
     private readonly IAdvancedPermissionService _permissionService = Substitute.For<IAdvancedPermissionService>();
     private readonly IEntityService _entityService = Substitute.For<IEntityService>();
+    private readonly IStartNodeAccessService _startNodes = Substitute.For<IStartNodeAccessService>();
     private readonly AdvancedPermissionsEffectiveController _sut;
 
     /// <summary>
@@ -30,7 +32,7 @@ public sealed class AdvancedPermissionsEffectiveControllerTests
     /// </summary>
     public AdvancedPermissionsEffectiveControllerTests()
     {
-        _sut = new AdvancedPermissionsEffectiveController(_permissionService, _entityService);
+        _sut = new AdvancedPermissionsEffectiveController(_permissionService, _entityService, _startNodes);
     }
 
     // ─── GetEffectiveForUser ─────────────────────────────────────────────────
@@ -176,6 +178,84 @@ public sealed class AdvancedPermissionsEffectiveControllerTests
                 Arg.Any<IReadOnlyList<Guid>>(),
                 Arg.Any<IEnumerable<string>?>(),
                 Arg.Any<CancellationToken>());
+    }
+
+    // ─── Start node access (issue #66) ───────────────────────────────────────
+
+    /// <summary>An unknown node is reported as not visible.</summary>
+    [Fact]
+    public async Task GetEffectiveForUser_UnknownNode_StartNodeAccessIsNotVisible()
+    {
+        _entityService.GetAllPaths(UmbracoObjectTypes.Document, Arg.Any<Guid[]>()).Returns([]);
+
+        var ok = Assert.IsType<OkObjectResult>(await _sut.GetEffectiveForUser(CancellationToken.None, Guid.NewGuid(), Guid.NewGuid()));
+
+        Assert.Equal("NotVisible", Assert.IsType<EffectivePermissionsResponseModel>(ok.Value).StartNodeAccess);
+    }
+
+    /// <summary>A known node carries the service's classification for the user.</summary>
+    [Fact]
+    public async Task GetEffectiveForUser_KnownNode_CarriesClassification()
+    {
+        var userKey = Guid.NewGuid();
+        var nodeKey = SeedNode(42, "-1,42");
+        var snapshot = StartNodeSnapshot.NotApplicable with { State = StartNodeSubjectState.Restricted };
+        _startNodes.GetForUserAsync(userKey).Returns(snapshot);
+        _startNodes.Classify(snapshot, "-1,42").Returns(StartNodeAccess.PathOnly);
+
+        var ok = Assert.IsType<OkObjectResult>(await _sut.GetEffectiveForUser(CancellationToken.None, userKey, nodeKey));
+
+        Assert.Equal("PathOnly", Assert.IsType<EffectivePermissionsResponseModel>(ok.Value).StartNodeAccess);
+    }
+
+    /// <summary>Review focus 4: an unknown user is never shown as blocked.</summary>
+    [Fact]
+    public async Task GetEffectiveForUser_UnknownUser_IsAccessible()
+    {
+        var nodeKey = SeedNode(42, "-1,42");
+        _startNodes.GetForUserAsync(Arg.Any<Guid>()).Returns((StartNodeSnapshot?)null);
+
+        var ok = Assert.IsType<OkObjectResult>(await _sut.GetEffectiveForUser(CancellationToken.None, Guid.NewGuid(), nodeKey));
+
+        Assert.Equal("Accessible", Assert.IsType<EffectivePermissionsResponseModel>(ok.Value).StartNodeAccess);
+    }
+
+    /// <summary>Role mode uses the group's own snapshot.</summary>
+    [Fact]
+    public async Task GetEffectiveForRole_KnownNode_CarriesClassification()
+    {
+        var nodeKey = SeedNode(42, "-1,42");
+        var snapshot = StartNodeSnapshot.NotApplicable with { State = StartNodeSubjectState.Restricted };
+        _startNodes.GetForUserGroupAsync("editors").Returns(snapshot);
+        _startNodes.Classify(snapshot, "-1,42").Returns(StartNodeAccess.NotVisible);
+
+        var ok = Assert.IsType<OkObjectResult>(await _sut.GetEffectiveForRole(CancellationToken.None, "editors", nodeKey));
+
+        Assert.Equal("NotVisible", Assert.IsType<EffectivePermissionsResponseModel>(ok.Value).StartNodeAccess);
+    }
+
+    /// <summary>Seeds one known node into the entity service and an empty resolver answer.</summary>
+    /// <param name="id">The node id.</param>
+    /// <param name="path">The node path.</param>
+    /// <returns>The node key.</returns>
+    private Guid SeedNode(int id, string path)
+    {
+        var nodeKey = Guid.NewGuid();
+        // Build the stub entity first: configuring a substitute inside a .Returns(...) argument
+        // corrupts NSubstitute's last-call tracking.
+        var entity = Substitute.For<IEntitySlim>();
+        entity.Id.Returns(id);
+        entity.Key.Returns(nodeKey);
+        _entityService.GetAllPaths(UmbracoObjectTypes.Document, Arg.Any<Guid[]>())
+            .Returns([new TreeEntityPath { Id = id, Key = nodeKey, Path = path }]);
+        _entityService.GetAll(UmbracoObjectTypes.Document, Arg.Any<int[]>()).Returns([entity]);
+        _permissionService
+            .ResolveAllAsync(Arg.Any<Guid>(), nodeKey, Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<IEnumerable<string>?>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission>());
+        _permissionService
+            .ResolveForRoleAsync(Arg.Any<string>(), nodeKey, Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<IEnumerable<string>?>(), Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission>());
+        return nodeKey;
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────

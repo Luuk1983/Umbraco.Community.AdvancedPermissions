@@ -69,6 +69,15 @@ public abstract class AdvancedPermissionsControllerBase : ManagementApiControlle
     }
 
     /// <summary>
+    /// Gets a document's materialised path (e.g. <c>-1,1050,1063</c>), read fresh from the database.
+    /// </summary>
+    /// <param name="nodeKey">The document key.</param>
+    /// <param name="entityService">The Umbraco entity service.</param>
+    /// <returns>The path, or <see langword="null"/> when the document does not exist.</returns>
+    protected static string? GetDocumentPath(Guid nodeKey, IEntityService entityService) =>
+        entityService.GetAllPaths(UmbracoObjectTypes.Document, nodeKey).FirstOrDefault()?.Path;
+
+    /// <summary>
     /// Maps a domain <see cref="AdvancedPermissionEntry"/> to an API <see cref="PermissionEntryResponseModel"/>.
     /// </summary>
     /// <param name="entry">The domain entry to map.</param>

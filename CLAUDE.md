@@ -61,8 +61,10 @@ Base: `GET|PUT /umbraco/management/api/v1/advanced-permissions/`
 | GET | `/tree/children?parentKey=&roleAlias=` | Children of a node |
 | GET | `/permissions?nodeKey=&roleAlias=` | Stored entries for a node+role |
 | PUT | `/permissions` | Save (replace) entries for a node+role |
-| GET | `/effective?userKey=&nodeKey=` | Effective permissions for a user at a node |
-| GET | `/effective/by-role?roleAlias=&nodeKey=` | Effective permissions for a role at a node |
+| GET | `/effective?userKey=&nodeKey=` | Effective permissions for a user at a node (response carries `startNodeAccess`) |
+| GET | `/effective/by-role?roleAlias=&nodeKey=` | Effective permissions for a role at a node (response carries `startNodeAccess`) |
+| GET | `/start-nodes?userKey=` | A user's effective start nodes and where each comes from |
+| GET | `/start-nodes/by-role?roleAlias=` | One user group's own start node |
 
 All endpoints require backoffice authentication and return 401 without it. **No `AddApplicationPart()` is needed** — Umbraco's minimal API discovery works automatically.
 
@@ -88,7 +90,7 @@ dotnet pack src/Umbraco.Community.AdvancedPermissions/  # Create NuGet package
 ### Backend
 ```bash
 dotnet build                                      # Build all projects
-dotnet test                                       # Run all 39 tests (20 unit + 19 integration)
+dotnet test                                       # Run all 437 tests (115 Core unit + 221 main package + 101 Data integration)
 dotnet pack src/Umbraco.Community.AdvancedPermissions/   # Create NuGet package
 ```
 

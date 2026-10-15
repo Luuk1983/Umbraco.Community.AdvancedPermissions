@@ -18,5 +18,6 @@ Use it to answer "why can this editor add a News Article here but not there?" wi
 
 - A dimmed or N/A cell means the document type isn't an allowed child type on that node, so Umbraco wouldn't offer it there even though a rule may still resolve.
 - Creating is allowed by default, so a node with no rules anywhere shows as allowed.
+- Creating under a node needs access to that node. Rows outside the subject's start nodes show **blocked** cells; the start-node card under the picker shows which start nodes apply and who set them.
 
 See the **Concepts** tab for how permissions are resolved.

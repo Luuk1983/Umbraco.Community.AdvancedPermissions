@@ -18,5 +18,6 @@ Gebruik het om "waarom kan deze redacteur hier wél een Nieuwsartikel toevoegen 
 
 - Een gedimde cel of een **N/A**-cel betekent dat het documenttype op dat knooppunt geen toegestaan onderliggend type is, dus Umbraco zou het daar niet aanbieden, ook al wordt er een regel opgelost.
 - Aanmaken is standaard toegestaan, dus een knooppunt zonder regels toont als toegestaan.
+- Aanmaken onder een node vereist toegang tot die node. Rijen buiten de startnodes van het onderwerp tonen **geblokkeerde** cellen; de startnodekaart onder de kiezer toont welke startnodes gelden en wie ze heeft ingesteld.
 
 Zie het tabblad **Concepten** voor hoe machtigingen worden opgelost.

@@ -142,7 +142,7 @@ public sealed class ServerEventHandlerTests
 }
 
 /// <summary>
-/// Tests that <see cref="AccessServerEventHandler"/> routes the six Umbraco-core notifications that
+/// Tests that <see cref="AccessServerEventHandler"/> routes the seven Umbraco-core notifications that
 /// shift effective permissions without this package's own store being touched, and that a failure
 /// routing one key cannot propagate out of the handler or block a sibling key.
 /// </summary>
@@ -158,6 +158,29 @@ public sealed class AccessServerEventHandlerTests
 
         await handler.HandleAsync(
             new UserGroupSavedNotification(BuildGroup(groupKey), new EventMessages()),
+            CancellationToken.None);
+
+        await router.Received(1).RouteEventAsync(Arg.Is<ServerEvent>(e =>
+            e.EventSource == AdvancedPermissionsServerEvents.AccessSource &&
+            e.EventType == AdvancedPermissionsServerEvents.EventType.Updated &&
+            e.Key == groupKey));
+    }
+
+    /// <summary>
+    /// A user group saved together with its users is also routed. This is defensive: Umbraco normally
+    /// runs the cache-clearing handler before any async handler, but routing here also covers a publish
+    /// outside a scope and guarantees the event follows the cache clear for this notification
+    /// (issue #66).
+    /// </summary>
+    [Fact]
+    public async Task UserGroupWithUsersSaved_RoutesAccessEvent()
+    {
+        var router = Substitute.For<IServerEventRouter>();
+        var handler = CreateHandler(router);
+        var groupKey = Guid.NewGuid();
+
+        await handler.HandleAsync(
+            new UserGroupWithUsersSavedNotification(new UserGroupWithUsers(BuildGroup(groupKey), [], []), new EventMessages()),
             CancellationToken.None);
 
         await router.Received(1).RouteEventAsync(Arg.Is<ServerEvent>(e =>

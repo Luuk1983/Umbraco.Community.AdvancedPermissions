@@ -18,6 +18,7 @@ using Umbraco.Community.AdvancedPermissions.Migrations;
 using Umbraco.Community.AdvancedPermissions.Notifications;
 using Umbraco.Community.AdvancedPermissions.ServerEvents;
 using Umbraco.Community.AdvancedPermissions.Services;
+using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Composing;
 
@@ -128,6 +129,9 @@ public sealed class AdvancedPermissionsComposer : IComposer
         builder.Services.AddSingleton<DocTypePermissionCache>();
         builder.Services.AddSingleton<IDocTypePermissionService, DocTypePermissionService>();
 
+        // Start nodes for the viewers (issue #66): reads Umbraco's combined start nodes, never enforces.
+        builder.Services.AddSingleton<IStartNodeAccessService, StartNodeAccessService>();
+
         // Register the IContentTypeFilter that enforces doc-type create restrictions in
         // Umbraco's allowed-children / allowed-at-root pipelines.
         builder.ContentTypeFilters().Append<DocTypeCreateContentTypeFilter>();
@@ -198,6 +202,7 @@ public sealed class AdvancedPermissionsComposer : IComposer
         builder.AddNotificationAsyncHandler<AdvancedPermissionsChangedNotification, AdvancedPermissionsServerEventHandler>();
         builder.AddNotificationAsyncHandler<DocTypePermissionsChangedNotification, AdvancedPermissionsServerEventHandler>();
         builder.AddNotificationAsyncHandler<UserGroupSavedNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<UserGroupWithUsersSavedNotification, AccessServerEventHandler>();
         builder.AddNotificationAsyncHandler<UserGroupDeletedNotification, AccessServerEventHandler>();
         builder.AddNotificationAsyncHandler<UserSavedNotification, AccessServerEventHandler>();
         builder.AddNotificationAsyncHandler<ContentMovedNotification, AccessServerEventHandler>();

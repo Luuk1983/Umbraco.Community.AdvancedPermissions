@@ -70,6 +70,7 @@ public sealed class AdvancedPermissionsControllerBaseAuthorizationTests
     [InlineData(typeof(AdvancedPermissionsEffectiveController))]
     [InlineData(typeof(AdvancedPermissionsTreeController))]
     [InlineData(typeof(DocTypePermissionsController))]
+    [InlineData(typeof(AdvancedPermissionsStartNodesController))]
     public void ManagementControllers_AreSectionGated(Type controllerType) =>
         Assert.True(
             TypeIsSectionGated(controllerType),
@@ -108,6 +109,7 @@ public sealed class AdvancedPermissionsControllerBaseAuthorizationTests
     [InlineData(typeof(AdvancedPermissionsEffectiveController))]
     [InlineData(typeof(AdvancedPermissionsTreeController))]
     [InlineData(typeof(DocTypePermissionsController))]
+    [InlineData(typeof(AdvancedPermissionsStartNodesController))]
     public void ConcreteControllers_DeriveFromBase(Type controllerType) =>
         Assert.True(
             typeof(AdvancedPermissionsControllerBase).IsAssignableFrom(controllerType),

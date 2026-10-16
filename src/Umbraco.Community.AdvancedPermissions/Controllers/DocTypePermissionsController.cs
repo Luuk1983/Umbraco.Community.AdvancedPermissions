@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Services;
@@ -12,6 +13,7 @@ using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Controllers;
 
@@ -27,6 +29,7 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// <param name="contentTypeService">The Umbraco content-type service used to list doc-types.</param>
 /// <param name="entityService">Used to resolve content node paths for the audit.</param>
 /// <param name="userService">Used to look up the audited user's groups.</param>
+/// <param name="startNodeAccessService">Classifies the audited node against the subject's start nodes.</param>
 [ApiVersion("1.0")]
 [Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public sealed class DocTypePermissionsController(
@@ -34,7 +37,8 @@ public sealed class DocTypePermissionsController(
     IDocTypePermissionRepository docTypeRepository,
     IContentTypeService contentTypeService,
     IEntityService entityService,
-    IUserService userService)
+    IUserService userService,
+    IStartNodeAccessService startNodeAccessService)
     : AdvancedPermissionsControllerBase
 {
     /// <summary>
@@ -411,7 +415,17 @@ public sealed class DocTypePermissionsController(
                 SuppressedReasoning: (effective.SuppressedReasoning ?? []).Select(MapReasoningItem).ToList()));
         }
 
-        return Ok(new DocTypeAuditForNodeResponseModel(nodeKey, rows));
+        var snapshot = hasUser
+            ? await startNodeAccessService.GetForUserAsync(userKey!.Value)
+            : await startNodeAccessService.GetForUserGroupAsync(roleAlias!);
+        var nodePath = isVirtualRoot ? Constants.System.RootString : GetDocumentPath(nodeKey, entityService);
+        var access = snapshot is null
+            ? StartNodeAccess.Accessible
+            : nodePath is null
+                ? StartNodeAccess.NotVisible
+                : startNodeAccessService.Classify(snapshot, nodePath);
+
+        return Ok(new DocTypeAuditForNodeResponseModel(nodeKey, rows, access.ToString()));
     }
 
     /// <summary>

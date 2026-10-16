@@ -36,6 +36,7 @@ namespace Umbraco.Community.AdvancedPermissions.ServerEvents;
 /// <param name="logger">Used to record a route failure without letting it escape this handler.</param>
 public sealed class AccessServerEventHandler(IServerEventRouter router, ILogger<AccessServerEventHandler> logger) :
     INotificationAsyncHandler<UserGroupSavedNotification>,
+    INotificationAsyncHandler<UserGroupWithUsersSavedNotification>,
     INotificationAsyncHandler<UserGroupDeletedNotification>,
     INotificationAsyncHandler<UserSavedNotification>,
     INotificationAsyncHandler<ContentMovedNotification>,
@@ -45,6 +46,17 @@ public sealed class AccessServerEventHandler(IServerEventRouter router, ILogger<
     /// <inheritdoc />
     public Task HandleAsync(UserGroupSavedNotification notification, CancellationToken cancellationToken) =>
         RouteAllAsync(notification.SavedEntities.Select(e => e.Key));
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Defensive: Umbraco queues this together with <see cref="UserGroupSavedNotification"/> and runs
+    /// its synchronous handlers (including the one that clears the cached start nodes of the group's
+    /// users) before any asynchronous handler, so the <see cref="UserGroupSavedNotification"/> route
+    /// already follows the cache clear. Routing this one too covers a publish outside a scope and
+    /// guarantees the event follows the cache clear for this notification as well.
+    /// </remarks>
+    public Task HandleAsync(UserGroupWithUsersSavedNotification notification, CancellationToken cancellationToken) =>
+        RouteAllAsync(notification.SavedEntities.Select(e => e.UserGroup.Key));
 
     /// <inheritdoc />
     public Task HandleAsync(UserGroupDeletedNotification notification, CancellationToken cancellationToken) =>

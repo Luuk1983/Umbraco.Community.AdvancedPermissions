@@ -50,3 +50,16 @@ When deciding whether a user has a permission on a node, the package gathers eve
 4. **Inherited Allow**.
 
 If no entry applies anywhere up the tree, the default is **Deny** for content permissions (**Allow** for insert options). A Priority Override entry steps outside this order and wins.
+
+<a id="start-nodes"></a>
+## Start nodes
+
+Start nodes decide which part of the content tree a user can reach at all. Umbraco checks them **before** any permission.
+
+- **A user group** has one start node, root access, or none. A group without a start node gives **no** content access.
+- **Several groups** combine: the user can reach every group's start node, and a higher start node covers a lower one on the same branch.
+- **Start nodes and permissions are separate.** A permission from one group also applies inside a start node that another group provides.
+- **A start node set on the user account** replaces any group start node above or below it on the same branch, even root access. On a branch that no group start node covers, it adds access.
+- **Administrators** reach everything only because their group has root access. There is no other exception.
+- **Deleted or trashed start nodes** are ignored. If a user's own start node is deleted, the user falls back to the group start nodes.
+- Some pickers can be configured to ignore start nodes, and backoffice search applies them slightly differently. The viewers show the tree and editor rules.

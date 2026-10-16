@@ -15,6 +15,7 @@ import type {
   BatchSaveNode,
   BatchSaveConflict,
   BatchSaveResult,
+  StartNodesResponse,
 } from '../models/permission.models.js';
 
 // Thin wrappers over the hey-api generated SDK. Auth + 401 retry are handled
@@ -157,6 +158,30 @@ export async function getEffectiveForRole(roleAlias: string, nodeKey: string, si
     ...(signal ? { signal } : {}),
   });
   return data as EffectivePermissions;
+}
+
+/**
+ * Gets the start nodes of a user (combined over all their groups) or of one user group on its own.
+ * @param subject The user key or the user group alias.
+ * @param signal Aborts the request when the selection changes.
+ * @returns The effective start nodes and one explained line per configured start node.
+ */
+export async function getStartNodes(
+  subject: { userKey: string } | { roleAlias: string },
+  signal?: AbortSignal,
+): Promise<StartNodesResponse> {
+  const { data } = 'userKey' in subject
+    ? await AdvancedPermissionsService.getStartNodesForUser({
+        throwOnError: true,
+        query: { userKey: subject.userKey },
+        ...(signal ? { signal } : {}),
+      })
+    : await AdvancedPermissionsService.getStartNodesForRole({
+        throwOnError: true,
+        query: { roleAlias: subject.roleAlias },
+        ...(signal ? { signal } : {}),
+      });
+  return data as StartNodesResponse;
 }
 
 /**

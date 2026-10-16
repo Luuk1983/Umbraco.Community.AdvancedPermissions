@@ -53,7 +53,8 @@ export async function saveDocTypePermissions(
 ): Promise<void> {
   await AdvancedPermissionsService.save({
     throwOnError: true,
-    body: { nodeKey, roleAlias, contentTypeKey, entries },
+    // `force` is required by the generated request body; a plain single save never forces.
+    body: { nodeKey, roleAlias, contentTypeKey, entries, force: false },
   });
 }
 

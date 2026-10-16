@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuditForNodeData, AuditForNodeErrors, AuditForNodeResponses, BatchSaveDocTypePermissionsData, BatchSaveDocTypePermissionsErrors, BatchSaveDocTypePermissionsResponses, BatchSavePermissionsData, BatchSavePermissionsErrors, BatchSavePermissionsResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PathEntriesData, PathEntriesErrors, PathEntriesResponses, SaveData, SaveErrors, SavePermissionsData, SavePermissionsErrors, SavePermissionsResponses, SaveResponses } from './types.gen';
+import type { AuditForNodeData, AuditForNodeErrors, AuditForNodeResponses, BatchSaveDocTypePermissionsData, BatchSaveDocTypePermissionsErrors, BatchSaveDocTypePermissionsResponses, BatchSavePermissionsData, BatchSavePermissionsErrors, BatchSavePermissionsResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetStartNodesForRoleData, GetStartNodesForRoleErrors, GetStartNodesForRoleResponses, GetStartNodesForUserData, GetStartNodesForUserErrors, GetStartNodesForUserResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PathEntriesData, PathEntriesErrors, PathEntriesResponses, SaveData, SaveErrors, SavePermissionsData, SavePermissionsErrors, SavePermissionsResponses, SaveResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -271,6 +271,38 @@ export class AdvancedPermissionsService {
                 }
             ],
             url: '/umbraco/management/api/v1/advanced-permissions/roles',
+            ...options
+        });
+    }
+    
+    /**
+     * Gets a user's effective start nodes and where each comes from.
+     */
+    public static getStartNodesForUser<ThrowOnError extends boolean = false>(options?: Options<GetStartNodesForUserData, ThrowOnError>) {
+        return (options?.client ?? client).get<GetStartNodesForUserResponses, GetStartNodesForUserErrors, ThrowOnError>({
+            security: [
+                {
+                    scheme: 'bearer',
+                    type: 'http'
+                }
+            ],
+            url: '/umbraco/management/api/v1/advanced-permissions/start-nodes',
+            ...options
+        });
+    }
+    
+    /**
+     * Gets one user group's own start node.
+     */
+    public static getStartNodesForRole<ThrowOnError extends boolean = false>(options?: Options<GetStartNodesForRoleData, ThrowOnError>) {
+        return (options?.client ?? client).get<GetStartNodesForRoleResponses, GetStartNodesForRoleErrors, ThrowOnError>({
+            security: [
+                {
+                    scheme: 'bearer',
+                    type: 'http'
+                }
+            ],
+            url: '/umbraco/management/api/v1/advanced-permissions/start-nodes/by-role',
             ...options
         });
     }

@@ -110,8 +110,8 @@ public sealed class ServerEventRegistrationTests
     }
 
     /// <summary>
-    /// Both server-event handlers are registered at all, and between them for the eight notifications
-    /// the feature is specified to listen to: two of this package's own and six of Umbraco's.
+    /// Both server-event handlers are registered at all, and between them for the nine notifications
+    /// the feature is specified to listen to: two of this package's own and seven of Umbraco's.
     /// </summary>
     /// <remarks>
     /// The test above compares each handler with what it implements, so it would stay green if a
@@ -120,7 +120,7 @@ public sealed class ServerEventRegistrationTests
     /// than a side effect of an edit elsewhere.
     /// </remarks>
     [Fact]
-    public void ServerEventHandlers_AreRegisteredForEightNotificationsInTotal()
+    public void ServerEventHandlers_AreRegisteredForNineNotificationsInTotal()
     {
         var descriptors = RegisteredDescriptors();
 
@@ -131,7 +131,7 @@ public sealed class ServerEventRegistrationTests
         Assert.All(
             ServerEventHandlerTypes,
             handlerType => Assert.Contains(registrations, d => d.ImplementationType == handlerType));
-        Assert.Equal(8, registrations.Count);
+        Assert.Equal(9, registrations.Count);
     }
 
     /// <summary>

@@ -11,8 +11,11 @@ import type {
   EffectivePermission,
   PathNode,
   PermissionEntry,
+  StartNodeAccess,
 } from '../models/permission.models.js';
-import { getVerbs, getRoles, getTreeRoot, getTreeChildren, getEffectiveForUser, getEffectiveForRole, getPermissionsForPath } from '../api/advanced-permissions.api.js';
+import { getVerbs, getRoles, getTreeRoot, getTreeChildren, getEffectiveForUser, getEffectiveForRole, getPermissionsForPath, getStartNodes } from '../api/advanced-permissions.api.js';
+import { blockedPlaceholderPermission, isBlocked, rowBadge } from '../start-nodes/start-node-display.js';
+import { StartNodesLoader } from '../start-nodes/start-nodes-loader.js';
 
 import { UAP_ROLE_PICKER_MODAL } from './role-picker-modal.token.js';
 import { UAP_USER_PICKER_MODAL } from './user-picker-modal.token.js';
@@ -26,6 +29,8 @@ import type { UapRefreshPhase } from '../live/refresh-phase.js';
 import '../live/uap-live-refresh.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
+import '../start-nodes/uap-start-node-badge.element.js';
+import '../start-nodes/uap-start-node-strip.element.js';
 import '../help/uap-page-intro.element.js';
 import '../help/uap-selection-panel.element.js';
 import type { UapSelectorGroup } from '../help/uap-selection-panel.element.js';
@@ -41,6 +46,8 @@ interface ViewerTreeNode {
   loading: boolean;
   /** Map of verb → resolved effective permission (null = not yet loaded). */
   effectivePerms: Map<string, EffectivePermission> | null;
+  /** Whether the subject can reach the node through its start nodes (null = not yet loaded). */
+  startNodeAccess: StartNodeAccess | null;
   children?: ViewerTreeNode[];
 }
 
@@ -90,6 +97,9 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #loadAbortController: AbortController | null = null;
+
+  /** The subject's start nodes and their load state, for the strip and the blocked dialog. */
+  #startNodes = new StartNodesLoader(this, (subject, signal) => getStartNodes(subject, signal));
 
   /** Live-event subscription; also the entry point for the manual refresh control. */
   #liveEvents: UapSecurityEventsController;
@@ -157,6 +167,8 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     this._activeSubject = null;
     this._treeNodes = [];
     this._error = null;
+    // A stale strip must not outlive the subject it described; this also discards a load in flight.
+    this.#startNodes.clear();
     clearSelection(SURFACE_ID);
   }
 
@@ -197,6 +209,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     this.#loadAbortController?.abort();
     const controller = new AbortController();
     this.#loadAbortController = controller;
+    this.#loadStartNodes(controller.signal);
 
     this._loading = true;
     this._error = null;
@@ -215,6 +228,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
         expanded: false,
         loading: false,
         effectivePerms: null,
+        startNodeAccess: null,
       }));
       // Load effective permissions for root nodes in batches to avoid request flooding
       await this.#loadEffectiveBatch(this._treeNodes, controller.signal);
@@ -224,6 +238,19 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     } finally {
       if (!controller.signal.aborted) this._loading = false;
     }
+  }
+
+  /**
+   * Starts loading the subject's start nodes into the loader the strip and the blocked dialog read.
+   * Fire and forget: the grid does not depend on it, and the loader reports its own failure.
+   * @param signal Aborts when the selection changes.
+   * @param background True for a live refresh: keep the current strip until the new one arrives.
+   */
+  #loadStartNodes(signal: AbortSignal, background = false): void {
+    const subject = this._activeSubject === 'role'
+      ? (this._selectedRole ? { roleAlias: this._selectedRole.alias } : null)
+      : (this._selectedUser ? { userKey: this._selectedUser.unique } : null);
+    if (subject) void this.#startNodes.load(subject, signal, background);
   }
 
   /**
@@ -247,6 +274,9 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     this.#loadAbortController?.abort();
     const controller = new AbortController();
     this.#loadAbortController = controller;
+    // Reloaded in the same pass, so a live event or a subject change refreshes the strip too. The
+    // strip reports its own failure; it does not count towards whether the grid refreshed.
+    this.#loadStartNodes(controller.signal, background);
 
     // Only expanded rows are refreshed below, but re-expanding a collapsed row reuses whatever
     // children it cached, so anything left under one would show values from before this refresh
@@ -291,6 +321,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   #clearEffectiveRecursive(nodes: ViewerTreeNode[]): void {
     for (const node of nodes) {
       node.effectivePerms = null;
+      node.startNodeAccess = null;
       if (node.children) this.#clearEffectiveRecursive(node.children);
     }
   }
@@ -350,6 +381,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
         permsMap.set(p.verb, p);
       }
       node.effectivePerms = permsMap;
+      node.startNodeAccess = result.startNodeAccess;
       this._treeNodes = [...this._treeNodes]; // trigger re-render
       return true;
     } catch {
@@ -379,6 +411,7 @@ export class UapAccessViewerRootElement extends UmbLitElement {
         expanded: false,
         loading: false,
         effectivePerms: null,
+        startNodeAccess: null,
       }));
       this.#updateNode(node.key, { expanded: true, loading: false, children: childNodes });
       // Load effective permissions in batches
@@ -606,7 +639,8 @@ export class UapAccessViewerRootElement extends UmbLitElement {
                 </uui-button>`
               : html`<uui-button compact look="default" class="expand-spacer" disabled aria-hidden="true" label="">▸</uui-button>`}
             <umb-icon name=${node.icon ?? 'icon-document'}></umb-icon>
-            <span class="node-name">${node.name}</span>
+            <span class="node-name ${node.startNodeAccess === 'NotVisible' ? 'muted' : ''}">${node.name}</span>
+            <uap-start-node-badge .badge=${rowBadge(node.key, node.startNodeAccess, this.#startNodes.data)}></uap-start-node-badge>
           </div>
         </td>
         ${this._verbs.map((v) => this.#renderEffectiveCell(node, v.verb))}
@@ -619,6 +653,14 @@ export class UapAccessViewerRootElement extends UmbLitElement {
       return html`
         <td class="perm-td" title=${verb}>
           <uap-perm-block loading></uap-perm-block>
+        </td>
+      `;
+    }
+
+    if (isBlocked(node.startNodeAccess)) {
+      return html`
+        <td class="perm-td" @click=${() => this.#openReasoning(node, verb)}>
+          <uap-perm-block blocked blocked-title=${this.#localize.term('uap_startNodes_blockedCellTitle')}></uap-perm-block>
         </td>
       `;
     }
@@ -659,6 +701,13 @@ export class UapAccessViewerRootElement extends UmbLitElement {
             @uap-live-refresh=${() => void this.#liveEvents.refresh()}>
           </uap-live-refresh>
           ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
+          ${this._activeSubject
+            ? html`<uap-start-node-strip
+                .data=${this.#startNodes.data}
+                ?loading=${this.#startNodes.loading}
+                ?error=${this.#startNodes.error}
+                subject-kind=${this._activeSubject}></uap-start-node-strip>`
+            : nothing}
           ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
           ${!this._loading && this._treeNodes.length > 0
             ? html`
@@ -690,6 +739,8 @@ export class UapAccessViewerRootElement extends UmbLitElement {
         .nodeName=${this._reasoningNode?.name ?? ''}
         .loading=${this._dialogLoading}
         .defaultState=${'deny'}
+        .startNodeAccess=${this._reasoningNode?.startNodeAccess ?? 'Accessible'}
+        .startNodes=${this.#startNodes.data}
         .roleNameLookup=${(alias: string) => this.#roleName(alias)}
         @uap-reasoning-close=${this.#onReasoningClose}>
       </uap-reasoning-dialog>
@@ -697,9 +748,15 @@ export class UapAccessViewerRootElement extends UmbLitElement {
   }
 
   /** Returns the effective permission to show in the reasoning dialog banner. */
-  #currentEffectivePerm() {
+  #currentEffectivePerm(): EffectivePermission | null {
     if (!this._reasoningNode || !this._reasoningVerb) return null;
-    return this._reasoningNode.effectivePerms?.get(this._reasoningVerb) ?? null;
+    const perm = this._reasoningNode.effectivePerms?.get(this._reasoningVerb);
+    if (perm) return perm;
+    // A blocked node always has one from the server, except when the node vanished after the tree
+    // loaded (an empty list); the dialog needs one to draw its blocked banner and note.
+    return isBlocked(this._reasoningNode.startNodeAccess)
+      ? blockedPlaceholderPermission(this._reasoningVerb)
+      : null;
   }
 
   /** Returns the subject's display name for the reasoning dialog banner. */
@@ -812,6 +869,10 @@ export class UapAccessViewerRootElement extends UmbLitElement {
     .node-name {
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+
+    .node-name.muted {
+      color: var(--uui-color-text-alt, #888);
     }
 
     /* ── Permission blocks ────────────────────────────────────── */

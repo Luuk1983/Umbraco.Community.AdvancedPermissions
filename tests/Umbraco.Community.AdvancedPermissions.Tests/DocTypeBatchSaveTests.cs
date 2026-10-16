@@ -455,5 +455,6 @@ public sealed class DocTypeBatchSaveTests
             Substitute.For<IDocTypePermissionRepository>(),
             Substitute.For<global::Umbraco.Cms.Core.Services.IContentTypeService>(),
             Substitute.For<global::Umbraco.Cms.Core.Services.IEntityService>(),
-            Substitute.For<global::Umbraco.Cms.Core.Services.IUserService>());
+            Substitute.For<global::Umbraco.Cms.Core.Services.IUserService>(),
+            Substitute.For<global::Umbraco.Community.AdvancedPermissions.Services.StartNodes.IStartNodeAccessService>());
 }

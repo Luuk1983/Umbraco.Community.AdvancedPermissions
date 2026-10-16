@@ -18,6 +18,17 @@ namespace Umbraco.Community.AdvancedPermissions.Services;
 internal static class ElementTreePathResolver
 {
     /// <summary>
+    /// Gets an element's or element folder's materialised path (e.g. <c>-1,1001,1002</c>), read fresh
+    /// from the database.
+    /// </summary>
+    /// <param name="entityService">The Umbraco entity service.</param>
+    /// <param name="nodeKey">The element or folder key.</param>
+    /// <returns>The path, or <see langword="null"/> when the node is not in the element tree.</returns>
+    public static string? GetPath(IEntityService entityService, Guid nodeKey) =>
+        (entityService.GetAllPaths(UmbracoObjectTypes.Element, nodeKey).FirstOrDefault()
+            ?? entityService.GetAllPaths(UmbracoObjectTypes.ElementContainer, nodeKey).FirstOrDefault())?.Path;
+
+    /// <summary>
     /// Resolves the ordered list of node keys from root to (and including) the given element or folder.
     /// Returns an empty list when the node cannot be found in the element tree.
     /// </summary>
@@ -26,13 +37,9 @@ internal static class ElementTreePathResolver
     /// <returns>An ordered list of node keys from root to the target node (inclusive), or empty.</returns>
     public static IReadOnlyList<Guid> BuildPathFromRoot(IEntityService entityService, Guid nodeKey)
     {
-        // The key may be an element or a folder; try both object types.
-        var pathEntry = entityService.GetAllPaths(UmbracoObjectTypes.Element, nodeKey).FirstOrDefault()
-            ?? entityService.GetAllPaths(UmbracoObjectTypes.ElementContainer, nodeKey).FirstOrDefault();
-
-        return pathEntry is null
-            ? []
-            : BuildPathFromRoot(entityService, pathEntry.Path);
+        // The key may be an element or a folder; GetPath tries both object types.
+        var path = GetPath(entityService, nodeKey);
+        return path is null ? [] : BuildPathFromRoot(entityService, path);
     }
 
     /// <summary>

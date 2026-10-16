@@ -1,13 +1,23 @@
 namespace Umbraco.Community.AdvancedPermissions.Controllers.Models;
 
 /// <summary>
-/// Represents the full set of resolved effective permissions for a user or role at a content node.
+/// Represents the full set of resolved effective permissions for a user or role at a content node or
+/// Library node, plus whether start nodes let the subject reach it.
 /// </summary>
-/// <param name="NodeKey">The content node key these permissions were resolved for.</param>
-/// <param name="Permissions">The effective permission for each verb.</param>
+/// <param name="NodeKey">The node key these permissions were resolved for.</param>
+/// <param name="Permissions">
+/// The effective permission for each verb. Always the advanced-permission result, even when start
+/// nodes block the node, so the viewer can show what would apply if the node were reachable.
+/// </param>
+/// <param name="StartNodeAccess">
+/// Whether the subject can reach the node through its start nodes (content start nodes for content
+/// nodes, Library start nodes for Library nodes): <c>Accessible</c>, <c>PathOnly</c> (an ancestor of
+/// a start node) or <c>NotVisible</c>.
+/// </param>
 public sealed record EffectivePermissionsResponseModel(
     Guid NodeKey,
-    IReadOnlyList<EffectivePermissionItem> Permissions);
+    IReadOnlyList<EffectivePermissionItem> Permissions,
+    string StartNodeAccess);
 
 /// <summary>
 /// Represents the resolved effective permission for a single verb, including reasoning.

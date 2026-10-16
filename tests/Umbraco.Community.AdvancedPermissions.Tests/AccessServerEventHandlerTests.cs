@@ -49,6 +49,23 @@ public sealed class AccessServerEventHandlerTests
         await AssertAccessRoutedAsync(groupKey);
     }
 
+    /// <summary>
+    /// A user group saved together with its users is also routed. Only this notification clears the
+    /// cached content and Library start nodes of the group's users, so routing it guarantees a viewer
+    /// refetches after the cache is cleared (issue #66).
+    /// </summary>
+    [Fact]
+    public async Task UserGroupWithUsersSaved_RoutesAccessEvent()
+    {
+        var groupKey = Guid.NewGuid();
+
+        await CreateHandler().HandleAsync(
+            new UserGroupWithUsersSavedNotification(new UserGroupWithUsers(BuildGroup(groupKey), [], []), new EventMessages()),
+            CancellationToken.None);
+
+        await AssertAccessRoutedAsync(groupKey);
+    }
+
     /// <summary>A deleted user group is routed under the <c>Access</c> source, keyed by the group.</summary>
     [Fact]
     public async Task UserGroupDeleted_RoutesAccessEvent()

@@ -8,6 +8,7 @@ using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Tests;
 
@@ -31,7 +32,8 @@ public sealed class DocTypePermissionsControllerElementTypeAuditTests
     public DocTypePermissionsControllerElementTypeAuditTests()
     {
         _sut = new DocTypePermissionsController(
-            _docTypeService, _repository, _contentTypeService, _entityService, _userService);
+            _docTypeService, _repository, _contentTypeService, _entityService, _userService,
+            Substitute.For<IStartNodeAccessService>());
     }
 
     /// <summary>

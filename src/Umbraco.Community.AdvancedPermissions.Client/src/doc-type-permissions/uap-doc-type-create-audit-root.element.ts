@@ -9,8 +9,11 @@ import type {
   UserItem,
   PathNode,
   PermissionEntry,
+  StartNodeAccess,
 } from '../models/permission.models.js';
-import { getRoles, getTreeRoot, getTreeChildren } from '../api/advanced-permissions.api.js';
+import { getRoles, getTreeRoot, getTreeChildren, getStartNodes } from '../api/advanced-permissions.api.js';
+import { blockedPlaceholderPermission, isBlocked, rowBadge } from '../start-nodes/start-node-display.js';
+import { StartNodesLoader } from '../start-nodes/start-nodes-loader.js';
 import {
   getDocTypes,
   getDocTypeAuditForNode,
@@ -32,6 +35,8 @@ import type { UapRefreshPhase } from '../live/refresh-phase.js';
 import '../live/uap-live-refresh.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
+import '../start-nodes/uap-start-node-badge.element.js';
+import '../start-nodes/uap-start-node-strip.element.js';
 import '../help/uap-page-intro.element.js';
 import '../help/uap-selection-panel.element.js';
 import type { UapSelectorGroup } from '../help/uap-selection-panel.element.js';
@@ -70,6 +75,8 @@ interface AuditTreeNode {
   loading: boolean;
   /** Map of contentTypeKey → audit row (null = not yet loaded). */
   auditResults: Map<string, DocTypeAuditForNodeRow> | null;
+  /** Whether the subject can reach the node through its start nodes (null = not yet loaded). */
+  startNodeAccess: StartNodeAccess | null;
   /** The loaded children, once the node has been expanded. */
   children?: AuditTreeNode[];
 }
@@ -140,6 +147,9 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   #notificationContext: typeof UMB_NOTIFICATION_CONTEXT.TYPE | undefined = undefined;
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #loadAbortController: AbortController | null = null;
+
+  /** The subject's start nodes and their load state, for the strip and the blocked dialog. */
+  #startNodes = new StartNodesLoader(this, (subject, signal) => getStartNodes(subject, signal));
 
   /** Live-event subscription; also the entry point for the manual refresh control. */
   #liveEvents: UapSecurityEventsController;
@@ -225,10 +235,23 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     this._selectedDocType = null;
     this._treeNodes = [];
     this._error = null;
+    // A stale strip must not outlive the subject it described; this also discards a load in flight.
+    this.#startNodes.clear();
     clearSelection(SURFACE_ID);
   }
 
   // ── Data loading ────────────────────────────────────────────────────────
+
+  /**
+   * Starts loading the subject's start nodes into the loader the strip and the blocked dialog read.
+   * Fire and forget: the grid does not depend on it, and the loader reports its own failure.
+   * @param signal Aborts when the selection changes.
+   * @param background True for a live refresh: keep the current strip until the new one arrives.
+   */
+  #loadStartNodes(signal: AbortSignal, background = false): void {
+    const subject = this.#subject;
+    if (subject) void this.#startNodes.load(subject, signal, background);
+  }
 
   /** Loads the document-type list and the user-group display names used by the reasoning dialog. */
   async #loadMeta(): Promise<void> {
@@ -264,6 +287,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     this.#loadAbortController?.abort();
     const controller = new AbortController();
     this.#loadAbortController = controller;
+    this.#loadStartNodes(controller.signal);
 
     this._loading = true;
     this._error = null;
@@ -282,6 +306,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
         expanded: false,
         loading: false,
         auditResults: null,
+        startNodeAccess: null,
       }));
 
       await this.#loadAuditBatch(this._treeNodes, controller.signal);
@@ -313,6 +338,9 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     this.#loadAbortController?.abort();
     const controller = new AbortController();
     this.#loadAbortController = controller;
+    // Reloaded in the same pass, so a live event or a subject change refreshes the strip too. The
+    // strip reports its own failure; it does not count towards whether the grid refreshed.
+    this.#loadStartNodes(controller.signal, background);
 
     let complete = true;
     if (!background) {
@@ -351,6 +379,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   #clearAuditRecursive(nodes: AuditTreeNode[]): void {
     for (const node of nodes) {
       node.auditResults = null;
+      node.startNodeAccess = null;
       if (node.children) this.#clearAuditRecursive(node.children);
     }
   }
@@ -413,7 +442,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
       for (const row of result.results) {
         map.set(row.contentTypeKey, row);
       }
-      this.#updateNode(node.key, { auditResults: map });
+      this.#updateNode(node.key, { auditResults: map, startNodeAccess: result.startNodeAccess });
       return true;
     } catch {
       // Non-fatal: a first load leaves auditResults null (shows the loading indicator); a
@@ -446,6 +475,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
         expanded: false,
         loading: false,
         auditResults: null,
+        startNodeAccess: null,
       }));
       this.#updateNode(node.key, { expanded: true, loading: false, children: childNodes });
       await this.#loadAuditBatch(childNodes, this.#loadAbortController?.signal ?? new AbortController().signal);
@@ -677,7 +707,8 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
                 </uui-button>`
               : html`<uui-button compact look="default" class="expand-spacer" disabled aria-hidden="true" label="">▸</uui-button>`}
             <umb-icon name=${node.icon ?? 'icon-document'}></umb-icon>
-            <span class="node-name">${node.name}</span>
+            <span class="node-name ${node.startNodeAccess === 'NotVisible' ? 'muted' : ''}">${node.name}</span>
+            <uap-start-node-badge .badge=${rowBadge(node.key, node.startNodeAccess, this.#startNodes.data)}></uap-start-node-badge>
           </div>
         </td>
         ${VERBS.map((v) => this.#renderCell(node, v.verb))}
@@ -701,6 +732,14 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
       return html`
         <td class="perm-td">
           <uap-perm-block loading></uap-perm-block>
+        </td>
+      `;
+    }
+
+    if (isBlocked(node.startNodeAccess)) {
+      return html`
+        <td class="perm-td" @click=${() => void this.#openReasoning(node, ctKey)}>
+          <uap-perm-block blocked blocked-title=${this.#localize.term('uap_startNodes_blockedCellTitle')}></uap-perm-block>
         </td>
       `;
     }
@@ -735,6 +774,16 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
   }
 
   /**
+   * The start-node access of the node the dialog is open for, read from the live tree like
+   * {@link #reasoningRow}, so a refresh while the dialog is open shows the new verdict.
+   * @returns The node's access; `Accessible` when no dialog is open or the node is not loaded.
+   */
+  #reasoningAccess(): StartNodeAccess {
+    if (!this._reasoningNode) return 'Accessible';
+    return findNode(this._treeNodes, this._reasoningNode.key)?.startNodeAccess ?? 'Accessible';
+  }
+
+  /**
    * The audit row behind the cell the reasoning dialog was opened from, read from the tree as it
    * is now rather than from the node object captured when the dialog opened. A refresh replaces
    * rows in place, so the captured node would go on showing the answer from before it.
@@ -752,7 +801,13 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
    */
   #currentEffective() {
     const row = this.#reasoningRow();
-    if (!row) return null;
+    if (!row) {
+      // A blocked cell can be clicked without a row (a stale doc-type list); the dialog needs a
+      // permission to draw its blocked banner and note.
+      return isBlocked(this.#reasoningAccess())
+        ? blockedPlaceholderPermission('Umb.Document.CreateOfType')
+        : null;
+    }
     return {
       verb: 'Umb.Document.CreateOfType',
       isAllowed: row.isAllowed,
@@ -834,6 +889,13 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
         </uap-live-refresh>
 
         ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
+        ${this._activeSubject
+          ? html`<uap-start-node-strip
+              .data=${this.#startNodes.data}
+              ?loading=${this.#startNodes.loading}
+              ?error=${this.#startNodes.error}
+              subject-kind=${this._activeSubject}></uap-start-node-strip>`
+          : nothing}
         ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
 
         ${!this._loading && this._treeNodes.length > 0
@@ -868,6 +930,8 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
         .nodeName=${this._reasoningNode?.name ?? ''}
         .loading=${this._dialogLoading}
         .defaultState=${'allow'}
+        .startNodeAccess=${this.#reasoningAccess()}
+        .startNodes=${this.#startNodes.data}
         .outsideAllowed=${this.#currentOutsideAllowed()}
         .roleNameLookup=${this.#roleName}
         @uap-reasoning-close=${this.#onReasoningClose}>
@@ -928,6 +992,7 @@ export class UapDocTypeCreateAuditRootElement extends UmbLitElement {
     /* Invisible clone of the expand toggle; reserves equal width so leaf icons stay aligned. */
     .expand-spacer { visibility: hidden; }
     .node-name { overflow: hidden; text-overflow: ellipsis; }
+    .node-name.muted { color: var(--uui-color-text-alt, #888); }
 
     .perm-td { padding: 3px; text-align: center; vertical-align: middle; }
   `;

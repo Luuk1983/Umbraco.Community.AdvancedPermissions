@@ -3,10 +3,13 @@ import type { TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UMB_MODAL_MANAGER_CONTEXT } from '@umbraco-cms/backoffice/modal';
-import type { RoleInfo, UserItem, PathNode, PermissionEntry } from '../models/permission.models.js';
+import type { RoleInfo, UserItem, PathNode, PermissionEntry, StartNodeAccess } from '../models/permission.models.js';
 import { VIRTUAL_ROOT_NODE_KEY } from '../models/permission.models.js';
 import { getRoles } from '../api/advanced-permissions.api.js';
 import { getElementTypeAudit, getDocTypePathEntries } from '../api/doc-type-permissions.api.js';
+import { getElementStartNodes } from '../api/element-permissions.api.js';
+import { createNoteTerm, isBlocked } from '../start-nodes/start-node-display.js';
+import { StartNodesLoader } from '../start-nodes/start-nodes-loader.js';
 import type { DocTypeAuditForNodeRow } from '../models/doc-type-permission.models.js';
 import type { CellInfo } from '../utils/cell-info.js';
 import { UAP_ROLE_PICKER_MODAL } from '../access-viewer/role-picker-modal.token.js';
@@ -17,6 +20,7 @@ import type { UapRefreshPhase } from '../live/refresh-phase.js';
 import '../live/uap-live-refresh.element.js';
 import '../shared/components/uap-perm-block.element.js';
 import '../shared/components/uap-reasoning-dialog.element.js';
+import '../start-nodes/uap-start-node-strip.element.js';
 import '../help/uap-page-intro.element.js';
 import '../help/uap-selection-panel.element.js';
 import type { UapSelectorGroup } from '../help/uap-selection-panel.element.js';
@@ -60,6 +64,8 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
 
   /** One row per library element type with whether the subject may create it; swapped in place on a refresh. */
   @state() private _rows: DocTypeAuditForNodeRow[] = [];
+  /** Whether the subject can reach the Library at all (per subject; null until the audit loads). */
+  @state() private _startNodeAccess: StartNodeAccess | null = null;
   /** True only for a first load or a selection change, which hides the list behind the loader. A live refresh never sets it. */
   @state() private _loading = false;
   /** The last load failure, shown above the list. */
@@ -84,6 +90,9 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
 
   #modalManager: typeof UMB_MODAL_MANAGER_CONTEXT.TYPE | undefined = undefined;
   #abort: AbortController | null = null;
+
+  /** The subject's Library start nodes and their load state, for the card and the blocked dialog. */
+  #startNodes = new StartNodesLoader(this, (subject, signal) => getElementStartNodes(subject, signal));
 
   /** Live-event subscription; also the entry point for the manual refresh control. */
   #liveEvents: UapSecurityEventsController;
@@ -158,9 +167,12 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     this._selectedUser = null;
     this._activeSubject = null;
     this._rows = [];
+    this._startNodeAccess = null;
     this._error = null;
     // A load aborted here never reaches its own `finally`, so the loader is cleared here.
     this._loading = false;
+    // A stale card must not outlive the subject it described; this also discards a load in flight.
+    this.#startNodes.clear();
     clearSelection(SURFACE_ID);
   }
 
@@ -202,6 +214,9 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
     this.#abort?.abort();
     const controller = new AbortController();
     this.#abort = controller;
+    // Reloaded in the same pass, so a live event or a subject change refreshes the card too. The
+    // card reports its own failure; it does not count towards whether the list refreshed.
+    void this.#startNodes.load(subject, controller.signal, background);
 
     if (!background) {
       this._loading = true;
@@ -211,6 +226,7 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
       const result = await getElementTypeAudit(subject, controller.signal);
       if (controller.signal.aborted) return;
       this._rows = result.results;
+      this._startNodeAccess = result.startNodeAccess;
     } catch (err) {
       if (controller.signal.aborted) return;
       this._error = String(err);
@@ -428,6 +444,15 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
             @uap-live-refresh=${() => void this.#liveEvents.refresh()}>
           </uap-live-refresh>
           ${this._error ? html`<p class="error-msg">⚠ ${this._error}</p>` : nothing}
+          ${this._activeSubject
+            ? html`<uap-start-node-strip
+                .data=${this.#startNodes.data}
+                ?loading=${this.#startNodes.loading}
+                ?error=${this.#startNodes.error}
+                subject-kind=${this._activeSubject}
+                tree="library"
+                .note=${createNoteTerm(this.#startNodes.data?.state)}></uap-start-node-strip>`
+            : nothing}
           ${this._loading ? html`<div class="loading"><uui-loader></uui-loader></div>` : nothing}
           ${!this._loading
             ? (this._rows.length > 0
@@ -454,6 +479,10 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
         .nodeName=${this._reasoningRow?.contentTypeName ?? ''}
         .loading=${this._dialogLoading}
         .defaultState=${'allow'}
+        .startNodeAccess=${this._startNodeAccess ?? 'Accessible'}
+        .startNodes=${this.#startNodes.data}
+        startNodeTree="library"
+        ?blockedSubjectWide=${true}
         .roleNameLookup=${this.#roleName}
         @uap-reasoning-close=${this.#onReasoningClose}>
       </uap-reasoning-dialog>
@@ -466,6 +495,20 @@ export class UapLibraryInsertViewerRootElement extends UmbLitElement {
    * @returns The row.
    */
   #renderRow(row: DocTypeAuditForNodeRow): TemplateResult {
+    // Element-type creation is section-global, so a subject without any Library access is blocked on
+    // every row; a subject with Library start nodes can still create inside them.
+    if (isBlocked(this._startNodeAccess)) {
+      const blockedTitle = this.#localize.term('uap_startNodes_blockedCellTitle');
+      return html`
+        <div class="type-row">
+          <umb-icon name=${row.contentTypeIcon ?? 'icon-document'}></umb-icon>
+          <span class="type-name">${row.contentTypeName}</span>
+          <div class="type-cell" title=${blockedTitle} @click=${() => void this.#openReasoning(row)}>
+            <uap-perm-block blocked blocked-title=${blockedTitle}></uap-perm-block>
+          </div>
+        </div>
+      `;
+    }
     const cls: 'allow' | 'deny' = row.isAllowed ? 'allow' : 'deny';
     const wasOverride = row.wasPriorityOverrideActive === true;
     const info: CellInfo = { split: false, nodeClass: cls, descClass: cls, nodeOverride: wasOverride, descOverride: wasOverride };

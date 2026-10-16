@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteElementPermissionData, DeleteElementPermissionErrors, DeleteElementPermissionResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypeAuditData, GetDocTypeAuditErrors, GetDocTypeAuditResponses, GetDocTypePathEntriesData, GetDocTypePathEntriesErrors, GetDocTypePathEntriesResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetElementChildrenData, GetElementChildrenErrors, GetElementChildrenResponses, GetElementEffectiveForCurrentUserData, GetElementEffectiveForCurrentUserErrors, GetElementEffectiveForCurrentUserResponses, GetElementEffectiveForRoleData, GetElementEffectiveForRoleErrors, GetElementEffectiveForRoleResponses, GetElementEffectiveForUserData, GetElementEffectiveForUserErrors, GetElementEffectiveForUserResponses, GetElementPermissionsByNodeData, GetElementPermissionsByNodeErrors, GetElementPermissionsByNodeResponses, GetElementPermissionsData, GetElementPermissionsErrors, GetElementPermissionsForPathData, GetElementPermissionsForPathErrors, GetElementPermissionsForPathResponses, GetElementPermissionsResponses, GetElementRootData, GetElementRootErrors, GetElementRootResponses, GetElementTypeAuditData, GetElementTypeAuditErrors, GetElementTypeAuditResponses, GetElementVerbsData, GetElementVerbsErrors, GetElementVerbsResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetLibraryElementTypesData, GetLibraryElementTypesErrors, GetLibraryElementTypesResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PutDocTypePermissionsBatchData, PutDocTypePermissionsBatchErrors, PutDocTypePermissionsBatchResponses, PutDocTypePermissionsData, PutDocTypePermissionsErrors, PutDocTypePermissionsResponses, PutElementPermissionsBatchData, PutElementPermissionsBatchErrors, PutElementPermissionsBatchResponses, PutElementPermissionsData, PutElementPermissionsErrors, PutElementPermissionsResponses, PutPermissionsBatchData, PutPermissionsBatchErrors, PutPermissionsBatchResponses, PutPermissionsData, PutPermissionsErrors, PutPermissionsResponses } from './types.gen';
+import type { DeleteElementPermissionData, DeleteElementPermissionErrors, DeleteElementPermissionResponses, DeletePermissionData, DeletePermissionErrors, DeletePermissionResponses, GetChildrenData, GetChildrenErrors, GetChildrenResponses, GetDocTypeAuditData, GetDocTypeAuditErrors, GetDocTypeAuditResponses, GetDocTypePathEntriesData, GetDocTypePathEntriesErrors, GetDocTypePathEntriesResponses, GetDocTypesData, GetDocTypesErrors, GetDocTypesResponses, GetEffectiveForRoleData, GetEffectiveForRoleErrors, GetEffectiveForRoleResponses, GetEffectiveForUserData, GetEffectiveForUserErrors, GetEffectiveForUserResponses, GetElementChildrenData, GetElementChildrenErrors, GetElementChildrenResponses, GetElementEffectiveForCurrentUserData, GetElementEffectiveForCurrentUserErrors, GetElementEffectiveForCurrentUserResponses, GetElementEffectiveForRoleData, GetElementEffectiveForRoleErrors, GetElementEffectiveForRoleResponses, GetElementEffectiveForUserData, GetElementEffectiveForUserErrors, GetElementEffectiveForUserResponses, GetElementPermissionsByNodeData, GetElementPermissionsByNodeErrors, GetElementPermissionsByNodeResponses, GetElementPermissionsData, GetElementPermissionsErrors, GetElementPermissionsForPathData, GetElementPermissionsForPathErrors, GetElementPermissionsForPathResponses, GetElementPermissionsResponses, GetElementRootData, GetElementRootErrors, GetElementRootResponses, GetElementStartNodesForRoleData, GetElementStartNodesForRoleErrors, GetElementStartNodesForRoleResponses, GetElementStartNodesForUserData, GetElementStartNodesForUserErrors, GetElementStartNodesForUserResponses, GetElementTypeAuditData, GetElementTypeAuditErrors, GetElementTypeAuditResponses, GetElementVerbsData, GetElementVerbsErrors, GetElementVerbsResponses, GetForEditorData, GetForEditorErrors, GetForEditorResponses, GetLibraryElementTypesData, GetLibraryElementTypesErrors, GetLibraryElementTypesResponses, GetPermissionsByNodeData, GetPermissionsByNodeErrors, GetPermissionsByNodeResponses, GetPermissionsData, GetPermissionsErrors, GetPermissionsForPathData, GetPermissionsForPathErrors, GetPermissionsForPathResponses, GetPermissionsResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetRootData, GetRootErrors, GetRootResponses, GetStartNodesForRoleData, GetStartNodesForRoleErrors, GetStartNodesForRoleResponses, GetStartNodesForUserData, GetStartNodesForUserErrors, GetStartNodesForUserResponses, GetVerbsData, GetVerbsErrors, GetVerbsResponses, PutDocTypePermissionsBatchData, PutDocTypePermissionsBatchErrors, PutDocTypePermissionsBatchResponses, PutDocTypePermissionsData, PutDocTypePermissionsErrors, PutDocTypePermissionsResponses, PutElementPermissionsBatchData, PutElementPermissionsBatchErrors, PutElementPermissionsBatchResponses, PutElementPermissionsData, PutElementPermissionsErrors, PutElementPermissionsResponses, PutPermissionsBatchData, PutPermissionsBatchErrors, PutPermissionsBatchResponses, PutPermissionsData, PutPermissionsErrors, PutPermissionsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -206,6 +206,24 @@ export const getElementPermissionsForPath = <ThrowOnError extends boolean = fals
 });
 
 /**
+ * Gets a user's effective Library start nodes and where each comes from.
+ */
+export const getElementStartNodesForUser = <ThrowOnError extends boolean = false>(options?: Options<GetElementStartNodesForUserData, ThrowOnError>) => (options?.client ?? client).get<GetElementStartNodesForUserResponses, GetElementStartNodesForUserErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/start-nodes',
+    ...options
+});
+
+/**
+ * Gets one user group's own Library start node.
+ */
+export const getElementStartNodesForRole = <ThrowOnError extends boolean = false>(options?: Options<GetElementStartNodesForRoleData, ThrowOnError>) => (options?.client ?? client).get<GetElementStartNodesForRoleResponses, GetElementStartNodesForRoleErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/element/start-nodes/by-role',
+    ...options
+});
+
+/**
  * Gets child library nodes with permission entries for a role.
  */
 export const getElementChildren = <ThrowOnError extends boolean = false>(options?: Options<GetElementChildrenData, ThrowOnError>) => (options?.client ?? client).get<GetElementChildrenResponses, GetElementChildrenErrors, ThrowOnError>({
@@ -300,6 +318,24 @@ export const getPermissionsForPath = <ThrowOnError extends boolean = false>(opti
 export const getRoles = <ThrowOnError extends boolean = false>(options?: Options<GetRolesData, ThrowOnError>) => (options?.client ?? client).get<GetRolesResponses, GetRolesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/management/api/v1/advanced-permissions/roles',
+    ...options
+});
+
+/**
+ * Gets a user's effective content start nodes and where each comes from.
+ */
+export const getStartNodesForUser = <ThrowOnError extends boolean = false>(options?: Options<GetStartNodesForUserData, ThrowOnError>) => (options?.client ?? client).get<GetStartNodesForUserResponses, GetStartNodesForUserErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/start-nodes',
+    ...options
+});
+
+/**
+ * Gets one user group's own content start node.
+ */
+export const getStartNodesForRole = <ThrowOnError extends boolean = false>(options?: Options<GetStartNodesForRoleData, ThrowOnError>) => (options?.client ?? client).get<GetStartNodesForRoleResponses, GetStartNodesForRoleErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/management/api/v1/advanced-permissions/start-nodes/by-role',
     ...options
 });
 

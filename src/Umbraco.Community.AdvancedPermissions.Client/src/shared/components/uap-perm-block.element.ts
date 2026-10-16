@@ -11,7 +11,9 @@ import type { CellInfo } from '../../utils/cell-info.js';
  * - the doc-type Permissions Editor (stored entries per (role, content-type, node))
  * - the doc-type Create Audit (effective + isInAllowedChildren per (subject, node, content-type))
  *
- * Display priority: `loading` > `na` > `info`. Click handling is the parent's responsibility —
+ * - the viewers' "blocked by start nodes" cell (neutral hatched grey with a lock)
+ *
+ * Display priority: `loading` > `blocked` > `na` > `info`. Click handling is the parent's responsibility —
  * this element only renders the visual state.
  */
 @customElement('uap-perm-block')
@@ -42,6 +44,15 @@ export class UapPermBlockElement extends LitElement {
   @property({ type: Boolean, attribute: 'outside-allowed' }) outsideAllowed = false;
 
   /**
+   * When true (and `loading` is false), renders the neutral "blocked by start nodes" cell: hatched
+   * grey with a lock, never green or red, because the subject cannot reach the node at all.
+   */
+  @property({ type: Boolean }) blocked = false;
+
+  /** Tooltip for a blocked cell. */
+  @property({ attribute: 'blocked-title' }) blockedTitle = '';
+
+  /**
    * Optional tooltip text shown on hover of an override-themed cell/half. Purely informational.
    */
   @property({ attribute: 'priority-override-title' }) priorityOverrideTitle = '';
@@ -49,6 +60,11 @@ export class UapPermBlockElement extends LitElement {
   override render(): TemplateResult {
     if (this.loading) {
       return html`<div class="perm-block loading">${nothing}…</div>`;
+    }
+    if (this.blocked) {
+      return html`<div class="perm-block uniform blocked" title=${this.blockedTitle}>
+        <umb-icon name="icon-lock"></umb-icon>
+      </div>`;
     }
     if (this.na) {
       const cls = `perm-block uniform na${this.pending ? ' pending' : ''}`;
@@ -175,6 +191,23 @@ export class UapPermBlockElement extends LitElement {
       border-color: var(--uui-color-border, #e8e8e8);
       border-style: dotted;
       cursor: default;
+    }
+
+    /* ── Blocked by start nodes ───────────────────────────────────
+       Neutral, hatched and solid-bordered: distinct from N/A (dotted, no icon), which the Library
+       viewers also use, and never green or red,
+       because the subject cannot reach the node whatever the permissions say. Clickable. */
+    .perm-block.blocked {
+      background: repeating-linear-gradient(
+        45deg,
+        color-mix(in srgb, var(--uui-color-text-alt, #888) 6%, transparent),
+        color-mix(in srgb, var(--uui-color-text-alt, #888) 6%, transparent) 4px,
+        color-mix(in srgb, var(--uui-color-text-alt, #888) 18%, transparent) 4px,
+        color-mix(in srgb, var(--uui-color-text-alt, #888) 18%, transparent) 8px
+      );
+      color: var(--uui-color-text-alt, #666);
+      border-color: var(--uui-color-border-emphasis, #bbb);
+      font-size: 12px;
     }
 
     /* ── Split state: two halves ──────────────────────────────── */

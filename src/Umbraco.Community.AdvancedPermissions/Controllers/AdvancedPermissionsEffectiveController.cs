@@ -6,6 +6,7 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Controllers;
 
@@ -20,11 +21,13 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// </remarks>
 /// <param name="permissionService">The advanced permission service.</param>
 /// <param name="entityService">The Umbraco entity service (for path resolution).</param>
+/// <param name="startNodeAccessService">Classifies the node against the subject's content start nodes.</param>
 [ApiVersion("1.0")]
 [Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public sealed class AdvancedPermissionsEffectiveController(
     IAdvancedPermissionService permissionService,
-    IEntityService entityService)
+    IEntityService entityService,
+    IStartNodeAccessService startNodeAccessService)
     : AdvancedPermissionsControllerBase
 {
     /// <summary>
@@ -43,7 +46,7 @@ public sealed class AdvancedPermissionsEffectiveController(
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <param name="userKey">The key of the user to resolve for.</param>
     /// <param name="nodeKey">The key of the content node to resolve at.</param>
-    /// <returns>The effective permissions for all standard verbs, with full reasoning.</returns>
+    /// <returns>The effective permissions for all standard verbs, with full reasoning, plus the node's start-node access.</returns>
     [HttpGet("effective", Name = "GetEffectiveForUser")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<EffectivePermissionsResponseModel>(StatusCodes.Status200OK)]
@@ -53,15 +56,17 @@ public sealed class AdvancedPermissionsEffectiveController(
         Guid userKey,
         Guid nodeKey)
     {
-        var pathFromRoot = BuildPathFromRoot(nodeKey, entityService);
-        if (pathFromRoot.Count == 0)
+        var path = GetDocumentPath(nodeKey, entityService);
+        var pathFromRoot = path is null ? [] : BuildPathFromRoot(path, entityService);
+        if (path is null || pathFromRoot.Count == 0)
         {
-            return Ok(new EffectivePermissionsResponseModel(nodeKey, []));
+            return Ok(new EffectivePermissionsResponseModel(nodeKey, [], nameof(StartNodeAccess.NotVisible)));
         }
 
         var resolved = await permissionService.ResolveAllAsync(userKey, nodeKey, pathFromRoot, cancellationToken: cancellationToken);
         var items = resolved.Values.Select(MapEffective).ToList();
-        return Ok(new EffectivePermissionsResponseModel(nodeKey, items));
+        var access = Classify(await startNodeAccessService.GetScopeForUserAsync(userKey, StartNodeTree.Content), path);
+        return Ok(new EffectivePermissionsResponseModel(nodeKey, items, access.ToString()));
     }
 
     /// <summary>
@@ -76,7 +81,7 @@ public sealed class AdvancedPermissionsEffectiveController(
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <param name="roleAlias">The role alias to resolve for.</param>
     /// <param name="nodeKey">The key of the content node to resolve at.</param>
-    /// <returns>The effective permissions for all standard verbs, with full reasoning.</returns>
+    /// <returns>The effective permissions for all standard verbs, with full reasoning, plus the node's start-node access.</returns>
     [HttpGet("effective/by-role", Name = "GetEffectiveForRole")]
     [MapToApiVersion("1.0")]
     [ProducesResponseType<EffectivePermissionsResponseModel>(StatusCodes.Status200OK)]
@@ -86,16 +91,28 @@ public sealed class AdvancedPermissionsEffectiveController(
         string roleAlias,
         Guid nodeKey)
     {
-        var pathFromRoot = BuildPathFromRoot(nodeKey, entityService);
-        if (pathFromRoot.Count == 0)
+        var path = GetDocumentPath(nodeKey, entityService);
+        var pathFromRoot = path is null ? [] : BuildPathFromRoot(path, entityService);
+        if (path is null || pathFromRoot.Count == 0)
         {
-            return Ok(new EffectivePermissionsResponseModel(nodeKey, []));
+            return Ok(new EffectivePermissionsResponseModel(nodeKey, [], nameof(StartNodeAccess.NotVisible)));
         }
 
         var resolved = await permissionService.ResolveForRoleAsync(
             roleAlias, nodeKey, pathFromRoot, cancellationToken: cancellationToken);
 
         var items = resolved.Values.Select(MapEffective).ToList();
-        return Ok(new EffectivePermissionsResponseModel(nodeKey, items));
+        var access = Classify(await startNodeAccessService.GetScopeForUserGroupAsync(roleAlias, StartNodeTree.Content), path);
+        return Ok(new EffectivePermissionsResponseModel(nodeKey, items, access.ToString()));
     }
+
+    /// <summary>
+    /// Classifies a node for a subject. A subject that cannot be found reports <c>Accessible</c>, so
+    /// the viewer never shows a restriction it could not verify.
+    /// </summary>
+    /// <param name="scope">The subject's start-node scope, or <see langword="null"/> when unknown.</param>
+    /// <param name="path">The node's path, as already read to resolve its permissions.</param>
+    /// <returns>The node's start-node access.</returns>
+    private StartNodeAccess Classify(StartNodeScope? scope, string path) =>
+        scope is null ? StartNodeAccess.Accessible : startNodeAccessService.Classify(scope, path);
 }

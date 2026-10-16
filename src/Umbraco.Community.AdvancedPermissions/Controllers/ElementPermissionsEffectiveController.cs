@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
@@ -9,6 +10,7 @@ using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Services;
+using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Controllers;
 
@@ -26,11 +28,13 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// <param name="permissionService">The element advanced permission service.</param>
 /// <param name="entityService">The Umbraco entity service (for path resolution).</param>
 /// <param name="backOfficeSecurityAccessor">Accessor for the current backoffice user.</param>
+/// <param name="startNodeAccessService">Classifies the node against the subject's Library start nodes.</param>
 [ApiVersion("1.0")]
 public sealed class ElementPermissionsEffectiveController(
     IElementNodePermissionService permissionService,
     IEntityService entityService,
-    IBackOfficeSecurityAccessor backOfficeSecurityAccessor)
+    IBackOfficeSecurityAccessor backOfficeSecurityAccessor,
+    IStartNodeAccessService startNodeAccessService)
     : AdvancedPermissionsControllerBase
 {
     /// <summary>
@@ -39,7 +43,7 @@ public sealed class ElementPermissionsEffectiveController(
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <param name="userKey">The key of the user to resolve for.</param>
     /// <param name="nodeKey">The element/folder key to resolve at.</param>
-    /// <returns>The effective permissions for all element verbs, with full reasoning.</returns>
+    /// <returns>The effective permissions for all element verbs, with full reasoning, plus the node's Library start-node access.</returns>
     [HttpGet("element/effective", Name = "GetElementEffectiveForUser")]
     [Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
     [MapToApiVersion("1.0")]
@@ -50,14 +54,15 @@ public sealed class ElementPermissionsEffectiveController(
         Guid userKey,
         Guid nodeKey)
     {
-        var (pathFromRoot, targetKey) = ResolvePath(nodeKey);
-        if (pathFromRoot.Count == 0)
+        var (pathFromRoot, targetKey, path) = ResolvePath(nodeKey);
+        if (pathFromRoot.Count == 0 || path is null)
         {
-            return Ok(new EffectivePermissionsResponseModel(nodeKey, []));
+            return Ok(new EffectivePermissionsResponseModel(nodeKey, [], nameof(StartNodeAccess.NotVisible)));
         }
 
         var resolved = await permissionService.ResolveAllAsync(userKey, targetKey, pathFromRoot, cancellationToken: cancellationToken);
-        return Ok(new EffectivePermissionsResponseModel(nodeKey, resolved.Values.Select(MapEffective).ToList()));
+        var access = Classify(await startNodeAccessService.GetScopeForUserAsync(userKey, StartNodeTree.Library), path);
+        return Ok(new EffectivePermissionsResponseModel(nodeKey, resolved.Values.Select(MapEffective).ToList(), access.ToString()));
     }
 
     /// <summary>
@@ -67,7 +72,7 @@ public sealed class ElementPermissionsEffectiveController(
     /// <param name="cancellationToken">Token to support cancellation.</param>
     /// <param name="roleAlias">The role alias to resolve for.</param>
     /// <param name="nodeKey">The element/folder key to resolve at.</param>
-    /// <returns>The effective permissions for all element verbs, with full reasoning.</returns>
+    /// <returns>The effective permissions for all element verbs, with full reasoning, plus the node's Library start-node access.</returns>
     [HttpGet("element/effective/by-role", Name = "GetElementEffectiveForRole")]
     [Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
     [MapToApiVersion("1.0")]
@@ -78,14 +83,15 @@ public sealed class ElementPermissionsEffectiveController(
         string roleAlias,
         Guid nodeKey)
     {
-        var (pathFromRoot, targetKey) = ResolvePath(nodeKey);
-        if (pathFromRoot.Count == 0)
+        var (pathFromRoot, targetKey, path) = ResolvePath(nodeKey);
+        if (pathFromRoot.Count == 0 || path is null)
         {
-            return Ok(new EffectivePermissionsResponseModel(nodeKey, []));
+            return Ok(new EffectivePermissionsResponseModel(nodeKey, [], nameof(StartNodeAccess.NotVisible)));
         }
 
         var resolved = await permissionService.ResolveForRoleAsync(roleAlias, targetKey, pathFromRoot, cancellationToken: cancellationToken);
-        return Ok(new EffectivePermissionsResponseModel(nodeKey, resolved.Values.Select(MapEffective).ToList()));
+        var access = Classify(await startNodeAccessService.GetScopeForUserGroupAsync(roleAlias, StartNodeTree.Library), path);
+        return Ok(new EffectivePermissionsResponseModel(nodeKey, resolved.Values.Select(MapEffective).ToList(), access.ToString()));
     }
 
     /// <summary>
@@ -105,6 +111,8 @@ public sealed class ElementPermissionsEffectiveController(
     /// section gate here re-introduces the read-only-content regression. It remains backoffice-authenticated
     /// via <c>ManagementApiControllerBase</c>, and resolves only for the current user — it takes no user
     /// or role parameter — so it discloses nothing about other users.
+    /// Start nodes are not classified here: this endpoint gates action visibility for the current user,
+    /// and enforcement already refuses unreachable nodes. <c>StartNodeAccess</c> is always <c>Accessible</c>.
     /// </remarks>
     [HttpGet("element/effective/current-user", Name = "GetElementEffectiveForCurrentUser")]
     [MapToApiVersion("1.0")]
@@ -117,17 +125,17 @@ public sealed class ElementPermissionsEffectiveController(
         var currentUser = backOfficeSecurityAccessor.BackOfficeSecurity?.CurrentUser;
         if (currentUser is null)
         {
-            return Ok(new EffectivePermissionsResponseModel(nodeKey, []));
+            return Ok(new EffectivePermissionsResponseModel(nodeKey, [], nameof(StartNodeAccess.Accessible)));
         }
 
-        var (pathFromRoot, targetKey) = ResolvePath(nodeKey);
+        var (pathFromRoot, targetKey, _) = ResolvePath(nodeKey);
         if (pathFromRoot.Count == 0)
         {
-            return Ok(new EffectivePermissionsResponseModel(nodeKey, []));
+            return Ok(new EffectivePermissionsResponseModel(nodeKey, [], nameof(StartNodeAccess.Accessible)));
         }
 
         var resolved = await permissionService.ResolveAllAsync(currentUser.Key, targetKey, pathFromRoot, cancellationToken: cancellationToken);
-        return Ok(new EffectivePermissionsResponseModel(nodeKey, resolved.Values.Select(MapEffective).ToList()));
+        return Ok(new EffectivePermissionsResponseModel(nodeKey, resolved.Values.Select(MapEffective).ToList(), nameof(StartNodeAccess.Accessible)));
     }
 
     /// <summary>
@@ -135,14 +143,29 @@ public sealed class ElementPermissionsEffectiveController(
     /// resolution (path = [virtual root]) so root defaults can be queried.
     /// </summary>
     /// <param name="nodeKey">The requested node key.</param>
-    /// <returns>The path from root and the target key to resolve at; an empty path when unresolvable.</returns>
-    private (IReadOnlyList<Guid> PathFromRoot, Guid TargetKey) ResolvePath(Guid nodeKey)
+    /// <returns>
+    /// The path from root, the target key to resolve at, and the node's materialised path (the Library
+    /// root <c>-1</c> for the virtual root; <see langword="null"/> when the node is not in the tree);
+    /// an empty path from root when unresolvable.
+    /// </returns>
+    private (IReadOnlyList<Guid> PathFromRoot, Guid TargetKey, string? Path) ResolvePath(Guid nodeKey)
     {
         if (nodeKey == AdvancedPermissionsConstants.VirtualRootNodeKey)
         {
-            return ([AdvancedPermissionsConstants.VirtualRootNodeKey], AdvancedPermissionsConstants.VirtualRootNodeKey);
+            return ([AdvancedPermissionsConstants.VirtualRootNodeKey], AdvancedPermissionsConstants.VirtualRootNodeKey, Constants.System.RootString);
         }
 
-        return (ElementTreePathResolver.BuildPathFromRoot(entityService, nodeKey), nodeKey);
+        var path = ElementTreePathResolver.GetPath(entityService, nodeKey);
+        return (path is null ? [] : ElementTreePathResolver.BuildPathFromRoot(entityService, path), nodeKey, path);
     }
+
+    /// <summary>
+    /// Classifies a Library node for a subject. A subject that cannot be found reports
+    /// <c>Accessible</c>, so the viewer never shows a restriction it could not verify.
+    /// </summary>
+    /// <param name="scope">The subject's Library start-node scope, or <see langword="null"/> when unknown.</param>
+    /// <param name="path">The node's path, as already read to resolve its permissions.</param>
+    /// <returns>The node's start-node access.</returns>
+    private StartNodeAccess Classify(StartNodeScope? scope, string path) =>
+        scope is null ? StartNodeAccess.Accessible : startNodeAccessService.Classify(scope, path);
 }

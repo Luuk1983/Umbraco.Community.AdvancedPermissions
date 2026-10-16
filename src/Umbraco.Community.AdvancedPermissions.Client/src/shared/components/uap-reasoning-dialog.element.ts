@@ -6,8 +6,12 @@ import type {
   EffectivePermission,
   PathNode,
   PermissionEntry,
+  StartNodeAccess,
+  StartNodeTree,
+  StartNodesResponse,
 } from '../../models/permission.models.js';
 import { VIRTUAL_ROOT_NODE_KEY } from '../../models/permission.models.js';
+import { blockedBannerTerm, blockedHeadingTerm, blockedNoteTerm, isBlocked } from '../../start-nodes/start-node-display.js';
 import type { CellInfo } from '../../utils/cell-info.js';
 import './uap-perm-block.element.js';
 
@@ -83,6 +87,25 @@ export class UapReasoningDialogElement extends UmbLitElement {
    */
   @property() virtualRootLabel = '';
 
+  /**
+   * The cell's start-node access. Anything but `Accessible` puts the dialog in blocked mode: a grey
+   * banner explaining that start nodes stop the subject, the start nodes as a note, and the path
+   * table greyed out as a preview of what would apply inside a start node.
+   */
+  @property() startNodeAccess: StartNodeAccess = 'Accessible';
+
+  /** The subject's start nodes, listed in blocked mode; null when not loaded. */
+  @property({ attribute: false }) startNodes: StartNodesResponse | null = null;
+
+  /** Which start nodes the blocked note lists: content or Library. */
+  @property() startNodeTree: StartNodeTree = 'content';
+
+  /**
+   * True when the block is for the whole subject rather than one node (Library Insert Viewer: the
+   * subject has no Library access at all). Changes the banner and the preview heading.
+   */
+  @property({ type: Boolean }) blockedSubjectWide = false;
+
   @query('dialog') private _dialog!: HTMLDialogElement;
 
   /**
@@ -103,20 +126,25 @@ export class UapReasoningDialogElement extends UmbLitElement {
             ? html`<div class="dialog-loading"><uui-loader-circle></uui-loader-circle></div>`
             : this.path.length > 0
               ? html`
-                  <div class="dialog-table-wrap">
-                    <table class="dialog-table">
-                      <thead>
-                        <tr>
-                          <th class="dialog-node-header">${this.#localize.term('uap_contentNodeHeader')}</th>
-                          <th class="dialog-security-header">${this.#localize.term('uap_dialogSecurityHeader')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${this.path.map((n, i) => this.#renderPathRow(n, i))}
-                      </tbody>
-                    </table>
+                  <div class=${isBlocked(this.startNodeAccess) ? 'blocked-preview' : ''}>
+                    ${isBlocked(this.startNodeAccess)
+                      ? html`<p class="blocked-heading">${this.#localize.term(blockedHeadingTerm(this.blockedSubjectWide))}</p>`
+                      : nothing}
+                    <div class="dialog-table-wrap">
+                      <table class="dialog-table">
+                        <thead>
+                          <tr>
+                            <th class="dialog-node-header">${this.#localize.term('uap_contentNodeHeader')}</th>
+                            <th class="dialog-security-header">${this.#localize.term('uap_dialogSecurityHeader')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${this.path.map((n, i) => this.#renderPathRow(n, i))}
+                        </tbody>
+                      </table>
+                    </div>
+                    ${this.#renderSuppressedSection()}
                   </div>
-                  ${this.#renderSuppressedSection()}
                 `
               : html`<p class="no-reasoning">${this.#localize.term('uap_noReasoningData')}</p>`}
 
@@ -143,6 +171,22 @@ export class UapReasoningDialogElement extends UmbLitElement {
    */
   #renderBanner(): TemplateResult {
     if (!this.effectivePerm) return html``;
+    if (isBlocked(this.startNodeAccess)) {
+      const contentPath = this.path
+        .filter((n) => n.key !== VIRTUAL_ROOT_NODE_KEY)
+        .map((n) => n.name)
+        .join(' > ');
+      return html`
+        <div class="effective-banner result-blocked">
+          <umb-icon class="banner-icon" name="icon-lock"></umb-icon>
+          <span class="banner-text">${this.#localize.term(
+            blockedBannerTerm(this.startNodeAccess, this.blockedSubjectWide),
+            this.subjectName,
+            this.verbLabel,
+            this.blockedSubjectWide ? this.nodeName : (contentPath || this.nodeName))}</span>
+        </div>
+      `;
+    }
     const isAllowed = this.effectivePerm.isAllowed;
     const cls = isAllowed ? 'result-allow' : 'result-deny';
     const icon = isAllowed ? '✓' : '✗';
@@ -176,6 +220,15 @@ export class UapReasoningDialogElement extends UmbLitElement {
   #renderInfoNote(): TemplateResult {
     if (this.loading || !this.effectivePerm) {
       return html``;
+    }
+    if (isBlocked(this.startNodeAccess)) {
+      const note = blockedNoteTerm(this.startNodes, this.startNodeTree);
+      return html`
+        <div class="info-note">
+          <span class="info-note-icon">ⓘ</span>
+          <span class="info-note-text">${this.#localize.term(note.key, ...note.args)}</span>
+        </div>
+      `;
     }
     let term: string;
     if (this.outsideAllowed) {
@@ -348,6 +401,21 @@ export class UapReasoningDialogElement extends UmbLitElement {
     }
     .result-allow .banner-icon { color: var(--uui-color-positive, #34a853); }
     .result-deny .banner-icon { color: var(--uui-color-danger, #ea4335); }
+    .effective-banner.result-blocked {
+      background: color-mix(in srgb, var(--uui-color-text-alt, #888) 10%, transparent);
+      border-left: 4px solid var(--uui-color-text-alt, #888);
+    }
+    .result-blocked .banner-icon { color: var(--uui-color-text-alt, #666); }
+    .blocked-heading {
+      margin: 0 0 8px;
+      font-weight: 600;
+      color: var(--uui-color-text-alt, #666);
+    }
+    .blocked-preview .dialog-table-wrap,
+    .blocked-preview .suppressed-section {
+      opacity: 0.55;
+      filter: grayscale(1);
+    }
 
     /* ── Info note ─────────────────────────────────────────────────
        Shown when the result came purely from the resolver default (empty reasoning chain),

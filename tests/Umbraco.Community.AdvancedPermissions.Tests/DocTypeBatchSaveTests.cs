@@ -9,6 +9,7 @@ using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Tests;
 
@@ -515,5 +516,6 @@ public sealed class DocTypeBatchSaveTests
             Substitute.For<IDocTypePermissionRepository>(),
             Substitute.For<global::Umbraco.Cms.Core.Services.IContentTypeService>(),
             Substitute.For<global::Umbraco.Cms.Core.Services.IEntityService>(),
-            Substitute.For<global::Umbraco.Cms.Core.Services.IUserService>());
+            Substitute.For<global::Umbraco.Cms.Core.Services.IUserService>(),
+            Substitute.For<IStartNodeAccessService>());
 }

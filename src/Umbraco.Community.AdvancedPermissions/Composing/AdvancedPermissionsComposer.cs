@@ -16,6 +16,7 @@ using Umbraco.Community.AdvancedPermissions.Migrations;
 using Umbraco.Community.AdvancedPermissions.Notifications;
 using Umbraco.Community.AdvancedPermissions.ServerEvents;
 using Umbraco.Community.AdvancedPermissions.Services;
+using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Composing;
 
@@ -113,6 +114,11 @@ public sealed class AdvancedPermissionsComposer : IComposer
         builder.Services.AddSingleton<DocTypePermissionCache>();
         builder.Services.AddSingleton<IDocTypePermissionService, DocTypePermissionService>();
 
+        // Start nodes for the viewers (issue #66): reads Umbraco's combined content and Library start
+        // nodes, never enforces.
+        builder.Services.AddSingleton<StartNodeScopeCache>();
+        builder.Services.AddSingleton<IStartNodeAccessService, StartNodeAccessService>();
+
         // Register the IContentTypeFilter that enforces doc-type create restrictions in
         // Umbraco's allowed-children / allowed-at-root pipelines.
         builder.ContentTypeFilters().Append<DocTypeCreateContentTypeFilter>();
@@ -196,6 +202,20 @@ public sealed class AdvancedPermissionsComposer : IComposer
         builder.AddNotificationAsyncHandler<EntityContainerDeletedNotification, ElementPermissionCleanup>();
         builder.AddNotificationAsyncHandler<UserGroupDeletedNotification, ElementPermissionCleanup>();
 
+        // Start-node scope cache (issue #66): forget every cached scope when start nodes or their paths
+        // can change, before the server events below tell the viewers to refetch.
+        builder.AddNotificationHandler<UserSavedNotification, StartNodeScopeCacheInvalidator>();
+        builder.AddNotificationHandler<UserDeletedNotification, StartNodeScopeCacheInvalidator>();
+        builder.AddNotificationHandler<UserGroupSavedNotification, StartNodeScopeCacheInvalidator>();
+        builder.AddNotificationHandler<UserGroupWithUsersSavedNotification, StartNodeScopeCacheInvalidator>();
+        builder.AddNotificationHandler<UserGroupDeletedNotification, StartNodeScopeCacheInvalidator>();
+        builder.AddNotificationHandler<ContentMovedNotification, StartNodeScopeCacheInvalidator>();
+        builder.AddNotificationHandler<ContentMovedToRecycleBinNotification, StartNodeScopeCacheInvalidator>();
+        builder.AddNotificationHandler<ContentDeletedNotification, StartNodeScopeCacheInvalidator>();
+        builder.AddNotificationHandler<EntityContainerMovedNotification, StartNodeScopeCacheInvalidator>();
+        builder.AddNotificationHandler<EntityContainerMovedToRecycleBinNotification, StartNodeScopeCacheInvalidator>();
+        builder.AddNotificationHandler<EntityContainerDeletedNotification, StartNodeScopeCacheInvalidator>();
+
         // Server-event handlers. Registered LAST, and that position is load-bearing: Umbraco runs
         // the handlers for one notification in registration order, and every notification below that
         // Umbraco raises is also handled by a cache invalidator above. A client that refetched on an
@@ -207,6 +227,7 @@ public sealed class AdvancedPermissionsComposer : IComposer
         builder.AddNotificationAsyncHandler<ElementPermissionsChangedNotification, AdvancedPermissionsServerEventHandler>();
         builder.AddNotificationAsyncHandler<DocTypePermissionsChangedNotification, AdvancedPermissionsServerEventHandler>();
         builder.AddNotificationAsyncHandler<UserGroupSavedNotification, AccessServerEventHandler>();
+        builder.AddNotificationAsyncHandler<UserGroupWithUsersSavedNotification, AccessServerEventHandler>();
         builder.AddNotificationAsyncHandler<UserGroupDeletedNotification, AccessServerEventHandler>();
         builder.AddNotificationAsyncHandler<UserSavedNotification, AccessServerEventHandler>();
         builder.AddNotificationAsyncHandler<ContentMovedNotification, AccessServerEventHandler>();

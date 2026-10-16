@@ -701,6 +701,7 @@ export type DisableUserRequestModel = {
 export type DocTypeAuditForNodeResponseModel = {
     nodeKey: string;
     results: Array<DocTypeAuditForNodeRowResponseModel>;
+    startNodeAccess: string;
 };
 
 export type DocTypeAuditForNodeRowResponseModel = {
@@ -1105,6 +1106,7 @@ export type EffectivePermissionItem = {
 export type EffectivePermissionsResponseModel = {
     nodeKey: string;
     permissions: Array<EffectivePermissionItem>;
+    startNodeAccess: string;
 };
 
 export type ElementConfigurationResponseModel = {
@@ -2812,6 +2814,30 @@ export type SortingRequestModel = {
     sorting: Array<ItemSortingRequestModel>;
 };
 
+export type StartNodeItemResponseModel = {
+    key: string;
+    name: string;
+};
+
+export type StartNodeSourceResponseModel = {
+    kind: string;
+    userGroupAlias: null | string;
+    userGroupName: null | string;
+    startNodeKey: null | string;
+    startNodeName: null | string;
+    isRoot: boolean;
+    status: string;
+    relatedNodeKey: null | string;
+    relatedNodeName: null | string;
+    relatedIsRoot: boolean;
+};
+
+export type StartNodesResponseModel = {
+    state: string;
+    startNodes: Array<StartNodeItemResponseModel>;
+    sources: Array<StartNodeSourceResponseModel>;
+};
+
 export type StaticFileItemResponseModel = {
     isFolder: boolean;
     name: string;
@@ -4182,6 +4208,76 @@ export type GetElementPermissionsForPathResponses = {
 
 export type GetElementPermissionsForPathResponse = GetElementPermissionsForPathResponses[keyof GetElementPermissionsForPathResponses];
 
+export type GetElementStartNodesForUserData = {
+    body?: never;
+    path?: never;
+    query?: {
+        userKey?: string;
+    };
+    url: '/umbraco/management/api/v1/advanced-permissions/element/start-nodes';
+};
+
+export type GetElementStartNodesForUserErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetElementStartNodesForUserError = GetElementStartNodesForUserErrors[keyof GetElementStartNodesForUserErrors];
+
+export type GetElementStartNodesForUserResponses = {
+    /**
+     * OK
+     */
+    200: StartNodesResponseModel;
+};
+
+export type GetElementStartNodesForUserResponse = GetElementStartNodesForUserResponses[keyof GetElementStartNodesForUserResponses];
+
+export type GetElementStartNodesForRoleData = {
+    body?: never;
+    path?: never;
+    query?: {
+        roleAlias?: string;
+    };
+    url: '/umbraco/management/api/v1/advanced-permissions/element/start-nodes/by-role';
+};
+
+export type GetElementStartNodesForRoleErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetElementStartNodesForRoleError = GetElementStartNodesForRoleErrors[keyof GetElementStartNodesForRoleErrors];
+
+export type GetElementStartNodesForRoleResponses = {
+    /**
+     * OK
+     */
+    200: StartNodesResponseModel;
+};
+
+export type GetElementStartNodesForRoleResponse = GetElementStartNodesForRoleResponses[keyof GetElementStartNodesForRoleResponses];
+
 export type GetElementChildrenData = {
     body?: never;
     path?: never;
@@ -4484,6 +4580,76 @@ export type GetRolesResponses = {
 };
 
 export type GetRolesResponse = GetRolesResponses[keyof GetRolesResponses];
+
+export type GetStartNodesForUserData = {
+    body?: never;
+    path?: never;
+    query?: {
+        userKey?: string;
+    };
+    url: '/umbraco/management/api/v1/advanced-permissions/start-nodes';
+};
+
+export type GetStartNodesForUserErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetStartNodesForUserError = GetStartNodesForUserErrors[keyof GetStartNodesForUserErrors];
+
+export type GetStartNodesForUserResponses = {
+    /**
+     * OK
+     */
+    200: StartNodesResponseModel;
+};
+
+export type GetStartNodesForUserResponse = GetStartNodesForUserResponses[keyof GetStartNodesForUserResponses];
+
+export type GetStartNodesForRoleData = {
+    body?: never;
+    path?: never;
+    query?: {
+        roleAlias?: string;
+    };
+    url: '/umbraco/management/api/v1/advanced-permissions/start-nodes/by-role';
+};
+
+export type GetStartNodesForRoleErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetStartNodesForRoleError = GetStartNodesForRoleErrors[keyof GetStartNodesForRoleErrors];
+
+export type GetStartNodesForRoleResponses = {
+    /**
+     * OK
+     */
+    200: StartNodesResponseModel;
+};
+
+export type GetStartNodesForRoleResponse = GetStartNodesForRoleResponses[keyof GetStartNodesForRoleResponses];
 
 export type GetChildrenData = {
     body?: never;

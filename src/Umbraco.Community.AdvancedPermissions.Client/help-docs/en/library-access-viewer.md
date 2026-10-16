@@ -16,4 +16,12 @@ This is the read-only companion to the Library Permissions Editor. It shows the 
 
 - A hatched **N/A** cell means the permission doesn't apply to that kind of item — for example "Create" on a single item, or item-only actions (Publish, Unpublish, Duplicate, Rollback) on a folder.
 
+## Library start nodes
+
+The viewer also takes the subject's **Library start nodes** into account, because Umbraco blocks every Library folder and item outside them before any permission is checked.
+
+- The **start-node card** under the picker says whether Library start nodes limit the subject, and lists the Library start nodes in effect with who set each one.
+- A folder or item the subject can't reach shows **blocked** cells (grey, hatched, with a lock) instead of allow or deny: **Browse only (start nodes)** for a folder above a start node, **Not visible (start nodes)** for everything outside them. Permissions that never apply to a folder or an item stay N/A.
+- Click a blocked cell to see why, and what the permissions would be if it were inside a start node.
+
 See the **Concepts** tab for how permissions are resolved.

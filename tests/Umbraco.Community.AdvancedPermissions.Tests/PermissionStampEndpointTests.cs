@@ -11,6 +11,7 @@ using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Concurrency;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Tests;
 
@@ -323,7 +324,8 @@ public sealed class PermissionStampEndpointTests
             Substitute.For<IDocTypePermissionRepository>(),
             Substitute.For<IContentTypeService>(),
             Substitute.For<IEntityService>(),
-            Substitute.For<IUserService>());
+            Substitute.For<IUserService>(),
+            Substitute.For<IStartNodeAccessService>());
 
         var result = await sut.GetForEditor(CancellationToken.None, "editors", typeKey);
 

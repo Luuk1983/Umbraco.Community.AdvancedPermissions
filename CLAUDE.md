@@ -61,8 +61,12 @@ Base: `GET|PUT /umbraco/management/api/v1/advanced-permissions/`
 | GET | `/tree/children?parentKey=&roleAlias=` | Children of a node |
 | GET | `/permissions?nodeKey=&roleAlias=` | Stored entries for a node+role |
 | PUT | `/permissions` | Save (replace) entries for a node+role |
-| GET | `/effective?userKey=&nodeKey=` | Effective permissions for a user at a node |
-| GET | `/effective/by-role?roleAlias=&nodeKey=` | Effective permissions for a role at a node |
+| GET | `/effective?userKey=&nodeKey=` | Effective permissions for a user at a node, plus `startNodeAccess` |
+| GET | `/effective/by-role?roleAlias=&nodeKey=` | Effective permissions for a role at a node, plus `startNodeAccess` |
+| GET | `/start-nodes?userKey=` | A user's effective content start nodes and where each comes from |
+| GET | `/start-nodes/by-role?roleAlias=` | One user group's own content start node |
+| GET | `/element/start-nodes?userKey=` | A user's effective Library start nodes and where each comes from |
+| GET | `/element/start-nodes/by-role?roleAlias=` | One user group's own Library start node |
 
 All endpoints require backoffice authentication and return 401 without it. **No `AddApplicationPart()` is needed** — Umbraco's minimal API discovery works automatically.
 

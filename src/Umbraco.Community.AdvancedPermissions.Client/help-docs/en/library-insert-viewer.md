@@ -16,5 +16,6 @@ This is the read-only companion to the Library Element Type Permissions editor. 
 
 - Creating element types is allowed by default, so a type with no rules anywhere shows as allowed.
 - This decision is section-wide, not per node — so there's no tree here, just the flat list of element types.
+- Creating an item needs access to the Library. A subject without any Library start node gets **blocked** rows; a subject with Library start nodes can only create inside them. The start-node card under the picker shows which Library start nodes apply.
 
 See the **Concepts** tab for how permissions are resolved.

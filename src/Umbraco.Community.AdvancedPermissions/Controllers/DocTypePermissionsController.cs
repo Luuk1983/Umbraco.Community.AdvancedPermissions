@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Services;
@@ -10,6 +11,7 @@ using Umbraco.Community.AdvancedPermissions.Controllers.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Controllers;
 
@@ -25,6 +27,7 @@ namespace Umbraco.Community.AdvancedPermissions.Controllers;
 /// <param name="contentTypeService">The Umbraco content-type service used to list doc-types.</param>
 /// <param name="entityService">Used to resolve content node paths for the audit.</param>
 /// <param name="userService">Used to look up the audited user's groups.</param>
+/// <param name="startNodeAccessService">Classifies the audited node against the subject's start nodes.</param>
 [ApiVersion("1.0")]
 [Authorize(Policy = AuthorizationPolicies.SectionAccessUsers)]
 public sealed class DocTypePermissionsController(
@@ -32,7 +35,8 @@ public sealed class DocTypePermissionsController(
     IDocTypePermissionRepository docTypeRepository,
     IContentTypeService contentTypeService,
     IEntityService entityService,
-    IUserService userService)
+    IUserService userService,
+    IStartNodeAccessService startNodeAccessService)
     : AdvancedPermissionsControllerBase
 {
     /// <summary>
@@ -253,9 +257,11 @@ public sealed class DocTypePermissionsController(
         }
 
         var isVirtualRoot = nodeKey == AdvancedPermissionsConstants.VirtualRootNodeKey;
-        var path = isVirtualRoot
+        // Read once: the same path resolves the rows and classifies the node against start nodes.
+        var nodePath = isVirtualRoot ? Constants.System.RootString : GetDocumentPath(nodeKey, entityService);
+        IReadOnlyList<Guid> path = isVirtualRoot
             ? [AdvancedPermissionsConstants.VirtualRootNodeKey]
-            : BuildPathFromRoot(nodeKey, entityService);
+            : nodePath is null ? [] : BuildPathFromRoot(nodePath, entityService);
         if (path.Count == 0)
         {
             path = [AdvancedPermissionsConstants.VirtualRootNodeKey];
@@ -290,7 +296,16 @@ public sealed class DocTypePermissionsController(
                 SuppressedReasoning: (effective.SuppressedReasoning ?? []).Select(MapReasoningItem).ToList()));
         }
 
-        return Ok(new DocTypeAuditForNodeResponseModel(nodeKey, rows));
+        var scope = hasUser
+            ? await startNodeAccessService.GetScopeForUserAsync(userKey!.Value, StartNodeTree.Content)
+            : await startNodeAccessService.GetScopeForUserGroupAsync(roleAlias!, StartNodeTree.Content);
+        var access = scope is null
+            ? StartNodeAccess.Accessible
+            : nodePath is null
+                ? StartNodeAccess.NotVisible
+                : startNodeAccessService.Classify(scope, nodePath);
+
+        return Ok(new DocTypeAuditForNodeResponseModel(nodeKey, rows, access.ToString()));
     }
 
     /// <summary>
@@ -384,7 +399,16 @@ public sealed class DocTypePermissionsController(
                 SuppressedReasoning: (effective.SuppressedReasoning ?? []).Select(MapReasoningItem).ToList()));
         }
 
-        return Ok(new DocTypeAuditForNodeResponseModel(AdvancedPermissionsConstants.VirtualRootNodeKey, rows));
+        // Element-type creation is section-global, so the verdict is per subject: blocked only when the
+        // subject cannot reach the Library at all. A restricted subject still creates inside its folders.
+        var scope = hasUser
+            ? await startNodeAccessService.GetScopeForUserAsync(userKey!.Value, StartNodeTree.Library)
+            : await startNodeAccessService.GetScopeForUserGroupAsync(roleAlias!, StartNodeTree.Library);
+        var access = scope?.State == StartNodeSubjectState.NoAccess
+            ? StartNodeAccess.NotVisible
+            : StartNodeAccess.Accessible;
+
+        return Ok(new DocTypeAuditForNodeResponseModel(AdvancedPermissionsConstants.VirtualRootNodeKey, rows, access.ToString()));
     }
 
     /// <summary>

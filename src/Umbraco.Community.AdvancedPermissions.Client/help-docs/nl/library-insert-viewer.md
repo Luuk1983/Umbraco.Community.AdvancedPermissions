@@ -16,5 +16,6 @@ Dit is de alleen-lezen tegenhanger van de Library Element Type Permissions-edito
 
 - Elementtypen aanmaken is standaard toegestaan, dus een type zonder regels toont als toegestaan.
 - Deze beslissing is sectiebreed, niet per knooppunt — daarom is er geen boom, alleen de platte lijst met elementtypen.
+- Een item aanmaken vereist toegang tot de Library. Een onderwerp zonder Library-startnode krijgt **geblokkeerde** rijen; een onderwerp met Library-startnodes kan alleen daarbinnen aanmaken. De startnodekaart onder de kiezer toont welke Library-startnodes gelden.
 
 Zie het tabblad **Concepten** voor hoe machtigingen worden opgelost.

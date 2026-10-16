@@ -110,9 +110,17 @@ public sealed record DocTypeAuditForNodeRowResponseModel(
 /// </summary>
 /// <param name="NodeKey">The audited node (or virtual root).</param>
 /// <param name="Results">One row per non-element doc-type.</param>
+/// <param name="StartNodeAccess">
+/// Whether the subject can reach the audited node through its start nodes: <c>Accessible</c>,
+/// <c>PathOnly</c> or <c>NotVisible</c>. Creating under a node needs access to that node, so a
+/// non-accessible node blocks every row. For the element-type audit (Library Insert Viewer) the verdict
+/// is per subject: <c>NotVisible</c> when the subject has no Library access at all, otherwise
+/// <c>Accessible</c>.
+/// </param>
 public sealed record DocTypeAuditForNodeResponseModel(
     Guid NodeKey,
-    IReadOnlyList<DocTypeAuditForNodeRowResponseModel> Results);
+    IReadOnlyList<DocTypeAuditForNodeRowResponseModel> Results,
+    string StartNodeAccess);
 
 /// <summary>
 /// A doc-type permission entry shown along the inheritance path in the reasoning dialog.

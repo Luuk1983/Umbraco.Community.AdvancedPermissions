@@ -1,4 +1,4 @@
-import type { PermissionState, PermissionScope, PathNode, ReasoningStep } from './permission.models.js';
+import type { PermissionState, PermissionScope, PathNode, ReasoningStep, StartNodeAccess } from './permission.models.js';
 
 /** A non-element document type listed in the editor's doc-type picker. */
 export interface DocTypeListItem {
@@ -49,6 +49,11 @@ export interface DocTypeAuditForNodeRow {
 export interface DocTypeAuditForNodeResponse {
   nodeKey: string;
   results: DocTypeAuditForNodeRow[];
+  /**
+   * Whether the subject can reach the parent node through its start nodes. For the Library element-type
+   * audit it is per subject: `NotVisible` when the subject has no Library access at all.
+   */
+  startNodeAccess: StartNodeAccess;
 }
 
 /** A doc-type entry shown along the inheritance path in the reasoning dialog. */

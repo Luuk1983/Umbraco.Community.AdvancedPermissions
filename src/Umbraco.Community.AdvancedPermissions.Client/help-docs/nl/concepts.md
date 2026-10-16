@@ -50,3 +50,18 @@ Bij het bepalen of een gebruiker een machtiging op een knooppunt heeft, verzamel
 4. **Geërfd Toestaan**.
 
 Als nergens in de boom een invoer van toepassing is, is de standaard **Weigeren** voor contentmachtigingen (**Toestaan** voor invoegopties). Een prioriteitsoverschrijving stapt buiten deze volgorde en wint.
+
+<a id="start-nodes"></a>
+## Startnodes
+
+Startnodes bepalen welk deel van de contentboom een gebruiker überhaupt kan bereiken. Umbraco controleert ze **vóór** elke machtiging.
+
+- **Een gebruikersgroep** heeft één startnode, roottoegang of geen. Een groep zonder startnode geeft **geen** toegang tot content.
+- **Meerdere groepen** worden gecombineerd: de gebruiker bereikt de startnode van elke groep, en een hogere startnode dekt een lagere op dezelfde tak.
+- **Startnodes en machtigingen staan los van elkaar.** Een machtiging uit de ene groep geldt ook binnen een startnode die een andere groep levert.
+- **Een startnode op het gebruikersaccount** vervangt elke groepsstartnode boven of onder hem op dezelfde tak, zelfs roottoegang. Op een tak die geen groepsstartnode dekt, geeft hij juist extra toegang.
+- **Beheerders** bereiken alles alleen omdat hun groep roottoegang heeft. Er is geen andere uitzondering.
+- **Verwijderde startnodes of startnodes in de prullenbak** worden genegeerd. Als de eigen startnode van een gebruiker wordt verwijderd, valt de gebruiker terug op de startnodes van de groepen.
+- **De Library heeft eigen startnodes.** Een gebruikersgroep heeft één Library-startnode (een Library-map), toegang tot de hele Library, of geen. Ze worden precies zo gecombineerd als contentstartnodes, en Umbraco controleert ze vóór elke Library-machtiging.
+- **Na een upgrade naar Umbraco 18** heeft alleen de groep Beheerders toegang tot de hele Library. Elke andere bestaande gebruikersgroep heeft geen Library-startnode, dus de gebruikers ervan kunnen de Library pas bereiken als je de groep er een geeft.
+- Sommige pickers kunnen zo worden ingesteld dat ze startnodes negeren, en zoeken in de backoffice past ze iets anders toe. De viewers tonen de regels van de boom en de editor.

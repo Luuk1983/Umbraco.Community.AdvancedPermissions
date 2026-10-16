@@ -34,14 +34,21 @@ public abstract class AdvancedPermissionsControllerBase : ManagementApiControlle
     /// <returns>An ordered list of node keys from root to the target node (inclusive).</returns>
     protected static IReadOnlyList<Guid> BuildPathFromRoot(Guid nodeKey, IEntityService entityService)
     {
-        var paths = entityService.GetAllPaths(UmbracoObjectTypes.Document, nodeKey);
-        var pathEntry = paths.FirstOrDefault();
-        if (pathEntry is null)
-        {
-            return [];
-        }
+        var path = GetDocumentPath(nodeKey, entityService);
+        return path is null ? [] : BuildPathFromRoot(path, entityService);
+    }
 
-        var pathIds = pathEntry.Path
+    /// <summary>
+    /// Builds an ordered list of content node keys from the tree root to (and including) the node a
+    /// materialised path ends at. For callers that already read the path and need it again, for
+    /// example to classify the node against start nodes, so it is read once.
+    /// </summary>
+    /// <param name="path">The document's materialised path, e.g. <c>-1,1050,1063</c>.</param>
+    /// <param name="entityService">The Umbraco entity service.</param>
+    /// <returns>An ordered list of node keys from root to the target node (inclusive).</returns>
+    protected static IReadOnlyList<Guid> BuildPathFromRoot(string path, IEntityService entityService)
+    {
+        var pathIds = path
             .Split(',')
             .Select(s => int.TryParse(s, out var id) ? id : 0)
             .Where(id => id > 0)
@@ -67,6 +74,15 @@ public abstract class AdvancedPermissionsControllerBase : ManagementApiControlle
 
         return result;
     }
+
+    /// <summary>
+    /// Gets a document's materialised path (e.g. <c>-1,1050,1063</c>), read fresh from the database.
+    /// </summary>
+    /// <param name="nodeKey">The document key.</param>
+    /// <param name="entityService">The Umbraco entity service.</param>
+    /// <returns>The path, or <see langword="null"/> when the document does not exist.</returns>
+    protected static string? GetDocumentPath(Guid nodeKey, IEntityService entityService) =>
+        entityService.GetAllPaths(UmbracoObjectTypes.Document, nodeKey).FirstOrDefault()?.Path;
 
     /// <summary>
     /// Maps a domain <see cref="AdvancedPermissionEntry"/> to an API <see cref="PermissionEntryResponseModel"/>.

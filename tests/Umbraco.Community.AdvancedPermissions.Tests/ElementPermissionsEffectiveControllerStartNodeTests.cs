@@ -6,9 +6,9 @@ using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Community.AdvancedPermissions.Controllers;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Tests;
@@ -38,7 +38,7 @@ public sealed class ElementPermissionsEffectiveControllerStartNodeTests
     /// <summary>Initializes a new instance of the <see cref="ElementPermissionsEffectiveControllerStartNodeTests"/> class.</summary>
     public ElementPermissionsEffectiveControllerStartNodeTests() =>
         _sut = new ElementPermissionsEffectiveController(
-            _permissionService, _entityService, Substitute.For<IBackOfficeSecurityAccessor>(), _startNodes);
+            _permissionService, _entityService, _startNodes);
 
     /// <summary>A known element carries the Library classification for the user.</summary>
     [Fact]

@@ -77,6 +77,11 @@ export type BatchResponseModelDocumentTypeResponseModel = {
     items: Array<DocumentTypeResponseModel>;
 };
 
+export type BatchResponseModelElementResponseModel = {
+    total: number;
+    items: Array<ElementResponseModel>;
+};
+
 export type BatchResponseModelMediaTypeResponseModel = {
     total: number;
     items: Array<MediaTypeResponseModel>;
@@ -85,6 +90,11 @@ export type BatchResponseModelMediaTypeResponseModel = {
 export type BatchResponseModelMemberTypeResponseModel = {
     total: number;
     items: Array<MemberTypeResponseModel>;
+};
+
+export type BatchResponseModelUserResponseModel = {
+    total: number;
+    items: Array<UserResponseModel>;
 };
 
 export type BatchSaveConflict = {
@@ -156,6 +166,8 @@ export type CalculatedUserStartNodesResponseModel = {
     hasMediaRootAccess: boolean;
     elementStartNodeIds: Array<ReferenceByIdModel>;
     hasElementRootAccess: boolean;
+    documentBlueprintStartNodeIds: Array<ReferenceByIdModel>;
+    hasDocumentBlueprintRootAccess: boolean;
 };
 
 export type ChangePasswordCurrentUserRequestModel = {
@@ -173,6 +185,8 @@ export type ConsentLevelPresentationModel = {
     level: TelemetryLevelModel;
     description: string;
 };
+
+export type ContentSortFieldModel = 'Name' | 'CreateDate' | 'UpdateDate';
 
 export type CopyDataTypeRequestModel = {
     target?: null | ReferenceByIdModel;
@@ -198,6 +212,25 @@ export type CopyMediaTypeRequestModel = {
 
 export type CopyMemberTypeRequestModel = {
     target?: null | ReferenceByIdModel;
+};
+
+export type CreateAndPublishDocumentRequestModel = {
+    culturesToPublish: Array<string>;
+    template: null | ReferenceByIdModel;
+    documentType: ReferenceByIdModel;
+    parent?: null | ReferenceByIdModel;
+    id?: null | string;
+    values: Array<DocumentValueModel>;
+    variants: Array<DocumentVariantRequestModel>;
+};
+
+export type CreateAndPublishElementRequestModel = {
+    culturesToPublish: Array<string>;
+    documentType: ReferenceByIdModel;
+    parent?: null | ReferenceByIdModel;
+    id?: null | string;
+    values: Array<ElementValueModel>;
+    variants: Array<ElementVariantRequestModel>;
 };
 
 export type CreateDataTypeRequestModel = {
@@ -433,6 +466,7 @@ export type CreatePackageRequestModel = {
     contentLoadChildNodes: boolean;
     mediaIds: Array<string>;
     mediaLoadChildNodes: boolean;
+    elementIds?: null | Array<string>;
     documentTypes: Array<string>;
     mediaTypes: Array<string>;
     dataTypes: Array<string>;
@@ -505,12 +539,15 @@ export type CreateUserGroupRequestModel = {
     sections: Array<string>;
     languages: Array<string>;
     hasAccessToAllLanguages: boolean;
+    hasAccessToInvariantForVariant: boolean;
     documentStartNode?: null | ReferenceByIdModel;
     documentRootAccess: boolean;
     mediaStartNode?: null | ReferenceByIdModel;
     mediaRootAccess: boolean;
     elementStartNode?: null | ReferenceByIdModel;
     elementRootAccess: boolean;
+    documentBlueprintStartNode?: null | ReferenceByIdModel;
+    documentBlueprintRootAccess: boolean;
     fallbackPermissions: Array<string>;
     permissions: Array<IPermissionPresentationModel>;
 };
@@ -549,6 +586,7 @@ export type CultureReponseModel = {
 
 export type CurrentUserConfigurationResponseModel = {
     keepUserLoggedIn: boolean;
+    timeoutUtc?: null | string;
     passwordConfiguration: PasswordConfigurationResponseModel;
     allowChangePassword: boolean;
     allowTwoFactor: boolean;
@@ -563,9 +601,12 @@ export type CurrentUserResponseModel = {
     hasMediaRootAccess: boolean;
     elementStartNodeIds: Array<ReferenceByIdModel>;
     hasElementRootAccess: boolean;
+    documentBlueprintStartNodeIds: Array<ReferenceByIdModel>;
+    hasDocumentBlueprintRootAccess: boolean;
     avatarUrls: Array<string>;
     languages: Array<string>;
     hasAccessToAllLanguages: boolean;
+    hasAccessToInvariantForVariant: boolean;
     hasAccessToSensitiveData: boolean;
     fallbackPermissions: Array<string>;
     permissions: Array<IPermissionPresentationModel>;
@@ -610,6 +651,7 @@ export type DatatypeConfigurationResponseModel = {
     canBeChanged: DataTypeChangeModeModel;
     documentListViewId: string;
     mediaListViewId: string;
+    offerDeprecatedPropertyEditors: boolean;
 };
 
 export type DataTypeItemResponseModel = {
@@ -774,6 +816,7 @@ export type DocumentBlueprintResponseModel = {
 
 export type DocumentBlueprintTreeItemResponseModel = {
     documentType?: null | DocumentTypeReferenceResponseModel;
+    variants: Array<DocumentVariantItemResponseModel>;
     isFolder: boolean;
     noAccess: boolean;
     name: string;
@@ -791,6 +834,7 @@ export type DocumentCollectionResponseModel = {
     updater?: null | string;
     creator?: null | string;
     sortOrder: number;
+    hasChildren: boolean;
     id: string;
     flags: Array<FlagModel>;
     values: Array<DocumentValueResponseModel>;
@@ -800,8 +844,6 @@ export type DocumentCollectionResponseModel = {
 export type DocumentConfigurationResponseModel = {
     disableDeleteWhenReferenced: boolean;
     disableUnpublishWhenReferenced: boolean;
-    allowEditInvariantFromNonDefault: boolean;
-    allowNonExistingSegmentsCreation: boolean;
 };
 
 export type DocumentItemResponseModel = {
@@ -981,6 +1023,7 @@ export type DocumentTypeTreeItemResponseModel = {
 export type DocumentUrlInfoModel = {
     message: null | string;
     provider: string;
+    isExternal: boolean;
     culture: null | string;
     url: null | string;
 };
@@ -1015,7 +1058,6 @@ export type DocumentVariantItemResponseModel = {
 
 export type DocumentVariantRequestModel = {
     culture?: null | string;
-    segment?: null | string;
     name: string;
 };
 
@@ -1029,7 +1071,6 @@ export type DocumentVariantResponseModel = {
     createDate: string;
     updateDate: string;
     culture?: null | string;
-    segment?: null | string;
     name: string;
 };
 
@@ -1112,8 +1153,6 @@ export type EffectivePermissionsResponseModel = {
 export type ElementConfigurationResponseModel = {
     disableDeleteWhenReferenced: boolean;
     disableUnpublishWhenReferenced: boolean;
-    allowEditInvariantFromNonDefault: boolean;
-    allowNonExistingSegmentsCreation: boolean;
 };
 
 export type ElementItemResponseModel = {
@@ -1194,7 +1233,6 @@ export type ElementVariantItemResponseModel = {
 
 export type ElementVariantRequestModel = {
     culture?: null | string;
-    segment?: null | string;
     name: string;
 };
 
@@ -1208,7 +1246,6 @@ export type ElementVariantResponseModel = {
     createDate: string;
     updateDate: string;
     culture?: null | string;
-    segment?: null | string;
     name: string;
 };
 
@@ -1252,11 +1289,6 @@ export type EventMessageTypeModel = 'Default' | 'Info' | 'Error' | 'Success' | '
 export type FetchResponseModelDataTypeSchemaItemResponseModel = {
     total: number;
     items: Array<DataTypeSchemaItemResponseModel>;
-};
-
-export type FieldPresentationModel = {
-    name: string;
-    values: Array<string>;
 };
 
 export type FileSystemFolderModel = {
@@ -1332,19 +1364,7 @@ export type HealthCheckWithResultPresentationModel = {
     id: string;
 };
 
-export type HealthStatusModel = 'Healthy' | 'Unhealthy' | 'Rebuilding' | 'Corrupt';
-
-export type HealthStatusResponseModel = {
-    status: HealthStatusModel;
-    message?: null | string;
-};
-
-export type HelpPageResponseModel = {
-    name?: null | string;
-    description?: null | string;
-    url?: null | string;
-    type?: null | string;
-};
+export type HealthStatusModel = 'Healthy' | 'Rebuilding' | 'Corrupted' | 'Empty' | 'Unknown';
 
 export type ImageCropModeModel = 'Crop' | 'Max' | 'Stretch' | 'Pad' | 'BoxPad' | 'Min';
 
@@ -1366,16 +1386,10 @@ export type ImportMemberTypeRequestModel = {
 };
 
 export type IndexResponseModel = {
-    name: string;
-    healthStatus: HealthStatusResponseModel;
-    canRebuild: boolean;
-    searcherName: string;
+    indexAlias: string;
+    providerName: string;
     documentCount: number;
-    fieldCount: number;
-    providerProperties?: null | {
-        [key: string]: unknown;
-    };
-    uniqueKeyFieldName?: null | string;
+    healthStatus: HealthStatusModel;
 };
 
 export type InstallRequestModel = {
@@ -1399,13 +1413,13 @@ export type InviteUserRequestModel = {
 };
 
 export type IPermissionPresentationModel = ({
-    $type?: 'DocumentPermissionPresentationModel';
+    $type: 'DocumentPermissionPresentationModel';
 } & IPermissionPresentationModelDocumentPermissionPresentationModel) | ({
-    $type?: 'DocumentPropertyValuePermissionPresentationModel';
+    $type: 'DocumentPropertyValuePermissionPresentationModel';
 } & IPermissionPresentationModelDocumentPropertyValuePermissionPresentationModel) | ({
-    $type?: 'ElementPermissionPresentationModel';
+    $type: 'ElementPermissionPresentationModel';
 } & IPermissionPresentationModelElementPermissionPresentationModel) | ({
-    $type?: 'UnknownTypePermissionPresentationModel';
+    $type: 'UnknownTypePermissionPresentationModel';
 } & IPermissionPresentationModelUnknownTypePermissionPresentationModel);
 
 export type IPermissionPresentationModelDocumentPermissionPresentationModel = {
@@ -1434,23 +1448,23 @@ export type IPermissionPresentationModelUnknownTypePermissionPresentationModel =
 };
 
 export type IReferenceResponseModel = ({
-    $type?: 'DefaultReferenceResponseModel';
+    $type: 'DefaultReferenceResponseModel';
 } & IReferenceResponseModelDefaultReferenceResponseModel) | ({
-    $type?: 'DocumentReferenceResponseModel';
+    $type: 'DocumentReferenceResponseModel';
 } & IReferenceResponseModelDocumentReferenceResponseModel) | ({
-    $type?: 'DocumentTypePropertyTypeReferenceResponseModel';
+    $type: 'DocumentTypePropertyTypeReferenceResponseModel';
 } & IReferenceResponseModelDocumentTypePropertyTypeReferenceResponseModel) | ({
-    $type?: 'ElementContainerReferenceResponseModel';
+    $type: 'ElementContainerReferenceResponseModel';
 } & IReferenceResponseModelElementContainerReferenceResponseModel) | ({
-    $type?: 'ElementReferenceResponseModel';
+    $type: 'ElementReferenceResponseModel';
 } & IReferenceResponseModelElementReferenceResponseModel) | ({
-    $type?: 'MediaReferenceResponseModel';
+    $type: 'MediaReferenceResponseModel';
 } & IReferenceResponseModelMediaReferenceResponseModel) | ({
-    $type?: 'MediaTypePropertyTypeReferenceResponseModel';
+    $type: 'MediaTypePropertyTypeReferenceResponseModel';
 } & IReferenceResponseModelMediaTypePropertyTypeReferenceResponseModel) | ({
-    $type?: 'MemberReferenceResponseModel';
+    $type: 'MemberReferenceResponseModel';
 } & IReferenceResponseModelMemberReferenceResponseModel) | ({
-    $type?: 'MemberTypePropertyTypeReferenceResponseModel';
+    $type: 'MemberTypePropertyTypeReferenceResponseModel';
 } & IReferenceResponseModelMemberTypePropertyTypeReferenceResponseModel);
 
 export type IReferenceResponseModelDefaultReferenceResponseModel = {
@@ -1523,9 +1537,7 @@ export type IReferenceResponseModelMemberTypePropertyTypeReferenceResponseModel 
     name?: null | string;
 };
 
-export type ISetupTwoFactorModel = {
-    $type?: 'NoopSetupTwoFactorModel';
-} & ISetupTwoFactorModelNoopSetupTwoFactorModel;
+export type ISetupTwoFactorModel = ISetupTwoFactorModelNoopSetupTwoFactorModel;
 
 export type ISetupTwoFactorModelNoopSetupTwoFactorModel = {
     $type: 'NoopSetupTwoFactorModel';
@@ -1620,13 +1632,16 @@ export type ManifestResponseModel = {
     name: string;
     id?: null | string;
     version?: null | string;
+    cacheBuster?: null | string;
     extensions: Array<unknown>;
 };
 
 export type MediaCollectionResponseModel = {
     mediaType: MediaTypeCollectionReferenceResponseModel;
+    extension?: null | string;
     creator?: null | string;
     sortOrder: number;
+    hasChildren: boolean;
     id: string;
     flags: Array<FlagModel>;
     values: Array<MediaValueResponseModel>;
@@ -1635,7 +1650,6 @@ export type MediaCollectionResponseModel = {
 
 export type MediaConfigurationResponseModel = {
     disableDeleteWhenReferenced: boolean;
-    disableUnpublishWhenReferenced: boolean;
 };
 
 export type MediaItemResponseModel = {
@@ -1643,6 +1657,7 @@ export type MediaItemResponseModel = {
     parent?: null | ReferenceByIdModel;
     hasChildren: boolean;
     mediaType: MediaTypeReferenceResponseModel;
+    extension?: null | string;
     variants: Array<VariantItemResponseModel>;
     id: string;
     flags: Array<FlagModel>;
@@ -1668,6 +1683,7 @@ export type MediaResponseModel = {
 
 export type MediaTreeItemResponseModel = {
     mediaType: MediaTypeReferenceResponseModel;
+    extension?: null | string;
     variants: Array<VariantItemResponseModel>;
     noAccess: boolean;
     isTrashed: boolean;
@@ -1809,7 +1825,6 @@ export type MediaValueResponseModel = {
 
 export type MediaVariantRequestModel = {
     culture?: null | string;
-    segment?: null | string;
     name: string;
 };
 
@@ -1817,7 +1832,6 @@ export type MediaVariantResponseModel = {
     createDate: string;
     updateDate: string;
     culture?: null | string;
-    segment?: null | string;
     name: string;
 };
 
@@ -1970,7 +1984,6 @@ export type MemberValueResponseModel = {
 
 export type MemberVariantRequestModel = {
     culture?: null | string;
-    segment?: null | string;
     name: string;
 };
 
@@ -1978,7 +1991,6 @@ export type MemberVariantResponseModel = {
     createDate: string;
     updateDate: string;
     culture?: null | string;
-    segment?: null | string;
     name: string;
 };
 
@@ -2095,6 +2107,7 @@ export type PackageDefinitionResponseModel = {
     contentLoadChildNodes: boolean;
     mediaIds: Array<string>;
     mediaLoadChildNodes: boolean;
+    elementIds?: null | Array<string>;
     documentTypes: Array<string>;
     mediaTypes: Array<string>;
     dataTypes: Array<string>;
@@ -2209,11 +2222,6 @@ export type PagedFileSystemTreeItemPresentationModel = {
 export type PagedHealthCheckGroupResponseModel = {
     total: number;
     items: Array<HealthCheckGroupResponseModel>;
-};
-
-export type PagedHelpPageResponseModel = {
-    total: number;
-    items: Array<HelpPageResponseModel>;
 };
 
 export type PagedIndexResponseModel = {
@@ -2384,16 +2392,6 @@ export type PagedRelationTypeResponseModel = {
 export type PagedSavedLogSearchResponseModel = {
     total: number;
     items: Array<SavedLogSearchResponseModel>;
-};
-
-export type PagedSearcherResponseModel = {
-    total: number;
-    items: Array<SearcherResponseModel>;
-};
-
-export type PagedSearchResultResponseModel = {
-    total: number;
-    items: Array<SearchResultResponseModel>;
 };
 
 export type PagedSegmentResponseModel = {
@@ -2578,6 +2576,15 @@ export type PublishedDocumentResponseModel = {
     variants: Array<DocumentVariantResponseModel>;
 };
 
+export type PublishedElementResponseModel = {
+    isTrashed: boolean;
+    documentType: DocumentTypeReferenceResponseModel;
+    id: string;
+    flags: Array<FlagModel>;
+    values: Array<ElementValueResponseModel>;
+    variants: Array<ElementVariantResponseModel>;
+};
+
 export type PublishElementRequestModel = {
     publishSchedules: Array<CultureAndScheduleRequestModel>;
 };
@@ -2752,15 +2759,23 @@ export type ScriptResponseModel = {
     path: string;
 };
 
-export type SearcherResponseModel = {
-    name: string;
+export type SearchDocumentResponseModel = {
+    id: string;
+    objectType: UmbracoObjectTypesModel;
+    name?: null | string;
+    icon?: null | string;
+};
+
+export type SearchRequestModel = {
+    indexAlias: string;
+    query?: null | string;
+    culture?: null | string;
+    segment?: null | string;
 };
 
 export type SearchResultResponseModel = {
-    id: string;
-    score: number;
-    fieldCount: number;
-    fields: Array<FieldPresentationModel>;
+    total: number;
+    documents: Array<SearchDocumentResponseModel>;
 };
 
 export type SecurityConfigurationResponseModel = {
@@ -2770,7 +2785,6 @@ export type SecurityConfigurationResponseModel = {
 export type SegmentResponseModel = {
     name: string;
     alias: string;
-    cultures?: null | Array<string>;
 };
 
 export type ServerConfigurationItemResponseModel = {
@@ -2791,6 +2805,7 @@ export type ServerInformationResponseModel = {
     assemblyVersion: string;
     baseUtcOffset: string;
     runtimeMode: RuntimeModeModel;
+    isDebugMode: boolean;
 };
 
 export type ServerStatusResponseModel = {
@@ -2809,9 +2824,20 @@ export type SignalRClientSettingsResponseModel = {
     skipNegotiation: boolean;
 };
 
+export type SortDocumentChildrenByFieldRequestModel = {
+    culture?: null | string;
+    field: ContentSortFieldModel;
+    direction: DirectionModel;
+};
+
 export type SortingRequestModel = {
     parent?: null | ReferenceByIdModel;
     sorting: Array<ItemSortingRequestModel>;
+};
+
+export type SortMediaChildrenByFieldRequestModel = {
+    field: ContentSortFieldModel;
+    direction: DirectionModel;
 };
 
 export type StartNodeItemResponseModel = {
@@ -3076,6 +3102,8 @@ export type TreeNodeResponseModel = {
     stamp: string;
 };
 
+export type UmbracoObjectTypesModel = 'Unknown' | 'ROOT' | 'Document' | 'Media' | 'Template' | 'DocumentType' | 'MediaType' | 'MemberType' | 'MemberGroup' | 'RecycleBin' | 'Member' | 'DataType' | 'DocumentTypeContainer' | 'MediaTypeContainer' | 'MemberTypeContainer' | 'DataTypeContainer' | 'DocumentBlueprintContainer' | 'RelationType' | 'FormsForm' | 'FormsPreValue' | 'FormsDataSource' | 'Language' | 'DocumentBlueprint' | 'IdReservation' | 'Element' | 'ElementContainer' | 'ElementRecycleBin';
+
 export type UnlockUsersRequestModel = {
     userIds: Array<ReferenceByIdModel>;
 };
@@ -3086,6 +3114,19 @@ export type UnpublishDocumentRequestModel = {
 
 export type UnpublishElementRequestModel = {
     cultures?: null | Array<string>;
+};
+
+export type UpdateAndPublishDocumentRequestModel = {
+    culturesToPublish: Array<string>;
+    template?: null | ReferenceByIdModel;
+    values: Array<DocumentValueModel>;
+    variants: Array<DocumentVariantRequestModel>;
+};
+
+export type UpdateAndPublishElementRequestModel = {
+    culturesToPublish: Array<string>;
+    values: Array<ElementValueModel>;
+    variants: Array<ElementVariantRequestModel>;
 };
 
 export type UpdateCurrentUserRequestModel = {
@@ -3290,6 +3331,7 @@ export type UpdatePackageRequestModel = {
     contentLoadChildNodes: boolean;
     mediaIds: Array<string>;
     mediaLoadChildNodes: boolean;
+    elementIds?: null | Array<string>;
     documentTypes: Array<string>;
     mediaTypes: Array<string>;
     dataTypes: Array<string>;
@@ -3334,12 +3376,15 @@ export type UpdateUserGroupRequestModel = {
     sections: Array<string>;
     languages: Array<string>;
     hasAccessToAllLanguages: boolean;
+    hasAccessToInvariantForVariant: boolean;
     documentStartNode?: null | ReferenceByIdModel;
     documentRootAccess: boolean;
     mediaStartNode?: null | ReferenceByIdModel;
     mediaRootAccess: boolean;
     elementStartNode?: null | ReferenceByIdModel;
     elementRootAccess: boolean;
+    documentBlueprintStartNode?: null | ReferenceByIdModel;
+    documentBlueprintRootAccess: boolean;
     fallbackPermissions: Array<string>;
     permissions: Array<IPermissionPresentationModel>;
 };
@@ -3357,6 +3402,8 @@ export type UpdateUserRequestModel = {
     hasMediaRootAccess: boolean;
     elementStartNodeIds: Array<ReferenceByIdModel>;
     hasElementRootAccess: boolean;
+    documentBlueprintStartNodeIds: Array<ReferenceByIdModel>;
+    hasDocumentBlueprintRootAccess: boolean;
     email: string;
     userName: string;
     name: string;
@@ -3375,18 +3422,12 @@ export type UpdateWebhookRequestModel = {
     };
 };
 
-export type UpgradeCheckResponseModel = {
-    type: string;
-    comment: string;
-    url: string;
-};
-
 export type UpgradeSettingsResponseModel = {
     currentState: string;
     newState: string;
     newVersion: string;
     oldVersion: string;
-    reportUrl: null | string;
+    reportUrl: string;
 };
 
 export type UserConfigurationResponseModel = {
@@ -3438,12 +3479,15 @@ export type UserGroupResponseModel = {
     sections: Array<string>;
     languages: Array<string>;
     hasAccessToAllLanguages: boolean;
+    hasAccessToInvariantForVariant: boolean;
     documentStartNode?: null | ReferenceByIdModel;
     documentRootAccess: boolean;
     mediaStartNode?: null | ReferenceByIdModel;
     mediaRootAccess: boolean;
     elementStartNode?: null | ReferenceByIdModel;
     elementRootAccess: boolean;
+    documentBlueprintStartNode?: null | ReferenceByIdModel;
+    documentBlueprintRootAccess: boolean;
     fallbackPermissions: Array<string>;
     permissions: Array<IPermissionPresentationModel>;
 };
@@ -3485,6 +3529,8 @@ export type UserResponseModel = {
     hasMediaRootAccess: boolean;
     elementStartNodeIds: Array<ReferenceByIdModel>;
     hasElementRootAccess: boolean;
+    documentBlueprintStartNodeIds: Array<ReferenceByIdModel>;
+    hasDocumentBlueprintRootAccess: boolean;
     avatarUrls: Array<string>;
     state: UserStateModel;
     failedLoginAttempts: number;
@@ -3581,6 +3627,7 @@ export type WebhookLogResponseModel = {
     key: string;
     webhookKey: string;
     statusCode: string;
+    httpStatusCode?: null | number;
     isSuccessStatusCode: boolean;
     date: string;
     eventAlias: string;
@@ -3992,31 +4039,6 @@ export type GetElementEffectiveForRoleResponses = {
 };
 
 export type GetElementEffectiveForRoleResponse = GetElementEffectiveForRoleResponses[keyof GetElementEffectiveForRoleResponses];
-
-export type GetElementEffectiveForCurrentUserData = {
-    body?: never;
-    path?: never;
-    query?: {
-        nodeKey?: string;
-    };
-    url: '/umbraco/management/api/v1/advanced-permissions/element/effective/current-user';
-};
-
-export type GetElementEffectiveForCurrentUserErrors = {
-    /**
-     * The resource is protected and requires an authentication token
-     */
-    401: unknown;
-};
-
-export type GetElementEffectiveForCurrentUserResponses = {
-    /**
-     * OK
-     */
-    200: EffectivePermissionsResponseModel;
-};
-
-export type GetElementEffectiveForCurrentUserResponse = GetElementEffectiveForCurrentUserResponses[keyof GetElementEffectiveForCurrentUserResponses];
 
 export type DeleteElementPermissionData = {
     body?: never;

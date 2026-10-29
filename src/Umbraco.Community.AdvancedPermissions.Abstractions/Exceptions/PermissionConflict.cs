@@ -1,6 +1,6 @@
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
-namespace Umbraco.Community.AdvancedPermissions.Core.Exceptions;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Exceptions;
 
 /// <summary>
 /// One node-and-user-group pair whose stored entries no longer match the stamp a writer expected.

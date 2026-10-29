@@ -1,5 +1,5 @@
-using Umbraco.Community.AdvancedPermissions.Core.Concurrency;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Concurrency;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
 namespace Umbraco.Community.AdvancedPermissions.Core.Tests.Concurrency;
 

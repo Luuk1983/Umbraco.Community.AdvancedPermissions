@@ -32,8 +32,8 @@ Umbraco's built-in permissions cover the everyday cases well: you grant a user g
 
 ## Prerequisites
 
-- Umbraco v18.0.0 or later
-- .NET 10
+- Umbraco v19.0.0 or later
+- .NET 11
 
 ## Installation
 

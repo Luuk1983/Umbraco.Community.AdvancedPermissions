@@ -7,8 +7,8 @@ using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.AuthorizationStatus;
 using Umbraco.Extensions;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 
 namespace Umbraco.Community.AdvancedPermissions.Services;
 
@@ -91,6 +91,68 @@ public sealed class AdvancedElementPermissionService(
         }
 
         return ElementAuthorizationStatus.Success;
+    }
+
+    /// <summary>
+    /// Filters a set of library elements down to those the user may access with every requested verb.
+    /// </summary>
+    /// <remarks>
+    /// Umbraco 19 added this for batch checks, such as filtering the Library items a reference list shows.
+    /// Its default implementation calls <see cref="AuthorizeAccessAsync(IUser, IEnumerable{Guid}, ISet{string})"/>
+    /// once per key, which reads paths and start nodes again for every element. This override decides each
+    /// element the same way but reads all paths, the start nodes and the shared ancestor ids once. Unknown
+    /// elements and elements outside the user's Library start nodes are left out.
+    /// </remarks>
+    /// <param name="user">The user to authorize.</param>
+    /// <param name="elementKeys">The elements to check.</param>
+    /// <param name="permissionsToCheck">The verbs that must all be allowed.</param>
+    /// <returns>The keys of the elements the user may access.</returns>
+    public async Task<ISet<Guid>> FilterAuthorizedAccessAsync(
+        IUser user,
+        IEnumerable<Guid> elementKeys,
+        ISet<string> permissionsToCheck)
+    {
+        var authorizedKeys = new HashSet<Guid>();
+        Guid[] keysArray = elementKeys.Distinct().ToArray();
+
+        if (keysArray.Length == 0)
+        {
+            return authorizedKeys;
+        }
+
+        TreeEntityPath[] entityPaths = entityService
+            .GetAllPaths(UmbracoObjectTypes.Element, keysArray)
+            .ToArray();
+
+        if (entityPaths.Length == 0)
+        {
+            return authorizedKeys;
+        }
+
+        var startNodeIds = user.CalculateElementStartNodeIds(entityService, appCaches);
+        var idToKeyCache = new Dictionary<int, Guid>();
+
+        foreach (TreeEntityPath entityPath in entityPaths)
+        {
+            if (!ContentPermissions.HasPathAccess(
+                    entityPath.Path, startNodeIds, Constants.System.RecycleBinElement))
+            {
+                continue;
+            }
+
+            IReadOnlyList<Guid> pathFromRoot =
+                ElementTreePathResolver.BuildPathFromRoot(entityService, entityPath.Path, idToKeyCache);
+
+            var allPerms = await elementPermissionService.ResolveAllAsync(
+                user.Key, entityPath.Key, pathFromRoot, permissionsToCheck);
+
+            if (allPerms.Values.All(p => p.IsAllowed))
+            {
+                authorizedKeys.Add(entityPath.Key);
+            }
+        }
+
+        return authorizedKeys;
     }
 
     /// <inheritdoc />
@@ -211,10 +273,16 @@ public sealed class AdvancedElementPermissionService(
     /// </para>
     /// <para>
     /// Permissions are stored against the canonical <c>Umb.Element.*</c> verbs. For an element key the
-    /// canonical verbs are returned as-is; for a folder key they are mapped back to the container verbs
-    /// (<c>Umb.ElementContainer.*</c>) the tree filter expects — e.g. <c>Umb.ElementContainer.Read</c>,
-    /// which the filter checks as a folder's browse permission. Exactly one <see cref="NodePermissions"/>
-    /// is returned per requested key (an unresolved key returns an empty set).
+    /// canonical verbs are returned as-is. For a folder key the canonical verbs are returned too, plus the
+    /// container verbs (<c>Umb.ElementContainer.*</c>) the tree filter expects — e.g.
+    /// <c>Umb.ElementContainer.Read</c>, which the filter checks as a folder's browse permission. Exactly one
+    /// <see cref="NodePermissions"/> is returned per requested key (an unresolved key returns an empty set).
+    /// </para>
+    /// <para>
+    /// It is also what Umbraco's current-user endpoint (<c>GET /user/current/permissions/element</c>) returns,
+    /// which the package's element and folder conditions call per node. For a new, unsaved element those
+    /// conditions ask for the parent folder instead, so the folder's canonical verbs (Publish included) are
+    /// what the new element will inherit there.
     /// </para>
     /// </remarks>
     /// <param name="user">The user to resolve permissions for.</param>
@@ -261,9 +329,14 @@ public sealed class AdvancedElementPermissionService(
                         .Select(p => p.Verb)
                         .ToHashSet(StringComparer.Ordinal);
 
+                    foreach (var verb in allowedCanonical)
+                    {
+                        allowedVerbs.Add(verb);
+                    }
+
                     if (containerKeys.Contains(key))
                     {
-                        // Folder: surface the container verbs the tree filter expects, mapped from the
+                        // Folder: also surface the container verbs the tree filter expects, mapped from the
                         // canonical element verbs. Element-only verbs have no container counterpart.
                         foreach (var (containerVerb, canonical) in AdvancedPermissionsConstants.ElementContainerVerbToCanonical)
                         {
@@ -271,13 +344,6 @@ public sealed class AdvancedElementPermissionService(
                             {
                                 allowedVerbs.Add(containerVerb);
                             }
-                        }
-                    }
-                    else
-                    {
-                        foreach (var verb in allowedCanonical)
-                        {
-                            allowedVerbs.Add(verb);
                         }
                     }
                 }

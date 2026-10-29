@@ -21,7 +21,8 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          # The SDK is pinned in global.json (Umbraco 19 targets .NET 11).
+          global-json-file: global.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

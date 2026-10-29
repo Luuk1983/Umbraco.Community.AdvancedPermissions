@@ -5,7 +5,7 @@ using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Community.AdvancedPermissions.Caching;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
 using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Tests;

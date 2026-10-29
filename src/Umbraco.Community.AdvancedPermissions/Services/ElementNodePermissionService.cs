@@ -2,8 +2,8 @@ using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Community.AdvancedPermissions.Caching;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Notifications;
 
 namespace Umbraco.Community.AdvancedPermissions.Services;

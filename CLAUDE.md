@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Umbraco v17 package implementing advanced permission management. Adds explicit Allow/Deny permission entries per role per content node, tree-based inheritance, an `$everyone` role, and dedicated backoffice UIs (Permissions Editor + Access Viewer).
+Umbraco package (the `main` branch targets Umbraco v19 on .NET 11; `v18/main` and `v17/main` hold the older lines) implementing advanced permission management. Adds explicit Allow/Deny permission entries per role per content node, tree-based inheritance, an `$everyone` role, and dedicated backoffice UIs (Permissions Editor + Access Viewer).
 
 ## Solution Structure
 
@@ -92,7 +92,7 @@ dotnet pack src/Umbraco.Community.AdvancedPermissions/  # Create NuGet package
 ### Backend
 ```bash
 dotnet build                                      # Build all projects
-dotnet test                                       # Run all 39 tests (20 unit + 19 integration)
+dotnet test                                       # Run all backend tests
 dotnet pack src/Umbraco.Community.AdvancedPermissions/   # Create NuGet package
 ```
 
@@ -113,7 +113,7 @@ dotnet run --urls http://localhost:5000
 
 ## Critical Gotchas
 
-1. **Auth in backoffice fetches**: Always use the `backofficeEntryPoint` + `UMB_AUTH_CONTEXT` pattern. See `src/entrypoint.ts`. `getLatestToken()` is deprecated and always returns `'[redacted]'`.
+1. **Auth in backoffice fetches**: Umbraco 19 uses cookie auth. `onInit` in `src/entrypoint.ts` awaits `UMB_AUTH_CONTEXT` and calls `configureClient(client)` (as Umbraco's extension template does). Never set an `Authorization` header; `getLatestToken()` and the other token methods were removed in v19.
 
 2. **`UmbExtensionManifest` is a global ambient type** — never import it. Just use `Array<UmbExtensionManifest>` directly.
 
@@ -137,8 +137,12 @@ dotnet run --urls http://localhost:5000
 
 10. **Namespace collision with `Umbraco.Cms`**: Since the project namespace is `Umbraco.Community.AdvancedPermissions`, the compiler sees `Umbraco` as a parent namespace. Inline fully-qualified references like `Umbraco.Cms.Core.Models.IContent` used *inside* a class declared in this namespace will resolve against the enclosing `Umbraco` first and fail. Keep all `Umbraco.Cms.*` access in `using` directives at the top of the file (absolute resolution), or use `global::Umbraco.Cms.Core...` for inline references.
 
+11. **.NET 11 SDK is pinned in `global.json`** — Umbraco 19 targets `net11.0`. CI reads the same file (`global-json-file`). The test site sets `<CompressionEnabled>false</CompressionEnabled>` like Umbraco's project template; without it the .NET 11 SDK fails on Umbraco's backoffice static assets ("Endpoints not found for related asset").
+
+12. **Permission conditions use Umbraco's per-node current-user endpoints** — the document, element, element-folder and element-or-element-folder conditions are replaced in `entrypoint.ts` and call `GET /user/current/permissions/document|element`, which Umbraco routes through the package's `IContentPermissionService` / `IElementPermissionService`. For a folder, `AdvancedElementPermissionService.GetPermissionsAsync` returns both the canonical `Umb.Element.*` verbs and the `Umb.ElementContainer.*` ones. Since 18.3 Umbraco resolves these conditions by alias everywhere, so no workspace action needs replacing.
+
 ## Umbraco Reference Source
 
-- Umbraco v17 backoffice source: `C:\GitHub\UmbracoVersions\v17\src\Umbraco.Web.UI.Client`
+- Umbraco v19 source (sparse checkout of `release-19.0.0-beta1`): `C:\GitHub\UmbracoVersions\v19\src`
 - Umbraco UI library source: `C:\GitHub\UmbracoVersions\UI-latest`
 - Do not read `node_modules` — use the reference source instead.

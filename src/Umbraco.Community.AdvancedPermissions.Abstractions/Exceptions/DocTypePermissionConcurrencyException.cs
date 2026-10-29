@@ -1,4 +1,4 @@
-namespace Umbraco.Community.AdvancedPermissions.Core.Exceptions;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Exceptions;
 
 /// <summary>
 /// The document-type counterpart of <see cref="PermissionConcurrencyException"/>: thrown by a

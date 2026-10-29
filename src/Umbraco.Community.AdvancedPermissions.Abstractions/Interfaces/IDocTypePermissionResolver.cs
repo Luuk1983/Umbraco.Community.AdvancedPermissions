@@ -1,6 +1,6 @@
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
-namespace Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 
 /// <summary>
 /// Resolves the effective doc-type permission for a (user roles, parent path, content-type, verb)

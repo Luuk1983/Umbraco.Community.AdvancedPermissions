@@ -1,6 +1,6 @@
 using Umbraco.Community.AdvancedPermissions.Caching;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 using Umbraco.Community.AdvancedPermissions.Core.Services;
 using Umbraco.Community.AdvancedPermissions.Services;
 using Microsoft.Extensions.Logging;
@@ -9,7 +9,7 @@ using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Services;
-using static Umbraco.Community.AdvancedPermissions.Core.Constants.AdvancedPermissionsConstants;
+using static Umbraco.Community.AdvancedPermissions.Abstractions.Constants.AdvancedPermissionsConstants;
 
 namespace Umbraco.Community.AdvancedPermissions.Tests;
 

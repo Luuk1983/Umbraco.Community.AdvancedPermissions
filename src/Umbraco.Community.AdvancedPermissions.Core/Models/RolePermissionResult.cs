@@ -1,3 +1,5 @@
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
+
 namespace Umbraco.Community.AdvancedPermissions.Core.Models;
 
 /// <summary>

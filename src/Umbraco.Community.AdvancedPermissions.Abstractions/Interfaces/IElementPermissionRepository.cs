@@ -1,4 +1,4 @@
-namespace Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 
 /// <summary>
 /// Data access for library element and element-folder advanced security permission entries

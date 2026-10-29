@@ -1,5 +1,5 @@
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
-using Umbraco.Community.AdvancedPermissions.Core.Concurrency;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Concurrency;
 
 namespace Umbraco.Community.AdvancedPermissions.Controllers;
 

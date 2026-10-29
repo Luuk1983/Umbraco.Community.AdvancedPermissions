@@ -1,6 +1,6 @@
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
-namespace Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 
 /// <summary>
 /// Provides data access for document-type permission entries (the new table introduced

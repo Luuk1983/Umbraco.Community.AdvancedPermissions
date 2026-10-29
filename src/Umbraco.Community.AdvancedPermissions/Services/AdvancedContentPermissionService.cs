@@ -7,8 +7,8 @@ using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.AuthorizationStatus;
 using Umbraco.Extensions;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 
 namespace Umbraco.Community.AdvancedPermissions.Services;
 
@@ -38,6 +38,14 @@ public sealed class AdvancedContentPermissionService(
     ILanguageService languageService)
     : IContentPermissionService
 {
+    /// <inheritdoc />
+    /// <remarks>
+    /// Umbraco 19 removed this overload's default implementation. It checks one node for one verb and
+    /// decides exactly as <see cref="AuthorizeAccessAsync(IUser, IEnumerable{Guid}, ISet{string})"/> does.
+    /// </remarks>
+    public Task<ContentAuthorizationStatus> AuthorizeAccessAsync(IUser user, Guid contentKey, string permissionToCheck)
+        => AuthorizeAccessAsync(user, [contentKey], new HashSet<string> { permissionToCheck });
+
     /// <inheritdoc />
     public async Task<ContentAuthorizationStatus> AuthorizeAccessAsync(
         IUser user,

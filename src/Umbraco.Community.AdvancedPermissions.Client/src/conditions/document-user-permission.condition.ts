@@ -1,4 +1,4 @@
-import type { UmbConditionConfigBase, UmbConditionControllerArguments, UmbExtensionCondition } from '@umbraco-cms/backoffice/extension-api';
+import type { UmbConditionConfigBase, UmbConditionControllerArguments } from '@umbraco-cms/backoffice/extension-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbConditionBase } from '@umbraco-cms/backoffice/extension-registry';
 import { UMB_ENTITY_CONTEXT, UMB_PARENT_ENTITY_CONTEXT } from '@umbraco-cms/backoffice/entity';
@@ -78,7 +78,6 @@ export function clearEffectivePermissionCache(): void {
  */
 export class UapDocumentUserPermissionCondition
   extends UmbConditionBase<UapDocumentPermissionConditionConfig>
-  implements UmbExtensionCondition
 {
   #entityType: string | undefined;
   #documentUnique: string | null | undefined;

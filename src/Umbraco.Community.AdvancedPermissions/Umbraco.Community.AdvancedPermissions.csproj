@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -65,7 +65,7 @@
     <PackageReference Include="Umbraco.Cms.Api.Management" />
   </ItemGroup>
 
-  <!-- Bundle the Core and Data implementation DLLs into this package (lib/net10.0/). The
+  <!-- Bundle the Core and Data implementation DLLs into this package (lib/net11.0/). The
        Abstractions DLL is deliberately EXCLUDED — it ships as its own package and is declared as
        a NuGet dependency above, so add-ons/overrides share the same contract assembly rather than
        getting a duplicate bundled copy. -->

@@ -1,4 +1,4 @@
-namespace Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 
 /// <summary>
 /// High-level operations for managing and resolving advanced security permissions on content nodes.

@@ -260,14 +260,14 @@ public sealed class ServerEventSourceCoverageTests
         await access.HandleAsync(new UserGroupWithUsersSavedNotification(new UserGroupWithUsers(WithKey<IUserGroup>(key), [], []), messages), ct);
         await access.HandleAsync(new UserGroupDeletedNotification(WithKey<IUserGroup>(key), messages), ct);
         await access.HandleAsync(new UserSavedNotification(WithKey<IUser>(key), messages), ct);
-        await access.HandleAsync(new ContentMovedNotification(new MoveEventInfo<IContent>(WithKey<IContent>(key), "-1,-20", -20), messages), ct);
+        await access.HandleAsync(new ContentMovedNotification(new MoveEventInfo<IContent>(WithKey<IContent>(key), "-1,-20", newParentKey: null), messages), ct);
         await access.HandleAsync(new ContentMovedToRecycleBinNotification(new MoveToRecycleBinEventInfo<IContent>(WithKey<IContent>(key), "-1,-20"), messages), ct);
         await access.HandleAsync(new ContentDeletedNotification(WithKey<IContent>(key), messages), ct);
-        await access.HandleAsync(new ElementMovedNotification(new MoveEventInfo<IElement>(WithKey<IElement>(key), "-1,-20", -20), messages), ct);
+        await access.HandleAsync(new ElementMovedNotification(new MoveEventInfo<IElement>(WithKey<IElement>(key), "-1,-20", newParentKey: null), messages), ct);
         await access.HandleAsync(new ElementMovedToRecycleBinNotification(new MoveToRecycleBinEventInfo<IElement>(WithKey<IElement>(key), "-1,-20"), messages), ct);
         await access.HandleAsync(new ElementDeletedNotification(WithKey<IElement>(key), messages), ct);
         await access.HandleAsync(
-            new EntityContainerMovedNotification(new MoveEventInfo<EntityContainer>(Container(key), "-1,-20", -20), messages), ct);
+            new EntityContainerMovedNotification(new MoveEventInfo<EntityContainer>(Container(key), "-1,-20", newParentKey: null), messages), ct);
         await access.HandleAsync(
             new EntityContainerMovedToRecycleBinNotification(new MoveToRecycleBinEventInfo<EntityContainer>(Container(key), "-1,-20"), messages), ct);
         await access.HandleAsync(new EntityContainerDeletedNotification(Container(key), messages), ct);

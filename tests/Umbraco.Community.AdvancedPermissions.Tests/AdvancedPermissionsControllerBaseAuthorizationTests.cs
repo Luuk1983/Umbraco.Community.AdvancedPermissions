@@ -13,19 +13,15 @@ namespace Umbraco.Community.AdvancedPermissions.Tests;
 /// permissions) are privilege-escalation primitives. Those must stay gated on
 /// <see cref="AuthorizationPolicies.SectionAccessUsers"/>.
 ///
-/// The one exception is <see cref="ElementPermissionsEffectiveController.GetEffectiveForCurrentUser"/>
-/// (<c>GET /element/effective/current-user</c>): it is the seam the replacement element/element-folder
-/// permission conditions call to decide whether the current user may act on a library node. Gating it on
-/// Users-section access meant any content editor without that section got a 403, the conditions denied
-/// every action, and library content became read-only. It must remain backoffice-authenticated but NOT
-/// Users-section-gated.
-///
-/// (Documents are unaffected in v18: their condition uses Umbraco's native per-document current-user
-/// endpoint, which is routed through <c>IContentPermissionService</c> and is not Users-section-gated.)
+/// No endpoint is exempt. Until v19 the element effective controller had a current-user action that the
+/// replacement element/element-folder conditions called, and it had to stay reachable without Users-section
+/// access. Those conditions now call Umbraco's own <c>GET /user/current/permissions/element</c>, which is
+/// routed through <c>IElementPermissionService</c> (issue #53), exactly as the document condition uses the
+/// native per-document endpoint, so that action was removed.
 ///
 /// The gate was previously an <see cref="AuthorizeAttribute"/> on
 /// <see cref="AdvancedPermissionsControllerBase"/>, which inherits to every endpoint and cannot be
-/// removed by a derived controller — hence it is now applied per management controller/action instead.
+/// removed by a derived controller — hence it is now applied per management controller instead.
 /// These reflection tests assert that topology so a forgotten attribute fails the build.
 /// </remarks>
 public sealed class AdvancedPermissionsControllerBaseAuthorizationTests
@@ -33,8 +29,8 @@ public sealed class AdvancedPermissionsControllerBaseAuthorizationTests
     /// <summary>
     /// The base controller must NOT carry the <see cref="AuthorizationPolicies.SectionAccessUsers"/>
     /// policy: a base-class <see cref="AuthorizeAttribute"/> inherits to every endpoint and cannot be
-    /// removed downstream, which is exactly what forced the backoffice-scoped current-user endpoint to be
-    /// Users-section-gated. The gate now lives on the individual management controllers/actions.
+    /// removed downstream, which once forced a backoffice-scoped endpoint to be Users-section-gated. The gate now
+    /// lives on the individual management controllers.
     /// </summary>
     [Fact]
     public void ControllerBase_DoesNotApplySectionAccessUsersPolicy() =>
@@ -74,36 +70,12 @@ public sealed class AdvancedPermissionsControllerBaseAuthorizationTests
     [InlineData(typeof(ElementPermissionsMetaController))]
     [InlineData(typeof(ElementPermissionsPermissionController))]
     [InlineData(typeof(ElementPermissionsTreeController))]
+    [InlineData(typeof(ElementPermissionsEffectiveController))]
     [InlineData(typeof(AdvancedPermissionsStartNodesController))]
     public void ManagementControllers_AreSectionGated(Type controllerType) =>
         Assert.True(
             TypeIsSectionGated(controllerType),
             $"{controllerType.Name} must apply the SectionAccessUsers policy so its management/mutating endpoints stay behind the Users section.");
-
-    /// <summary>
-    /// The arbitrary-user and arbitrary-role element effective endpoints are consumed only by the Library
-    /// access viewer (a management UI), so they stay gated on Users-section access.
-    /// </summary>
-    /// <param name="methodName">The action under test.</param>
-    [Theory]
-    [InlineData(nameof(ElementPermissionsEffectiveController.GetEffectiveForUser))]
-    [InlineData(nameof(ElementPermissionsEffectiveController.GetEffectiveForRole))]
-    public void ElementEffective_ManagementActions_AreSectionGated(string methodName) =>
-        Assert.True(
-            MethodIsSectionGated(typeof(ElementPermissionsEffectiveController), methodName),
-            $"ElementPermissionsEffectiveController.{methodName} is a management (Library access viewer) endpoint and must stay Users-section-gated.");
-
-    /// <summary>
-    /// The core fix: <c>GET /element/effective/current-user</c> must be reachable by any authenticated
-    /// backoffice user, because the element and element-folder permission conditions call it to gate
-    /// library-editing actions. It must NOT be Users-section-gated at either the method or the controller
-    /// level.
-    /// </summary>
-    [Fact]
-    public void ElementEffective_CurrentUser_IsNotSectionGated() =>
-        Assert.False(
-            MethodIsSectionGated(typeof(ElementPermissionsEffectiveController), nameof(ElementPermissionsEffectiveController.GetEffectiveForCurrentUser)),
-            "GET /element/effective/current-user must be backoffice-scoped (not Users-section-gated) so content editors without Users-section access can still edit library content.");
 
     /// <summary>
     /// The concrete controllers all derive from the base, so the shared routing/feature attributes
@@ -136,24 +108,4 @@ public sealed class AdvancedPermissionsControllerBaseAuthorizationTests
         type.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
             .Cast<AuthorizeAttribute>()
             .Any(a => a.Policy == AuthorizationPolicies.SectionAccessUsers);
-
-    /// <summary>
-    /// Determines whether an action is gated on Users-section access, considering both the action's own
-    /// attributes and its declaring controller's attributes (a controller-level gate applies to all actions).
-    /// </summary>
-    /// <param name="controllerType">The controller declaring the action.</param>
-    /// <param name="methodName">The action method name.</param>
-    /// <returns><c>true</c> if the action is gated on Users-section access; otherwise <c>false</c>.</returns>
-    private static bool MethodIsSectionGated(Type controllerType, string methodName)
-    {
-        var method = controllerType.GetMethod(methodName)
-            ?? throw new InvalidOperationException($"Action '{methodName}' not found on {controllerType.Name}.");
-
-        var methodGated = method
-            .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true)
-            .Cast<AuthorizeAttribute>()
-            .Any(a => a.Policy == AuthorizationPolicies.SectionAccessUsers);
-
-        return methodGated || TypeIsSectionGated(controllerType);
-    }
 }

@@ -1,4 +1,4 @@
-namespace Umbraco.Community.AdvancedPermissions.Core.Models;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
 /// <summary>
 /// One row in the Create Audit listing: a candidate doc-type that the parent's allowed-children

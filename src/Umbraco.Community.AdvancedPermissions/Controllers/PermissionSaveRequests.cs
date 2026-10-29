@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
-using Umbraco.Community.AdvancedPermissions.Core.Concurrency;
-using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Concurrency;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Exceptions;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
 namespace Umbraco.Community.AdvancedPermissions.Controllers;
 

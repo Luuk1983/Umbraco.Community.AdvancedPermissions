@@ -1,14 +1,13 @@
-import type { ManifestBase, UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
+import type { UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
 import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
 import { UMB_CURRENT_USER_CONTEXT } from '@umbraco-cms/backoffice/current-user';
 import { client } from './api/generated/client.gen.js';
 import { setCurrentUserKey } from './utils/selection-store.js';
-import { replaceExtensionApi } from './workspace-actions/replace-extension-api.js';
 
 const DOCUMENT_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.Document';
 const ELEMENT_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.Element';
 const ELEMENT_FOLDER_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.ElementFolder';
-const SAVE_AND_PUBLISH_WORKSPACE_ACTION_ALIAS = 'Umb.WorkspaceAction.Document.SaveAndPublish';
+const ELEMENT_OR_ELEMENT_FOLDER_PERMISSION_CONDITION_ALIAS = 'Umb.Condition.UserPermission.ElementOrElementFolder';
 
 // Native Document entityUserPermission manifests drive the "Default permissions" checkboxes
 // in the user group editor. We remove them so the section disappears entirely — document
@@ -54,12 +53,17 @@ const ELEMENT_ENTITY_PERMISSION_ALIASES = [
   'Umb.UserGranularPermission.Element',
 ];
 
-export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
-  // Wire our hey-api generated client through Umbraco's auth pipeline (token refresh, 401 retry).
-  _host.consumeContext(UMB_AUTH_CONTEXT, (authContext) => {
-    if (!authContext) return;
+export const onInit: UmbEntryPointOnInit = async (_host, _extensionRegistry) => {
+  // Wire our hey-api generated client into the backoffice auth context, as Umbraco's extension
+  // template does: configureClient() sets the base URL and cookie credentials (Umbraco 19 has no
+  // token to attach) and binds the default response interceptors (401 handling, error notifications).
+  // The framework awaits onInit, so the client is configured before any of our elements can use it.
+  const authContext = await _host.getContext(UMB_AUTH_CONTEXT);
+  if (authContext) {
     authContext.configureClient(client);
-  });
+  } else {
+    console.warn('Advanced Permissions: UMB_AUTH_CONTEXT is not available; the API client is not authenticated.');
+  }
 
   // Track the current backoffice user so per-user selection memory (issue #46) can key its
   // sessionStorage entries. Resolves well before any editor/viewer opens; until it does,
@@ -72,8 +76,10 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
   });
 
   // Replace the native document permission condition with the Advanced Permissions version.
-  // The native condition reads from cached group permissions and doesn't support our
-  // scope-based Allow/Deny model. The replacement calls the /effective API per document.
+  // The native condition reads the bulk /user/current permission set, which never lists the package's
+  // entries; the replacement asks Umbraco's per-node /user/current/permissions/document endpoint, which is
+  // routed through IContentPermissionService. Umbraco resolves this condition by alias everywhere since
+  // 18.3 (Save and publish included), so the replacement decides every document action.
   _extensionRegistry.unregister(DOCUMENT_PERMISSION_CONDITION_ALIAS);
   _extensionRegistry.register({
     type: 'condition',
@@ -82,23 +88,9 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
     api: () => import('./conditions/document-user-permission.condition.js'),
   } as UmbExtensionManifest);
 
-  // Umbraco's "Save and publish" action constructs the native document permission condition
-  // directly instead of resolving it by alias, so the replacement above never decides it and the
-  // button stays disabled (the native check reads fallback permissions, from which this package
-  // strips its managed verbs). Swap in a copy of the action that resolves the condition by alias,
-  // keeping the native alias, placement and conditions.
-  replaceExtensionApi<ManifestBase>(
-    _extensionRegistry,
-    SAVE_AND_PUBLISH_WORKSPACE_ACTION_ALIAS,
-    {
-      name: 'Advanced Permissions Save And Publish Document Workspace Action',
-      api: () => import('./workspace-actions/save-and-publish.action.js'),
-    },
-  );
-
-  // Replace the native element + element-folder permission conditions. Unlike documents, Umbraco 18 does
-  // not route the element current-user permission path through IElementPermissionService, so these
-  // replacements resolve UI action visibility via the package's own element effective endpoint.
+  // Replace the native element + element-folder permission conditions. The native ones read the bulk
+  // /user/current permission set, which never lists the package's entries; the replacements ask Umbraco's
+  // per-node /user/current/permissions/element endpoint, which is routed through IElementPermissionService.
   _extensionRegistry.unregister(ELEMENT_PERMISSION_CONDITION_ALIAS);
   _extensionRegistry.register({
     type: 'condition',
@@ -113,6 +105,16 @@ export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
     name: 'Advanced Permissions Element Folder User Permission Condition',
     alias: ELEMENT_FOLDER_PERMISSION_CONDITION_ALIAS,
     api: () => import('./conditions/element-folder-user-permission.condition.js'),
+  } as UmbExtensionManifest);
+
+  // The native "element or element folder" condition (the Library Create actions) constructs the native
+  // element and folder conditions directly, so the two replacements above never decide it. Replace it too.
+  _extensionRegistry.unregister(ELEMENT_OR_ELEMENT_FOLDER_PERMISSION_CONDITION_ALIAS);
+  _extensionRegistry.register({
+    type: 'condition',
+    name: 'Advanced Permissions Element Or Element Folder User Permission Condition',
+    alias: ELEMENT_OR_ELEMENT_FOLDER_PERMISSION_CONDITION_ALIAS,
+    api: () => import('./conditions/element-or-element-folder-user-permission.condition.js'),
   } as UmbExtensionManifest);
 
   // Exclude native Document, Element and Element Folder entityUserPermission manifests (and the native

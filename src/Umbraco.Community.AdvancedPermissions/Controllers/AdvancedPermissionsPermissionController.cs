@@ -7,9 +7,9 @@ using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
 namespace Umbraco.Community.AdvancedPermissions.Controllers;
 

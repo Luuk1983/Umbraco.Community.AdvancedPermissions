@@ -104,7 +104,7 @@ public sealed class AccessServerEventHandlerTests
 
         await CreateHandler().HandleAsync(
             new ContentMovedNotification(
-                new MoveEventInfo<IContent>(BuildContent(contentKey), "-1,-20", -20),
+                new MoveEventInfo<IContent>(BuildContent(contentKey), "-1,-20", newParentKey: null),
                 new EventMessages()),
             CancellationToken.None);
 
@@ -125,8 +125,8 @@ public sealed class AccessServerEventHandlerTests
         await CreateHandler().HandleAsync(
             new ContentMovedNotification(
                 [
-                    new MoveEventInfo<IContent>(BuildContent(firstKey), "-1,-20", -20),
-                    new MoveEventInfo<IContent>(BuildContent(secondKey), "-1,-21", -21),
+                    new MoveEventInfo<IContent>(BuildContent(firstKey), "-1,-20", newParentKey: null),
+                    new MoveEventInfo<IContent>(BuildContent(secondKey), "-1,-21", newParentKey: null),
                 ],
                 new EventMessages()),
             CancellationToken.None);
@@ -175,7 +175,7 @@ public sealed class AccessServerEventHandlerTests
 
         await CreateHandler().HandleAsync(
             new ElementMovedNotification(
-                new MoveEventInfo<IElement>(BuildElement(elementKey), "-1,-20", -20),
+                new MoveEventInfo<IElement>(BuildElement(elementKey), "-1,-20", newParentKey: null),
                 new EventMessages()),
             CancellationToken.None);
 
@@ -222,7 +222,7 @@ public sealed class AccessServerEventHandlerTests
 
         await CreateHandler().HandleAsync(
             new EntityContainerMovedNotification(
-                new MoveEventInfo<EntityContainer>(BuildContainer(containerKey), "-1,-20", -20),
+                new MoveEventInfo<EntityContainer>(BuildContainer(containerKey), "-1,-20", newParentKey: null),
                 new EventMessages()),
             CancellationToken.None);
 
@@ -278,8 +278,8 @@ public sealed class AccessServerEventHandlerTests
         await CreateHandler().HandleAsync(
             new ContentMovedNotification(
                 [
-                    new MoveEventInfo<IContent>(BuildContent(failingKey), "-1,-20", -20),
-                    new MoveEventInfo<IContent>(BuildContent(okKey), "-1,-21", -21),
+                    new MoveEventInfo<IContent>(BuildContent(failingKey), "-1,-20", newParentKey: null),
+                    new MoveEventInfo<IContent>(BuildContent(okKey), "-1,-21", newParentKey: null),
                 ],
                 new EventMessages()),
             CancellationToken.None);
@@ -345,8 +345,8 @@ public sealed class AccessServerEventHandlerTests
         var handling = CreateHandler().HandleAsync(
             new ContentMovedNotification(
                 [
-                    new MoveEventInfo<IContent>(BuildContent(firstKey), "-1,-20", -20),
-                    new MoveEventInfo<IContent>(BuildContent(secondKey), "-1,-21", -21),
+                    new MoveEventInfo<IContent>(BuildContent(firstKey), "-1,-20", newParentKey: null),
+                    new MoveEventInfo<IContent>(BuildContent(secondKey), "-1,-21", newParentKey: null),
                 ],
                 new EventMessages()),
             CancellationToken.None);

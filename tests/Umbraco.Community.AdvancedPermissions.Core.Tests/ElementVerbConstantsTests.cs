@@ -1,4 +1,4 @@
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
 
 namespace Umbraco.Community.AdvancedPermissions.Core.Tests;
 

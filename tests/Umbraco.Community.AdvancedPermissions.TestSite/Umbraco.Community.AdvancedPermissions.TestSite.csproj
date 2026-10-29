@@ -1,10 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Umbraco.Community.AdvancedPermissions.TestSite</RootNamespace>
+    <!-- As in Umbraco's project template: Umbraco serves its own backoffice assets, and on .NET 11 the
+         SDK's compression step fails on them ("Endpoints not found for related asset"). -->
+    <CompressionEnabled>false</CompressionEnabled>
   </PropertyGroup>
 
   <ItemGroup>

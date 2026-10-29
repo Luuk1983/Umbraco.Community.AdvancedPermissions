@@ -4,9 +4,9 @@ using NSubstitute.ExceptionExtensions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
-using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Exceptions;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
 namespace Umbraco.Community.AdvancedPermissions.Tests;
 

@@ -3,8 +3,8 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.Filters;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 
 namespace Umbraco.Community.AdvancedPermissions.Filters;
 
@@ -35,12 +35,17 @@ public sealed class DocTypeCreateContentTypeFilter(
     }
 
     /// <inheritdoc />
-    public Task<IEnumerable<TItem>> FilterAllowedInLibraryAsync<TItem>(IEnumerable<TItem> contentTypes)
+    /// <remarks>
+    /// Umbraco passes the parent folder key (or <see langword="null"/> at the Library root) since 18.1. The
+    /// package's Library element-type entries are still section-global, so the key is not used yet and every
+    /// check resolves against the virtual root. Folder-aware filtering is issue #54.
+    /// </remarks>
+    public Task<IEnumerable<TItem>> FilterAllowedInLibraryAsync<TItem>(IEnumerable<TItem> contentTypes, Guid? parentKey)
         where TItem : IContentTypeComposition
     {
-        // Library element-type create-filtering is section-global (Umbraco supplies no parent context),
-        // so entries live on the virtual root. The candidates here are element types; resolve against the
-        // element-type verb so they are governed independently of document create-filtering in the shared store.
+        // Library element-type create-filtering is section-global, so entries live on the virtual root.
+        // The candidates here are element types; resolve against the element-type verb so they are
+        // governed independently of document create-filtering in the shared store.
         var pathFromRoot = new List<Guid> { AdvancedPermissionsConstants.VirtualRootNodeKey };
         return FilterAsync(contentTypes, pathFromRoot, ct => ct.Key, AdvancedPermissionsConstants.VerbElementCreateOfType);
     }

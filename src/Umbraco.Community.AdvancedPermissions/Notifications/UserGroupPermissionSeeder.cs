@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 using Umbraco.Community.AdvancedPermissions.Data.Context;
 using Umbraco.Community.AdvancedPermissions.Data.Entities;
 

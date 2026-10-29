@@ -4,9 +4,10 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Cms.Core.Services.AuthorizationStatus;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 using Umbraco.Community.AdvancedPermissions.Services;
 
 namespace Umbraco.Community.AdvancedPermissions.Tests;
@@ -197,6 +198,51 @@ public sealed class AdvancedContentPermissionServiceTests
         var result = await _sut.FilterFallbackPermissionsAsync(user, fallback);
 
         Assert.Empty(result);
+    }
+
+    // ─── AuthorizeAccessAsync(user, key, verb) ────────────────────────────────
+
+    /// <summary>
+    /// The single-node, single-verb overload has no default implementation in Umbraco 19, so the service
+    /// implements it. It must decide exactly as the set overload does: the verb is resolved at the node
+    /// through the Advanced Security model.
+    /// </summary>
+    /// <param name="isAllowed">Whether the resolver allows the verb.</param>
+    /// <param name="expected">The status the overload must return.</param>
+    [Theory]
+    [InlineData(true, ContentAuthorizationStatus.Success)]
+    [InlineData(false, ContentAuthorizationStatus.UnauthorizedMissingPermissionAccess)]
+    public async Task AuthorizeAccessAsync_SingleKeyAndVerb_ResolvesTheVerbAtTheNode(bool isAllowed, ContentAuthorizationStatus expected)
+    {
+        var userKey = Guid.NewGuid();
+        var group = Substitute.For<IReadOnlyUserGroup>();
+        group.StartContentId.Returns(Umbraco.Cms.Core.Constants.System.Root);
+        var user = StubUser(userKey);
+        user.Groups.Returns([group]);
+        user.StartContentIds.Returns([]);
+        var nodeKey = Guid.NewGuid();
+        var entity = StubEntity(42, nodeKey);
+        _entityService
+            .GetAllPaths(UmbracoObjectTypes.Document, Arg.Any<Guid[]>())
+            .Returns([new TreeEntityPath { Id = 42, Key = nodeKey, Path = "-1,42" }]);
+        _entityService
+            .GetAll(UmbracoObjectTypes.Document, Arg.Any<int[]>())
+            .Returns([entity]);
+        _permissionService
+            .ResolveAllAsync(
+                userKey,
+                nodeKey,
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Is<IEnumerable<string>?>(verbs => verbs != null && verbs.SequenceEqual(new[] { AdvancedPermissionsConstants.VerbPublish })),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission>
+            {
+                [AdvancedPermissionsConstants.VerbPublish] = new(AdvancedPermissionsConstants.VerbPublish, isAllowed, IsExplicit: true, Reasoning: []),
+            });
+
+        var result = await _sut.AuthorizeAccessAsync(user, nodeKey, AdvancedPermissionsConstants.VerbPublish);
+
+        Assert.Equal(expected, result);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

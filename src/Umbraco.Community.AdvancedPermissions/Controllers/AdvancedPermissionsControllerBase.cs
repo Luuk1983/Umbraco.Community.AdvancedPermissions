@@ -4,7 +4,7 @@ using Umbraco.Cms.Api.Management.Routing;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
 namespace Umbraco.Community.AdvancedPermissions.Controllers;
 

@@ -1,9 +1,9 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Umbraco.Community.AdvancedPermissions.Core.Concurrency;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
-using Umbraco.Community.AdvancedPermissions.Core.Exceptions;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Concurrency;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Exceptions;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 using Umbraco.Community.AdvancedPermissions.Data.Context;
 using Umbraco.Community.AdvancedPermissions.Data.Repositories;
 

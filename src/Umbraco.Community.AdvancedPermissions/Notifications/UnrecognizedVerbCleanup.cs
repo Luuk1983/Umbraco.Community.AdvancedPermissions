@@ -4,7 +4,7 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Runtime;
 using Umbraco.Cms.Core.Sync;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
 using Umbraco.Community.AdvancedPermissions.Data.Context;
 
 namespace Umbraco.Community.AdvancedPermissions.Notifications;

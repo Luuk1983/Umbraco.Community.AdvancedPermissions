@@ -1,4 +1,4 @@
-namespace Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 
 /// <summary>
 /// Data access for content-node advanced security permission entries (the <c>AdvancedPermission</c> table).

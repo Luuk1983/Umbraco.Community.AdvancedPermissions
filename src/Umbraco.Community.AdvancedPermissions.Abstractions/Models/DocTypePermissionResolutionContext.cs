@@ -1,4 +1,4 @@
-namespace Umbraco.Community.AdvancedPermissions.Core.Models;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
 /// <summary>
 /// Input data for <see cref="Interfaces.IDocTypePermissionResolver"/>.

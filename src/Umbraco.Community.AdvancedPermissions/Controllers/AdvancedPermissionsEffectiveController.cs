@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 
 namespace Umbraco.Community.AdvancedPermissions.Controllers;

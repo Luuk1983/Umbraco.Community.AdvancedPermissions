@@ -1,6 +1,6 @@
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
-namespace Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 
 /// <summary>
 /// Resolves effective permissions for a user at a specific content node by applying

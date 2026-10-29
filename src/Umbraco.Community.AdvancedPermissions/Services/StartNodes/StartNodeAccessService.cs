@@ -2,7 +2,7 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Community.AdvancedPermissions.Caching;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
 
 namespace Umbraco.Community.AdvancedPermissions.Services.StartNodes;
 

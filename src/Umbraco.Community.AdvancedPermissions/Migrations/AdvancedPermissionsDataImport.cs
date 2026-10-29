@@ -8,9 +8,9 @@ using Umbraco.Cms.Core.Runtime;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.Navigation;
 using Umbraco.Cms.Core.Sync;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 using Umbraco.Community.AdvancedPermissions.Data.Context;
 using Umbraco.Community.AdvancedPermissions.Data.Entities;
 

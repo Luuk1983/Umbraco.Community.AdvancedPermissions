@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Data.Context;
 using Umbraco.Community.AdvancedPermissions.Data.Entities;
 

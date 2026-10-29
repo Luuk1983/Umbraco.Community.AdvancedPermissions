@@ -1,4 +1,4 @@
-namespace Umbraco.Community.AdvancedPermissions.Core.Exceptions;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Exceptions;
 
 /// <summary>
 /// Thrown by a repository write when the entries it was about to replace no longer match the stamp

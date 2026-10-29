@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Umbraco.Community.AdvancedPermissions.Controllers;
 using Umbraco.Community.AdvancedPermissions.Controllers.Models;
-using Umbraco.Community.AdvancedPermissions.Core.Constants;
-using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 
 namespace Umbraco.Community.AdvancedPermissions.Tests;
 

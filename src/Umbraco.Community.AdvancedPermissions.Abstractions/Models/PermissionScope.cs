@@ -1,4 +1,4 @@
-namespace Umbraco.Community.AdvancedPermissions.Core.Models;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
 /// <summary>
 /// Defines the scope at which a permission entry applies within the content tree.

@@ -1,4 +1,4 @@
-namespace Umbraco.Community.AdvancedPermissions.Core.Constants;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
 
 /// <summary>
 /// Constants used throughout the Advanced Security package.

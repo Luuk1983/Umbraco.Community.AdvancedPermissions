@@ -1,4 +1,4 @@
-namespace Umbraco.Community.AdvancedPermissions.Core.Models;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
 /// <summary>
 /// Explains why a specific effective permission was resolved the way it was.

@@ -211,20 +211,3 @@ export async function getElementStartNodes(
     : await Sdk.getElementStartNodesForRole({ throwOnError: true, query: { roleAlias: subject.roleAlias }, ...(signal ? { signal } : {}) });
   return data as StartNodesResponse;
 }
-
-/**
- * Resolves effective element permissions for the CURRENT backoffice user at a node. This is the seam the
- * custom element/element-folder conditions use to gate UI action visibility — Umbraco 18 does not route
- * the native element current-user path through IElementPermissionService (the element form of #22351).
- */
-export async function getElementEffectiveForCurrentUser(
-  nodeKey: string,
-  signal?: AbortSignal,
-): Promise<EffectivePermissions> {
-  const { data } = await Sdk.getElementEffectiveForCurrentUser({
-    throwOnError: true,
-    query: { nodeKey },
-    ...(signal ? { signal } : {}),
-  });
-  return data as EffectivePermissions;
-}

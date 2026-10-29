@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -12,10 +12,8 @@
     <!-- NuGet package metadata. This is the PUBLIC CONTRACT package: the interfaces, models and
          constants that add-ons (e.g. the AI companion) and overrides compile against. Metadata
          mirrors the main Umbraco.Community.AdvancedPermissions package, adjusted for this role.
-         TODO(v19): rename the Umbraco.Community.AdvancedPermissions.Core.* namespaces to
-         .Abstractions.*. Kept as-is through v17 AND v18 (both already released) to avoid a source
-         break and to keep v17<->v18 forward-ports conflict-free; v19 is the first major where the
-         rename is possible. -->
+         Its namespaces are Umbraco.Community.AdvancedPermissions.Abstractions.* since v19. v17 and
+         v18 kept the original ...Core.* namespaces to avoid a source break within those majors. -->
     <IsPackable>true</IsPackable>
     <PackageId>Umbraco.Community.AdvancedPermissions.Abstractions</PackageId>
     <Title>Advanced Permissions for Umbraco — Abstractions</Title>

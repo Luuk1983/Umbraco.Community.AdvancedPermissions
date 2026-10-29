@@ -1,8 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
-using Umbraco.Community.AdvancedPermissions.Core.Models;
+using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
-namespace Umbraco.Community.AdvancedPermissions.Core.Concurrency;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Concurrency;
 
 /// <summary>
 /// Computes a concurrency stamp over the stored permission entries for one node and user group.

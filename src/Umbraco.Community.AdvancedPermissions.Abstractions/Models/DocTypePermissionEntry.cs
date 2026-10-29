@@ -1,4 +1,4 @@
-namespace Umbraco.Community.AdvancedPermissions.Core.Models;
+namespace Umbraco.Community.AdvancedPermissions.Abstractions.Models;
 
 /// <summary>
 /// Represents a single stored document-type permission entry.

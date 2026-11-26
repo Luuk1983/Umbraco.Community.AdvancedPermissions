@@ -104,9 +104,49 @@ public sealed class AdvancedElementContainerPermissionService(
             return ElementAuthorizationStatus.UnauthorizedMissingRootAccess;
         }
 
+        return await AreAllowedByGroupDefaultsAsync(user, permissionsToCheck)
+            ? ElementAuthorizationStatus.Success
+            : ElementAuthorizationStatus.UnauthorizedMissingPermissionAccess;
+    }
+
+    /// <summary>
+    /// Recycle bin check. Umbraco asks this to delete a folder permanently (Delete), to restore one (Move) and
+    /// to look up its original parent (Read).
+    /// </summary>
+    /// <remarks>
+    /// The Library recycle bin is not a real node: the user needs start-node access to it, and, as in
+    /// Umbraco's own service, every requested verb, mapped to its canonical element verb, must be allowed by
+    /// the group defaults, which the package keeps at its virtual root.
+    /// </remarks>
+    /// <param name="user">The user to authorize.</param>
+    /// <param name="permissionsToCheck">The verbs that must all be allowed.</param>
+    /// <returns>The authorization status.</returns>
+    public async Task<ElementAuthorizationStatus> AuthorizeBinAccessAsync(IUser user, ISet<string> permissionsToCheck)
+    {
+        var startNodeIds = user.CalculateElementStartNodeIds(entityService, appCaches);
+        if (!ContentPermissions.HasPathAccess(
+                Constants.System.RecycleBinElementString, startNodeIds, Constants.System.RecycleBinElement))
+        {
+            return ElementAuthorizationStatus.UnauthorizedMissingBinAccess;
+        }
+
+        return await AreAllowedByGroupDefaultsAsync(user, permissionsToCheck)
+            ? ElementAuthorizationStatus.Success
+            : ElementAuthorizationStatus.UnauthorizedMissingPermissionAccess;
+    }
+
+    /// <summary>
+    /// Whether every verb is allowed by the user's group defaults, which the package keeps at its virtual
+    /// root. The root and the recycle bin are not nodes in the tree, so their checks are decided here.
+    /// </summary>
+    /// <param name="user">The user to resolve for.</param>
+    /// <param name="permissionsToCheck">The verbs that must all be allowed; none means allowed.</param>
+    /// <returns><see langword="true"/> when every verb is allowed.</returns>
+    private async Task<bool> AreAllowedByGroupDefaultsAsync(IUser user, ISet<string> permissionsToCheck)
+    {
         if (permissionsToCheck.Count == 0)
         {
-            return ElementAuthorizationStatus.Success;
+            return true;
         }
 
         var resolved = await elementPermissionService.ResolveAllAsync(
@@ -115,21 +155,7 @@ public sealed class AdvancedElementContainerPermissionService(
             [AdvancedPermissionsConstants.VirtualRootNodeKey],
             ToCanonicalVerbs(permissionsToCheck));
 
-        return resolved.Values.Any(p => !p.IsAllowed)
-            ? ElementAuthorizationStatus.UnauthorizedMissingPermissionAccess
-            : ElementAuthorizationStatus.Success;
-    }
-
-    /// <inheritdoc />
-    public Task<ElementAuthorizationStatus> AuthorizeBinAccessAsync(IUser user, ISet<string> permissionsToCheck)
-    {
-        var startNodeIds = user.CalculateElementStartNodeIds(entityService, appCaches);
-        var hasAccess = ContentPermissions.HasPathAccess(
-            Constants.System.RecycleBinElementString, startNodeIds, Constants.System.RecycleBinElement);
-
-        return Task.FromResult(hasAccess
-            ? ElementAuthorizationStatus.Success
-            : ElementAuthorizationStatus.UnauthorizedMissingBinAccess);
+        return resolved.Values.All(p => p.IsAllowed);
     }
 
     /// <summary>

@@ -307,6 +307,53 @@ public sealed class AdvancedElementPermissionServiceTests
         await _elementPermissionService.DidNotReceiveWithAnyArgs().ResolveAllAsync(default, default, default!, default, default);
     }
 
+    // ─── AuthorizeBinAccessAsync ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Umbraco asks the recycle bin check to delete an element permanently or empty the bin (Delete), to
+    /// restore (Move) and to look up an element's original parent (Read). The bin is not in the tree, so, like
+    /// Umbraco's own service, the verbs are decided by the group defaults: the package's virtual root.
+    /// </summary>
+    /// <param name="isAllowed">Whether the resolver allows the verb at the virtual root.</param>
+    /// <param name="expected">The status the recycle bin check must return.</param>
+    [Theory]
+    [InlineData(true, ElementAuthorizationStatus.Success)]
+    [InlineData(false, ElementAuthorizationStatus.UnauthorizedMissingPermissionAccess)]
+    public async Task AuthorizeBinAccessAsync_ResolvesTheVerbsAtTheVirtualRoot(bool isAllowed, ElementAuthorizationStatus expected)
+    {
+        var userKey = Guid.NewGuid();
+        var user = StubUserWithElementStartNode(userKey, Constants.System.Root);
+        _elementPermissionService
+            .ResolveAllAsync(
+                userKey,
+                AdvancedPermissionsConstants.VirtualRootNodeKey,
+                Arg.Is<IReadOnlyList<Guid>>(path => path.SequenceEqual(new[] { AdvancedPermissionsConstants.VirtualRootNodeKey })),
+                Arg.Is<IEnumerable<string>?>(verbs => verbs != null && verbs.SequenceEqual(new[] { AdvancedPermissionsConstants.VerbElementDelete })),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission>
+            {
+                [AdvancedPermissionsConstants.VerbElementDelete] = new(AdvancedPermissionsConstants.VerbElementDelete, isAllowed, IsExplicit: false, Reasoning: []),
+            });
+
+        var result = await _sut.AuthorizeBinAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbElementDelete });
+
+        Assert.Equal(expected, result);
+    }
+
+    /// <summary>
+    /// Start nodes are checked first: without access to the Library recycle bin the verbs are not resolved.
+    /// </summary>
+    [Fact]
+    public async Task AuthorizeBinAccessAsync_WithoutBinStartNodeAccess_IsDeniedBeforeResolving()
+    {
+        var user = StubUserWithElementStartNode(Guid.NewGuid(), 1234);
+
+        var result = await _sut.AuthorizeBinAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbElementDelete });
+
+        Assert.Equal(ElementAuthorizationStatus.UnauthorizedMissingBinAccess, result);
+        await _elementPermissionService.DidNotReceiveWithAnyArgs().ResolveAllAsync(default, default, default!, default, default);
+    }
+
     // ─── FilterFallbackPermissionsAsync ───────────────────────────────────────
 
     /// <summary>

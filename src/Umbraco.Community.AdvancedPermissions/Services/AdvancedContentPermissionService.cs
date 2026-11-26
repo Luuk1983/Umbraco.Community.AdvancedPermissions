@@ -158,17 +158,35 @@ public sealed class AdvancedContentPermissionService(
     }
 
     /// <inheritdoc />
-    public Task<ContentAuthorizationStatus> AuthorizeRootAccessAsync(IUser user, ISet<string> permissionsToCheck)
+    /// <remarks>
+    /// Umbraco asks this whenever a document is created, moved, copied, published or sorted at the content
+    /// root. The root (<c>-1</c>) is not a real content item: the user needs start-node access to it, and
+    /// every requested verb must be allowed at the package's virtual root, which holds the group defaults.
+    /// That is the same answer the Access Viewer shows for the root.
+    /// </remarks>
+    public async Task<ContentAuthorizationStatus> AuthorizeRootAccessAsync(IUser user, ISet<string> permissionsToCheck)
     {
-        // The content root (-1) is a virtual node, not a real content item.
-        // We use HasPathAccess against the root path to check start node access.
         var startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
-        var hasAccess = ContentPermissions.HasPathAccess(
-            Constants.System.RootString, startNodeIds, Constants.System.RecycleBinContent);
+        if (!ContentPermissions.HasPathAccess(
+                Constants.System.RootString, startNodeIds, Constants.System.RecycleBinContent))
+        {
+            return ContentAuthorizationStatus.UnauthorizedMissingRootAccess;
+        }
 
-        return Task.FromResult(hasAccess
-            ? ContentAuthorizationStatus.Success
-            : ContentAuthorizationStatus.UnauthorizedMissingRootAccess);
+        if (permissionsToCheck.Count == 0)
+        {
+            return ContentAuthorizationStatus.Success;
+        }
+
+        var resolved = await advancedPermissionService.ResolveAllAsync(
+            user.Key,
+            AdvancedPermissionsConstants.VirtualRootNodeKey,
+            [AdvancedPermissionsConstants.VirtualRootNodeKey],
+            permissionsToCheck);
+
+        return resolved.Values.Any(p => !p.IsAllowed)
+            ? ContentAuthorizationStatus.UnauthorizedMissingPermissionAccess
+            : ContentAuthorizationStatus.Success;
     }
 
     /// <inheritdoc />

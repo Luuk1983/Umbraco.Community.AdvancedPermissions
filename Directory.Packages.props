@@ -6,24 +6,25 @@
     <!-- Umbraco — pinned to the v19 line. Each Umbraco major (v20, v21, …) requires a
          deliberate verification pass before we widen the range, so consumers on a future
          Umbraco major won't accidentally install this package against an unverified host.
-         Range syntax: [19.0.0-beta1,20.0.0) means >= 19.0.0-beta1 and < 20.0.0.
+         Range syntax: [19.0.0-rc2,20.0.0) means >= 19.0.0-rc2 and < 20.0.0.
          TODO(v19 release): move the floor to the stable 19.0.0 release (see RELEASE.md), so
-         consumers never resolve to a prerelease of the host. The beta floor is only for
+         consumers never resolve to a prerelease of the host. The prerelease floor is only for
          testing against the 19.0.0 prereleases. -->
-    <PackageVersion Include="Umbraco.Cms" Version="[19.0.0-beta1,20.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[19.0.0-beta1,20.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Core" Version="[19.0.0-beta1,20.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[19.0.0-beta1,20.0.0)" />
-    <PackageVersion Include="Umbraco.Cms.Persistence.EFCore" Version="[19.0.0-beta1,20.0.0)" />
-    <PackageVersion Include="Umbraco.TheStarterKit" Version="19.0.0-beta1" />
-    <PackageVersion Include="uSync" Version="[19.0.0-beta01,20.0.0)" />
-    <!-- Entity Framework Core: pinned to exactly match the version Umbraco 19.0.0-beta1 references
-         (11.0.0-rc.3.26522.148). Using a different version triggers an MSB3277 assembly-version
+    <PackageVersion Include="Umbraco.Cms" Version="[19.0.0-rc2,20.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="[19.0.0-rc2,20.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Core" Version="[19.0.0-rc2,20.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="[19.0.0-rc2,20.0.0)" />
+    <PackageVersion Include="Umbraco.Cms.Persistence.EFCore" Version="[19.0.0-rc2,20.0.0)" />
+    <!-- The starter kit has no rc2 build; rc1 is its latest v19 release (test site only). -->
+    <PackageVersion Include="Umbraco.TheStarterKit" Version="19.0.0-rc1" />
+    <PackageVersion Include="uSync" Version="[19.0.0-rc2,20.0.0)" />
+    <!-- Entity Framework Core: pinned to exactly match the version Umbraco 19.0.0-rc2 references
+         (11.0.0, the .NET 11 GA release). Using a different version triggers an MSB3277 assembly-version
          conflict with Umbraco's own EF Core reference, so we deliberately track the host version
          here and move it with every Umbraco prerelease/release. -->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0-rc.3.26522.148" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="11.0.0-rc.3.26522.148" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="11.0.0-rc.3.26522.148" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="11.0.0" />
     <!-- Build / versioning -->
     <PackageVersion Include="MinVer" Version="7.0.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.300" />

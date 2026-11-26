@@ -245,7 +245,85 @@ public sealed class AdvancedContentPermissionServiceTests
         Assert.Equal(expected, result);
     }
 
+    // ─── AuthorizeRootAccessAsync ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Umbraco asks the root check whenever something is created, moved, copied, published or sorted at the
+    /// content root. Beyond start-node access, every requested verb must be allowed at the package's virtual
+    /// root, the same layer the Access Viewer shows for the root.
+    /// </summary>
+    /// <param name="isAllowed">Whether the resolver allows the verb at the virtual root.</param>
+    /// <param name="expected">The status the root check must return.</param>
+    [Theory]
+    [InlineData(true, ContentAuthorizationStatus.Success)]
+    [InlineData(false, ContentAuthorizationStatus.UnauthorizedMissingPermissionAccess)]
+    public async Task AuthorizeRootAccessAsync_ResolvesTheVerbsAtTheVirtualRoot(bool isAllowed, ContentAuthorizationStatus expected)
+    {
+        var userKey = Guid.NewGuid();
+        var user = StubUserWithContentStartNode(userKey, Umbraco.Cms.Core.Constants.System.Root);
+        _permissionService
+            .ResolveAllAsync(
+                userKey,
+                AdvancedPermissionsConstants.VirtualRootNodeKey,
+                Arg.Is<IReadOnlyList<Guid>>(path => path.SequenceEqual(new[] { AdvancedPermissionsConstants.VirtualRootNodeKey })),
+                Arg.Is<IEnumerable<string>?>(verbs => verbs != null && verbs.SequenceEqual(new[] { AdvancedPermissionsConstants.VerbCreate })),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission>
+            {
+                [AdvancedPermissionsConstants.VerbCreate] = new(AdvancedPermissionsConstants.VerbCreate, isAllowed, IsExplicit: false, Reasoning: []),
+            });
+
+        var result = await _sut.AuthorizeRootAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbCreate });
+
+        Assert.Equal(expected, result);
+    }
+
+    /// <summary>
+    /// Start nodes are checked first: without access to the content root the verbs are not resolved at all.
+    /// </summary>
+    [Fact]
+    public async Task AuthorizeRootAccessAsync_WithoutRootStartNodeAccess_IsDeniedBeforeResolving()
+    {
+        var userKey = Guid.NewGuid();
+        var user = StubUserWithContentStartNode(userKey, 1234);
+
+        var result = await _sut.AuthorizeRootAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbCreate });
+
+        Assert.Equal(ContentAuthorizationStatus.UnauthorizedMissingRootAccess, result);
+        await _permissionService.DidNotReceiveWithAnyArgs().ResolveAllAsync(default, default, default!, default, default);
+    }
+
+    /// <summary>
+    /// A root check without verbs only needs start-node access, as before.
+    /// </summary>
+    [Fact]
+    public async Task AuthorizeRootAccessAsync_WithoutVerbs_OnlyChecksStartNodes()
+    {
+        var user = StubUserWithContentStartNode(Guid.NewGuid(), Umbraco.Cms.Core.Constants.System.Root);
+
+        var result = await _sut.AuthorizeRootAccessAsync(user, new HashSet<string>());
+
+        Assert.Equal(ContentAuthorizationStatus.Success, result);
+        await _permissionService.DidNotReceiveWithAnyArgs().ResolveAllAsync(default, default, default!, default, default);
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Creates a user whose single group has the given content start node.
+    /// </summary>
+    /// <param name="key">The user key.</param>
+    /// <param name="startContentId">The group's content start node id; <c>-1</c> is the content root.</param>
+    /// <returns>The substitute user.</returns>
+    private static IUser StubUserWithContentStartNode(Guid key, int startContentId)
+    {
+        var group = Substitute.For<IReadOnlyUserGroup>();
+        group.StartContentId.Returns(startContentId);
+        var user = StubUser(key);
+        user.Groups.Returns([group]);
+        user.StartContentIds.Returns([]);
+        return user;
+    }
 
     private static IUser StubUser(Guid key)
     {

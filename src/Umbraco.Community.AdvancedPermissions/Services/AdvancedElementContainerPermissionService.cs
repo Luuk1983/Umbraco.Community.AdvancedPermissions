@@ -90,15 +90,34 @@ public sealed class AdvancedElementContainerPermissionService(
     }
 
     /// <inheritdoc />
-    public Task<ElementAuthorizationStatus> AuthorizeRootAccessAsync(IUser user, ISet<string> permissionsToCheck)
+    /// <remarks>
+    /// Umbraco asks this whenever a folder is created or moved at the Library root. The root is not a real
+    /// node: the user needs start-node access to it, and every requested verb, mapped to its canonical
+    /// element verb, must be allowed at the package's virtual root, which holds the group defaults.
+    /// </remarks>
+    public async Task<ElementAuthorizationStatus> AuthorizeRootAccessAsync(IUser user, ISet<string> permissionsToCheck)
     {
         var startNodeIds = user.CalculateElementStartNodeIds(entityService, appCaches);
-        var hasAccess = ContentPermissions.HasPathAccess(
-            Constants.System.RootString, startNodeIds, Constants.System.RecycleBinElement);
+        if (!ContentPermissions.HasPathAccess(
+                Constants.System.RootString, startNodeIds, Constants.System.RecycleBinElement))
+        {
+            return ElementAuthorizationStatus.UnauthorizedMissingRootAccess;
+        }
 
-        return Task.FromResult(hasAccess
-            ? ElementAuthorizationStatus.Success
-            : ElementAuthorizationStatus.UnauthorizedMissingRootAccess);
+        if (permissionsToCheck.Count == 0)
+        {
+            return ElementAuthorizationStatus.Success;
+        }
+
+        var resolved = await elementPermissionService.ResolveAllAsync(
+            user.Key,
+            AdvancedPermissionsConstants.VirtualRootNodeKey,
+            [AdvancedPermissionsConstants.VirtualRootNodeKey],
+            ToCanonicalVerbs(permissionsToCheck));
+
+        return resolved.Values.Any(p => !p.IsAllowed)
+            ? ElementAuthorizationStatus.UnauthorizedMissingPermissionAccess
+            : ElementAuthorizationStatus.Success;
     }
 
     /// <inheritdoc />

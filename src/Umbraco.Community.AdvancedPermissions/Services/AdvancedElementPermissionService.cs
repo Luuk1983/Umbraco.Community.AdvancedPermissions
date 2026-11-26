@@ -218,16 +218,35 @@ public sealed class AdvancedElementPermissionService(
     }
 
     /// <inheritdoc />
-    public Task<ElementAuthorizationStatus> AuthorizeRootAccessAsync(IUser user, ISet<string> permissionsToCheck)
+    /// <remarks>
+    /// Umbraco asks this whenever an element is created, moved, copied or published at the Library root. The
+    /// root is not a real node: the user needs start-node access to it, and every requested verb must be
+    /// allowed at the package's virtual root, which holds the group defaults. That is the same answer the
+    /// Library Access Viewer shows for the root.
+    /// </remarks>
+    public async Task<ElementAuthorizationStatus> AuthorizeRootAccessAsync(IUser user, ISet<string> permissionsToCheck)
     {
-        // The element root is a virtual node; access is governed by element start-node configuration.
         var startNodeIds = user.CalculateElementStartNodeIds(entityService, appCaches);
-        var hasAccess = ContentPermissions.HasPathAccess(
-            Constants.System.RootString, startNodeIds, Constants.System.RecycleBinElement);
+        if (!ContentPermissions.HasPathAccess(
+                Constants.System.RootString, startNodeIds, Constants.System.RecycleBinElement))
+        {
+            return ElementAuthorizationStatus.UnauthorizedMissingRootAccess;
+        }
 
-        return Task.FromResult(hasAccess
-            ? ElementAuthorizationStatus.Success
-            : ElementAuthorizationStatus.UnauthorizedMissingRootAccess);
+        if (permissionsToCheck.Count == 0)
+        {
+            return ElementAuthorizationStatus.Success;
+        }
+
+        var resolved = await elementPermissionService.ResolveAllAsync(
+            user.Key,
+            AdvancedPermissionsConstants.VirtualRootNodeKey,
+            [AdvancedPermissionsConstants.VirtualRootNodeKey],
+            permissionsToCheck);
+
+        return resolved.Values.Any(p => !p.IsAllowed)
+            ? ElementAuthorizationStatus.UnauthorizedMissingPermissionAccess
+            : ElementAuthorizationStatus.Success;
     }
 
     /// <inheritdoc />
@@ -259,6 +278,54 @@ public sealed class AdvancedElementPermissionService(
             ? ElementAuthorizationStatus.Success
             : ElementAuthorizationStatus.UnauthorizedMissingCulture;
     }
+
+    /// <summary>
+    /// Filters the user-group default ("fallback") permissions Umbraco sends to the backoffice for the current
+    /// user, removing every element verb the package does not allow at the Library root.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The backoffice falls back to these permissions where it has no node to ask about. Since Umbraco
+    /// 19.0.0-rc2 the Transfer to Library dialog asks the server for a selected folder, but it still decides
+    /// the Library root from these permissions, because the root has no key. Without this filter the dialog
+    /// would follow the native group defaults at the root and ignore the package's Library root rules.
+    /// </para>
+    /// <para>
+    /// The Library root is resolved as the package's virtual root, the same way the Library Access Viewer
+    /// resolves it. Umbraco's contract only honours removals and asks each service to remove only the verbs it
+    /// owns, so only the canonical <c>Umb.Element.*</c> verbs are filtered. Folder verbs
+    /// (<c>Umb.ElementContainer.*</c>), document verbs and any other verb pass through unchanged.
+    /// </para>
+    /// </remarks>
+    /// <param name="user">The current user.</param>
+    /// <param name="fallbackPermissions">The fallback permissions aggregated from the user's groups.</param>
+    /// <returns>The fallback permissions without the element verbs the package denies at the Library root.</returns>
+    public async Task<ISet<string>> FilterFallbackPermissionsAsync(IUser user, ISet<string> fallbackPermissions)
+    {
+        var filtered = new HashSet<string>(fallbackPermissions, StringComparer.Ordinal);
+        if (!filtered.Any(IsElementVerb))
+        {
+            return filtered;
+        }
+
+        var resolved = await elementPermissionService.ResolveAllAsync(
+            user.Key,
+            AdvancedPermissionsConstants.VirtualRootNodeKey,
+            [AdvancedPermissionsConstants.VirtualRootNodeKey]);
+
+        filtered.RemoveWhere(verb =>
+            IsElementVerb(verb) && !(resolved.TryGetValue(verb, out var permission) && permission.IsAllowed));
+
+        return filtered;
+    }
+
+    /// <summary>
+    /// Whether a verb is one of the canonical element verbs this service owns.
+    /// </summary>
+    /// <param name="verb">The verb to check.</param>
+    /// <returns><see langword="true"/> for an <c>Umb.Element.*</c> verb the package manages.</returns>
+    private static bool IsElementVerb(string verb) =>
+        AdvancedPermissionsConstants.ElementVerbs.Contains(verb, StringComparer.Ordinal);
 
     /// <summary>
     /// Gets the effective permissions for a user on the specified library elements, resolved through the

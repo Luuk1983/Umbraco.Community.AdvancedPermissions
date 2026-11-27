@@ -5,6 +5,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Services.AuthorizationStatus;
 using Umbraco.Community.AdvancedPermissions.Core.Constants;
 using Umbraco.Community.AdvancedPermissions.Core.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Core.Models;
@@ -14,8 +15,9 @@ namespace Umbraco.Community.AdvancedPermissions.Tests;
 
 /// <summary>
 /// Tests <see cref="AdvancedElementPermissionService.GetPermissionsAsync"/> — the per-element effective
-/// permission seam that resolves library element permissions through the Advanced Security model. The
-/// path-walking <c>Authorize*</c> methods are start-node-coupled and follow the same
+/// permission seam that resolves library element permissions through the Advanced Security model — plus
+/// the Library root check (<see cref="AdvancedElementPermissionService.AuthorizeRootAccessAsync"/>). The
+/// other path-walking <c>Authorize*</c> methods are start-node-coupled and follow the same
 /// not-unit-tested precedent as <see cref="AdvancedContentPermissionService"/>.
 /// </summary>
 public sealed class AdvancedElementPermissionServiceTests
@@ -161,6 +163,118 @@ public sealed class AdvancedElementPermissionServiceTests
         Assert.DoesNotContain(AdvancedPermissionsConstants.VerbElementRead, node.Permissions);
         // …and element-only verbs (Publish) have no container counterpart, so they're dropped.
         Assert.DoesNotContain(AdvancedPermissionsConstants.VerbElementPublish, node.Permissions);
+    }
+
+    // ─── AuthorizeRootAccessAsync ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Umbraco asks the root check whenever an element is created, moved, copied or published at the
+    /// Library root. Beyond start-node access, every requested verb must be allowed at the package's virtual
+    /// root, the same layer the Library Access Viewer shows for the root.
+    /// </summary>
+    /// <param name="isAllowed">Whether the resolver allows the verb at the virtual root.</param>
+    /// <param name="expected">The status the root check must return.</param>
+    [Theory]
+    [InlineData(true, ElementAuthorizationStatus.Success)]
+    [InlineData(false, ElementAuthorizationStatus.UnauthorizedMissingPermissionAccess)]
+    public async Task AuthorizeRootAccessAsync_ResolvesTheVerbsAtTheVirtualRoot(bool isAllowed, ElementAuthorizationStatus expected)
+    {
+        var userKey = Guid.NewGuid();
+        var user = StubUserWithElementStartNode(userKey, Constants.System.Root);
+        _elementPermissionService
+            .ResolveAllAsync(
+                userKey,
+                AdvancedPermissionsConstants.VirtualRootNodeKey,
+                Arg.Is<IReadOnlyList<Guid>>(path => path.SequenceEqual(new[] { AdvancedPermissionsConstants.VirtualRootNodeKey })),
+                Arg.Is<IEnumerable<string>?>(verbs => verbs != null && verbs.SequenceEqual(new[] { AdvancedPermissionsConstants.VerbElementCreate })),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission>
+            {
+                [AdvancedPermissionsConstants.VerbElementCreate] = new(AdvancedPermissionsConstants.VerbElementCreate, isAllowed, IsExplicit: false, Reasoning: []),
+            });
+
+        var result = await _sut.AuthorizeRootAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbElementCreate });
+
+        Assert.Equal(expected, result);
+    }
+
+    /// <summary>
+    /// Start nodes are checked first: without access to the Library root the verbs are not resolved at all.
+    /// </summary>
+    [Fact]
+    public async Task AuthorizeRootAccessAsync_WithoutRootStartNodeAccess_IsDeniedBeforeResolving()
+    {
+        var user = StubUserWithElementStartNode(Guid.NewGuid(), 1234);
+
+        var result = await _sut.AuthorizeRootAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbElementCreate });
+
+        Assert.Equal(ElementAuthorizationStatus.UnauthorizedMissingRootAccess, result);
+        await _elementPermissionService.DidNotReceiveWithAnyArgs().ResolveAllAsync(default, default, default!, default, default);
+    }
+
+    // ─── AuthorizeBinAccessAsync ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Umbraco asks the recycle bin check to delete an element permanently or empty the bin (Delete), to
+    /// restore (Move) and to look up an element's original parent (Read). The bin is not in the tree, so, like
+    /// Umbraco's own service, the verbs are decided by the group defaults: the package's virtual root.
+    /// </summary>
+    /// <param name="isAllowed">Whether the resolver allows the verb at the virtual root.</param>
+    /// <param name="expected">The status the recycle bin check must return.</param>
+    [Theory]
+    [InlineData(true, ElementAuthorizationStatus.Success)]
+    [InlineData(false, ElementAuthorizationStatus.UnauthorizedMissingPermissionAccess)]
+    public async Task AuthorizeBinAccessAsync_ResolvesTheVerbsAtTheVirtualRoot(bool isAllowed, ElementAuthorizationStatus expected)
+    {
+        var userKey = Guid.NewGuid();
+        var user = StubUserWithElementStartNode(userKey, Constants.System.Root);
+        _elementPermissionService
+            .ResolveAllAsync(
+                userKey,
+                AdvancedPermissionsConstants.VirtualRootNodeKey,
+                Arg.Is<IReadOnlyList<Guid>>(path => path.SequenceEqual(new[] { AdvancedPermissionsConstants.VirtualRootNodeKey })),
+                Arg.Is<IEnumerable<string>?>(verbs => verbs != null && verbs.SequenceEqual(new[] { AdvancedPermissionsConstants.VerbElementDelete })),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission>
+            {
+                [AdvancedPermissionsConstants.VerbElementDelete] = new(AdvancedPermissionsConstants.VerbElementDelete, isAllowed, IsExplicit: false, Reasoning: []),
+            });
+
+        var result = await _sut.AuthorizeBinAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbElementDelete });
+
+        Assert.Equal(expected, result);
+    }
+
+    /// <summary>
+    /// Start nodes are checked first: without access to the Library recycle bin the verbs are not resolved.
+    /// </summary>
+    [Fact]
+    public async Task AuthorizeBinAccessAsync_WithoutBinStartNodeAccess_IsDeniedBeforeResolving()
+    {
+        var user = StubUserWithElementStartNode(Guid.NewGuid(), 1234);
+
+        var result = await _sut.AuthorizeBinAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbElementDelete });
+
+        Assert.Equal(ElementAuthorizationStatus.UnauthorizedMissingBinAccess, result);
+        await _elementPermissionService.DidNotReceiveWithAnyArgs().ResolveAllAsync(default, default, default!, default, default);
+    }
+
+    /// <summary>
+    /// Creates a user whose single group has the given Library start node.
+    /// </summary>
+    /// <param name="key">The user key.</param>
+    /// <param name="startElementId">The group's Library start node id; <c>-1</c> is the Library root.</param>
+    /// <returns>The substitute user.</returns>
+    private static IUser StubUserWithElementStartNode(Guid key, int startElementId)
+    {
+        var group = Substitute.For<IReadOnlyUserGroup>();
+        group.StartElementId.Returns(startElementId);
+        var user = Substitute.For<IUser>();
+        user.Key.Returns(key);
+        user.Id.Returns(Math.Abs(key.GetHashCode()));
+        user.Groups.Returns([group]);
+        user.StartElementIds.Returns([]);
+        return user;
     }
 
     private static IUser StubUser(Guid key)

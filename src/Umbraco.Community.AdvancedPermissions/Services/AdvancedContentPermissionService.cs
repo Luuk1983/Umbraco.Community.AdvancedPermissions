@@ -150,30 +150,73 @@ public sealed class AdvancedContentPermissionService(
     }
 
     /// <inheritdoc />
-    public Task<ContentAuthorizationStatus> AuthorizeRootAccessAsync(IUser user, ISet<string> permissionsToCheck)
+    /// <remarks>
+    /// Umbraco asks this whenever a document is created, moved, copied, published or sorted at the content
+    /// root. The root (<c>-1</c>) is not a real content item: the user needs start-node access to it, and
+    /// every requested verb must be allowed at the package's virtual root, which holds the group defaults.
+    /// That is the same answer the Access Viewer shows for the root.
+    /// </remarks>
+    public async Task<ContentAuthorizationStatus> AuthorizeRootAccessAsync(IUser user, ISet<string> permissionsToCheck)
     {
-        // The content root (-1) is a virtual node, not a real content item.
-        // We use HasPathAccess against the root path to check start node access.
         var startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
-        var hasAccess = ContentPermissions.HasPathAccess(
-            Constants.System.RootString, startNodeIds, Constants.System.RecycleBinContent);
+        if (!ContentPermissions.HasPathAccess(
+                Constants.System.RootString, startNodeIds, Constants.System.RecycleBinContent))
+        {
+            return ContentAuthorizationStatus.UnauthorizedMissingRootAccess;
+        }
 
-        return Task.FromResult(hasAccess
+        return await AreAllowedByGroupDefaultsAsync(user, permissionsToCheck)
             ? ContentAuthorizationStatus.Success
-            : ContentAuthorizationStatus.UnauthorizedMissingRootAccess);
+            : ContentAuthorizationStatus.UnauthorizedMissingPermissionAccess;
     }
 
-    /// <inheritdoc />
-    public Task<ContentAuthorizationStatus> AuthorizeBinAccessAsync(IUser user, ISet<string> permissionsToCheck)
+    /// <summary>
+    /// Recycle bin check. Umbraco asks this to delete a document permanently or empty the bin (Delete), to
+    /// restore one (Move) and to look up its original parent (Read).
+    /// </summary>
+    /// <remarks>
+    /// The recycle bin (<c>-20</c>) is not a real content item: the user needs start-node access to it, and,
+    /// as in Umbraco's own service, every requested verb must be allowed by the group defaults, which the
+    /// package keeps at its virtual root.
+    /// </remarks>
+    /// <param name="user">The user to authorize.</param>
+    /// <param name="permissionsToCheck">The verbs that must all be allowed.</param>
+    /// <returns>The authorization status.</returns>
+    public async Task<ContentAuthorizationStatus> AuthorizeBinAccessAsync(IUser user, ISet<string> permissionsToCheck)
     {
-        // The recycle bin (-20) is a virtual node, not a real content item.
         var startNodeIds = user.CalculateContentStartNodeIds(entityService, appCaches);
-        var hasAccess = ContentPermissions.HasPathAccess(
-            Constants.System.RecycleBinContentString, startNodeIds, Constants.System.RecycleBinContent);
+        if (!ContentPermissions.HasPathAccess(
+                Constants.System.RecycleBinContentString, startNodeIds, Constants.System.RecycleBinContent))
+        {
+            return ContentAuthorizationStatus.UnauthorizedMissingBinAccess;
+        }
 
-        return Task.FromResult(hasAccess
+        return await AreAllowedByGroupDefaultsAsync(user, permissionsToCheck)
             ? ContentAuthorizationStatus.Success
-            : ContentAuthorizationStatus.UnauthorizedMissingBinAccess);
+            : ContentAuthorizationStatus.UnauthorizedMissingPermissionAccess;
+    }
+
+    /// <summary>
+    /// Whether every verb is allowed by the user's group defaults, which the package keeps at its virtual
+    /// root. The root and the recycle bin are not nodes in the tree, so their checks are decided here.
+    /// </summary>
+    /// <param name="user">The user to resolve for.</param>
+    /// <param name="permissionsToCheck">The verbs that must all be allowed; none means allowed.</param>
+    /// <returns><see langword="true"/> when every verb is allowed.</returns>
+    private async Task<bool> AreAllowedByGroupDefaultsAsync(IUser user, ISet<string> permissionsToCheck)
+    {
+        if (permissionsToCheck.Count == 0)
+        {
+            return true;
+        }
+
+        var resolved = await advancedPermissionService.ResolveAllAsync(
+            user.Key,
+            AdvancedPermissionsConstants.VirtualRootNodeKey,
+            [AdvancedPermissionsConstants.VirtualRootNodeKey],
+            permissionsToCheck);
+
+        return resolved.Values.All(p => p.IsAllowed);
     }
 
     /// <inheritdoc />

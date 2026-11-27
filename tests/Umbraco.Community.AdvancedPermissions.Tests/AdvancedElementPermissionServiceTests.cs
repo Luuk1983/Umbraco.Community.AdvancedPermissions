@@ -5,6 +5,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
 using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Services.AuthorizationStatus;
 using Umbraco.Community.AdvancedPermissions.Abstractions.Constants;
 using Umbraco.Community.AdvancedPermissions.Abstractions.Interfaces;
 using Umbraco.Community.AdvancedPermissions.Abstractions.Models;
@@ -14,7 +15,8 @@ namespace Umbraco.Community.AdvancedPermissions.Tests;
 
 /// <summary>
 /// Tests <see cref="AdvancedElementPermissionService.GetPermissionsAsync"/> — the per-element effective
-/// permission seam that resolves library element permissions through the Advanced Security model. The
+/// permission seam that resolves library element permissions through the Advanced Security model — plus
+/// the batch filter and the fallback-permission filter that covers the Library root. The
 /// path-walking <c>Authorize*</c> methods are start-node-coupled and follow the same
 /// not-unit-tested precedent as <see cref="AdvancedContentPermissionService"/>.
 /// </summary>
@@ -256,6 +258,215 @@ public sealed class AdvancedElementPermissionServiceTests
 
         Assert.Equal(keys.ToHashSet(), result);
         _entityService.Received(1).GetAllPaths(UmbracoObjectTypes.Element, Arg.Any<Guid[]>());
+    }
+
+    // ─── AuthorizeRootAccessAsync ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Umbraco asks the root check whenever an element is created, moved, copied or published at the
+    /// Library root. Beyond start-node access, every requested verb must be allowed at the package's virtual
+    /// root, the same layer the Library Access Viewer shows for the root.
+    /// </summary>
+    /// <param name="isAllowed">Whether the resolver allows the verb at the virtual root.</param>
+    /// <param name="expected">The status the root check must return.</param>
+    [Theory]
+    [InlineData(true, ElementAuthorizationStatus.Success)]
+    [InlineData(false, ElementAuthorizationStatus.UnauthorizedMissingPermissionAccess)]
+    public async Task AuthorizeRootAccessAsync_ResolvesTheVerbsAtTheVirtualRoot(bool isAllowed, ElementAuthorizationStatus expected)
+    {
+        var userKey = Guid.NewGuid();
+        var user = StubUserWithElementStartNode(userKey, Constants.System.Root);
+        _elementPermissionService
+            .ResolveAllAsync(
+                userKey,
+                AdvancedPermissionsConstants.VirtualRootNodeKey,
+                Arg.Is<IReadOnlyList<Guid>>(path => path.SequenceEqual(new[] { AdvancedPermissionsConstants.VirtualRootNodeKey })),
+                Arg.Is<IEnumerable<string>?>(verbs => verbs != null && verbs.SequenceEqual(new[] { AdvancedPermissionsConstants.VerbElementCreate })),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission>
+            {
+                [AdvancedPermissionsConstants.VerbElementCreate] = new(AdvancedPermissionsConstants.VerbElementCreate, isAllowed, IsExplicit: false, Reasoning: []),
+            });
+
+        var result = await _sut.AuthorizeRootAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbElementCreate });
+
+        Assert.Equal(expected, result);
+    }
+
+    /// <summary>
+    /// Start nodes are checked first: without access to the Library root the verbs are not resolved at all.
+    /// </summary>
+    [Fact]
+    public async Task AuthorizeRootAccessAsync_WithoutRootStartNodeAccess_IsDeniedBeforeResolving()
+    {
+        var user = StubUserWithElementStartNode(Guid.NewGuid(), 1234);
+
+        var result = await _sut.AuthorizeRootAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbElementCreate });
+
+        Assert.Equal(ElementAuthorizationStatus.UnauthorizedMissingRootAccess, result);
+        await _elementPermissionService.DidNotReceiveWithAnyArgs().ResolveAllAsync(default, default, default!, default, default);
+    }
+
+    // ─── AuthorizeBinAccessAsync ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Umbraco asks the recycle bin check to delete an element permanently or empty the bin (Delete), to
+    /// restore (Move) and to look up an element's original parent (Read). The bin is not in the tree, so, like
+    /// Umbraco's own service, the verbs are decided by the group defaults: the package's virtual root.
+    /// </summary>
+    /// <param name="isAllowed">Whether the resolver allows the verb at the virtual root.</param>
+    /// <param name="expected">The status the recycle bin check must return.</param>
+    [Theory]
+    [InlineData(true, ElementAuthorizationStatus.Success)]
+    [InlineData(false, ElementAuthorizationStatus.UnauthorizedMissingPermissionAccess)]
+    public async Task AuthorizeBinAccessAsync_ResolvesTheVerbsAtTheVirtualRoot(bool isAllowed, ElementAuthorizationStatus expected)
+    {
+        var userKey = Guid.NewGuid();
+        var user = StubUserWithElementStartNode(userKey, Constants.System.Root);
+        _elementPermissionService
+            .ResolveAllAsync(
+                userKey,
+                AdvancedPermissionsConstants.VirtualRootNodeKey,
+                Arg.Is<IReadOnlyList<Guid>>(path => path.SequenceEqual(new[] { AdvancedPermissionsConstants.VirtualRootNodeKey })),
+                Arg.Is<IEnumerable<string>?>(verbs => verbs != null && verbs.SequenceEqual(new[] { AdvancedPermissionsConstants.VerbElementDelete })),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, EffectivePermission>
+            {
+                [AdvancedPermissionsConstants.VerbElementDelete] = new(AdvancedPermissionsConstants.VerbElementDelete, isAllowed, IsExplicit: false, Reasoning: []),
+            });
+
+        var result = await _sut.AuthorizeBinAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbElementDelete });
+
+        Assert.Equal(expected, result);
+    }
+
+    /// <summary>
+    /// Start nodes are checked first: without access to the Library recycle bin the verbs are not resolved.
+    /// </summary>
+    [Fact]
+    public async Task AuthorizeBinAccessAsync_WithoutBinStartNodeAccess_IsDeniedBeforeResolving()
+    {
+        var user = StubUserWithElementStartNode(Guid.NewGuid(), 1234);
+
+        var result = await _sut.AuthorizeBinAccessAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbElementDelete });
+
+        Assert.Equal(ElementAuthorizationStatus.UnauthorizedMissingBinAccess, result);
+        await _elementPermissionService.DidNotReceiveWithAnyArgs().ResolveAllAsync(default, default, default!, default, default);
+    }
+
+    // ─── FilterFallbackPermissionsAsync ───────────────────────────────────────
+
+    /// <summary>
+    /// At the Library root, Umbraco's backoffice decides from the current user's fallback permissions
+    /// (the Transfer to Library dialog does, for one). An element verb the package does not allow at the
+    /// Library root is removed, so the backoffice gives the same answer as the package.
+    /// </summary>
+    [Fact]
+    public async Task FilterFallbackPermissionsAsync_RemovesElementVerbsNotAllowedAtTheLibraryRoot()
+    {
+        var userKey = Guid.NewGuid();
+        var user = StubUser(userKey);
+        StubRootResolve(userKey, allowed: [AdvancedPermissionsConstants.VerbElementRead, AdvancedPermissionsConstants.VerbElementPublish],
+            denied: [AdvancedPermissionsConstants.VerbElementCreate]);
+        var fallback = new HashSet<string>
+        {
+            AdvancedPermissionsConstants.VerbElementRead,
+            AdvancedPermissionsConstants.VerbElementCreate,
+            AdvancedPermissionsConstants.VerbElementPublish,
+        };
+
+        var result = await _sut.FilterFallbackPermissionsAsync(user, fallback);
+
+        Assert.Equal(
+            new HashSet<string> { AdvancedPermissionsConstants.VerbElementRead, AdvancedPermissionsConstants.VerbElementPublish },
+            result);
+    }
+
+    /// <summary>
+    /// The set holds every fallback verb of the user, not only element ones, and Umbraco's contract says an
+    /// implementation may only remove verbs it owns. Document, folder and unknown verbs pass through untouched.
+    /// </summary>
+    [Fact]
+    public async Task FilterFallbackPermissionsAsync_PassesThroughVerbsItDoesNotOwn()
+    {
+        var userKey = Guid.NewGuid();
+        var user = StubUser(userKey);
+        StubRootResolve(userKey, allowed: [], denied: [AdvancedPermissionsConstants.VerbElementRead]);
+        var fallback = new HashSet<string>
+        {
+            "Umb.Document.Read",
+            "Umb.Document.PropertyValue.Write",
+            AdvancedPermissionsConstants.VerbElementContainerCreate,
+            "Some.Custom.Verb",
+            AdvancedPermissionsConstants.VerbElementRead,
+        };
+
+        var result = await _sut.FilterFallbackPermissionsAsync(user, fallback);
+
+        Assert.Equal(
+            new HashSet<string>
+            {
+                "Umb.Document.Read",
+                "Umb.Document.PropertyValue.Write",
+                AdvancedPermissionsConstants.VerbElementContainerCreate,
+                "Some.Custom.Verb",
+            },
+            result);
+    }
+
+    /// <summary>
+    /// The Library root is resolved as the package's virtual root, the same way the Library Access Viewer
+    /// resolves it, so the answer reflects the user's group defaults for the Library.
+    /// </summary>
+    [Fact]
+    public async Task FilterFallbackPermissionsAsync_ResolvesAtTheVirtualRoot()
+    {
+        var userKey = Guid.NewGuid();
+        var user = StubUser(userKey);
+        StubRootResolve(userKey, allowed: [AdvancedPermissionsConstants.VerbElementRead], denied: []);
+
+        await _sut.FilterFallbackPermissionsAsync(user, new HashSet<string> { AdvancedPermissionsConstants.VerbElementRead });
+
+        await _elementPermissionService.Received(1).ResolveAllAsync(
+            userKey,
+            AdvancedPermissionsConstants.VirtualRootNodeKey,
+            Arg.Is<IReadOnlyList<Guid>>(path => path.SequenceEqual(new[] { AdvancedPermissionsConstants.VirtualRootNodeKey })),
+            Arg.Any<IEnumerable<string>?>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// A fallback set without element verbs needs no resolution at all.
+    /// </summary>
+    [Fact]
+    public async Task FilterFallbackPermissionsAsync_WithoutElementVerbs_DoesNotResolve()
+    {
+        var user = StubUser(Guid.NewGuid());
+        var fallback = new HashSet<string> { "Umb.Document.Read" };
+
+        var result = await _sut.FilterFallbackPermissionsAsync(user, fallback);
+
+        Assert.Equal(fallback, result);
+        await _elementPermissionService.DidNotReceiveWithAnyArgs().ResolveAllAsync(
+            default, default, default!, default, default);
+    }
+
+    /// <summary>
+    /// Makes the element resolver answer at the Library (virtual) root for one user.
+    /// </summary>
+    /// <param name="userKey">The user the answer is for.</param>
+    /// <param name="allowed">The element verbs allowed at the root.</param>
+    /// <param name="denied">The element verbs denied at the root.</param>
+    private void StubRootResolve(Guid userKey, string[] allowed, string[] denied)
+    {
+        var answer = allowed
+            .Select(verb => new EffectivePermission(verb, IsAllowed: true, IsExplicit: false, Reasoning: []))
+            .Concat(denied.Select(verb => new EffectivePermission(verb, IsAllowed: false, IsExplicit: false, Reasoning: [])))
+            .ToDictionary(p => p.Verb, StringComparer.Ordinal);
+
+        _elementPermissionService
+            .ResolveAllAsync(userKey, AdvancedPermissionsConstants.VirtualRootNodeKey, Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<IEnumerable<string>?>(), Arg.Any<CancellationToken>())
+            .Returns(answer);
     }
 
     /// <summary>
